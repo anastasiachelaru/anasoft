@@ -32,4 +32,5 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./dist/
-          server-dir: /public_html/ # Modifică dacă folderul tău de pe server are alt nume (ex. public_html, web, httpdocs)
+          server-dir: /public_html/
+          dangerous-clean-slate: true
