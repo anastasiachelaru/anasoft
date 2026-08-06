@@ -3,33 +3,369 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="PIM Iași - Gestiune și comenzi tonere, echipamente și consumabile de imprimare.">
-  <title>PIM Iași - Tonere & Consumabile</title>
+  <meta name="description" content="PIM Iași - Sistem de Gestiune și Evidență Tonere și Consumabile Imprimante.">
+  <title>PIM Iași - Toner Management System</title>
   
-  <!-- Google Fonts -->
+  <!-- Google Fonts: Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="dark-theme">
+  
+  <!-- Fundal Dinamic CMYK Glow -->
   <div class="background-decor">
-    <div class="glow glow-1"></div>
-    <div class="glow glow-2"></div>
+    <div class="glow glow-cyan"></div>
+    <div class="glow glow-magenta"></div>
+    <div class="glow glow-yellow"></div>
   </div>
 
-  <main class="container">
-    <div class="card">
-      <div class="brand">
-        <div class="logo-icon">PIM</div>
-        <span class="brand-text">PIM Iași</span>
+  <!-- ECRAN AUTENTIFICARE (LOGIN) -->
+  <section id="auth-screen" class="screen-view active">
+    <div class="auth-container">
+      <div class="auth-card">
+        <div class="brand-header">
+          <div class="brand-logo">PIM</div>
+          <div>
+            <h2 class="brand-title">PIM Iași</h2>
+            <p class="brand-sub">Toner Management System</p>
+          </div>
+        </div>
+
+        <div class="auth-tabs">
+          <button id="tab-pin-btn" class="auth-tab-btn active" onclick="switchAuthTab('pin')">
+            <i class="fa-solid fa-calculator"></i> PIN (6 Cifre)
+          </button>
+          <button id="tab-pass-btn" class="auth-tab-btn" onclick="switchAuthTab('pass')">
+            <i class="fa-solid fa-user-lock"></i> User & Parolă
+          </button>
+        </div>
+
+        <!-- FORMULAR 1: AUTENTIFICARE PRIN PIN (KEYPAD) -->
+        <div id="auth-pin-view" class="auth-subview active">
+          <p class="auth-instruction">Introdu codul PIN din 6 cifre atribuit contului tău:</p>
+          
+          <div class="pin-display">
+            <span class="pin-dot" id="dot-0"></span>
+            <span class="pin-dot" id="dot-1"></span>
+            <span class="pin-dot" id="dot-2"></span>
+            <span class="pin-dot" id="dot-3"></span>
+            <span class="pin-dot" id="dot-4"></span>
+            <span class="pin-dot" id="dot-5"></span>
+          </div>
+
+          <div class="keypad-grid">
+            <button class="key-btn" onclick="pressPinKey('1')">1</button>
+            <button class="key-btn" onclick="pressPinKey('2')">2</button>
+            <button class="key-btn" onclick="pressPinKey('3')">3</button>
+            <button class="key-btn" onclick="pressPinKey('4')">4</button>
+            <button class="key-btn" onclick="pressPinKey('5')">5</button>
+            <button class="key-btn" onclick="pressPinKey('6')">6</button>
+            <button class="key-btn" onclick="pressPinKey('7')">7</button>
+            <button class="key-btn" onclick="pressPinKey('8')">8</button>
+            <button class="key-btn" onclick="pressPinKey('9')">9</button>
+            <button class="key-btn action-key" onclick="clearPinKey()"><i class="fa-solid fa-trash-can"></i></button>
+            <button class="key-btn" onclick="pressPinKey('0')">0</button>
+            <button class="key-btn action-key" onclick="backspacePinKey()"><i class="fa-solid fa-delete-left"></i></button>
+          </div>
+
+          <div class="demo-hint">
+            <i class="fa-solid fa-lightbulb"></i> PIN Demo Angajat: <code>123456</code> sau <code>8122</code> | Admin: <code>000000</code>
+          </div>
+        </div>
+
+        <!-- FORMULAR 2: AUTENTIFICARE CLASICĂ (USER & PAROLĂ) -->
+        <div id="auth-pass-view" class="auth-subview">
+          <form id="login-pass-form" onsubmit="handlePassLogin(event)">
+            <div class="form-group">
+              <label for="input-username"><i class="fa-solid fa-user"></i> Utilizator (Username)</label>
+              <input type="text" id="input-username" placeholder="ex: liviuc sau admin" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="input-password"><i class="fa-solid fa-key"></i> Parolă</label>
+              <input type="password" id="input-password" placeholder="Parolă" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">
+              <i class="fa-solid fa-right-to-bracket"></i> Conectare
+            </button>
+          </form>
+
+          <div class="demo-hint">
+            <i class="fa-solid fa-lightbulb"></i> Demo: User <code>operator</code> (sau <code>admin</code>) | Orice parolă
+          </div>
+        </div>
+
+        <div id="auth-error-msg" class="alert alert-danger hidden"></div>
       </div>
-      
-      <h1 class="greeting">buna</h1>
-      
-      <p class="subtitle">Platforma de Tonere & Consumabile PIM Iași se află în construcție de la 0.</p>
     </div>
-  </main>
+  </section>
+
+  <!-- APLICAȚIA PRINCIPALĂ (DASHBOARD PENTRU ANGAJAȚI ȘI ADMINI) -->
+  <section id="app-screen" class="screen-view">
+    
+    <!-- BARĂ NAVIGARE (HEADER) -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="brand-logo sm">PIM</div>
+        <span class="header-title">PIM Iași - Gestiune Tonere</span>
+        
+        <div class="office-selector-wrap">
+          <i class="fa-solid fa-building"></i>
+          <select id="office-filter-select" onchange="changeOfficeFilter(this.value)">
+            <option value="all">Toate Punctele PIM Iași</option>
+            <option value="2">Punct UMF</option>
+            <option value="3">Punct TUDOR</option>
+            <option value="4">Punct TIPO (Tipografie)</option>
+            <option value="5">Punct SMÂRDAN</option>
+            <option value="6">Punct UMF 2</option>
+            <option value="0">Punct COPOU</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div class="user-badge">
+          <span class="user-role-tag" id="user-role-badge">Angajat</span>
+          <span class="user-name" id="user-name-display">Liviu C.</span>
+        </div>
+        
+        <button class="btn btn-icon-danger" onclick="logout()" title="Deconectare">
+          <i class="fa-solid fa-power-off"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- CONTAINER CONȚINUT -->
+    <div class="app-body">
+      
+      <!-- NAVIGARE SECȚIUNI -->
+      <nav class="app-nav">
+        <button class="nav-btn active" id="nav-tonere-btn" onclick="switchSection('tonere')">
+          <i class="fa-solid fa-boxes-stacked"></i> Stoc & Listă Tonere
+        </button>
+        <button class="nav-btn" id="nav-schimbare-btn" onclick="switchSection('schimbare')">
+          <i class="fa-solid fa-rotate"></i> Înregistrează Schimbare
+        </button>
+        <button class="nav-btn" id="nav-istoric-btn" onclick="switchSection('istoric')">
+          <i class="fa-solid fa-clock-rotate-left"></i> Istoric Înlocuiri
+        </button>
+        
+        <!-- OPȚIUNI EXCLUSIVE PENTRU ADMIN -->
+        <button class="nav-btn admin-only hidden" id="nav-utilizatori-btn" onclick="switchSection('utilizatori')">
+          <i class="fa-solid fa-users-gear"></i> Management Utilizatori & PIN-uri
+        </button>
+      </nav>
+
+      <main class="main-content">
+        
+        <!-- SECȚIUNEA 1: STOC ȘI LISTĂ TONERE -->
+        <div id="section-tonere" class="app-section active">
+          <div class="section-header">
+            <div>
+              <h3><i class="fa-solid fa-boxes-stacked text-cyan"></i> Stoc Curent Tonere PIM</h3>
+              <p class="section-subtitle">Evidența tonerelor pe fiecare punct de lucru din Iași</p>
+            </div>
+            
+            <div class="action-buttons">
+              <input type="text" id="search-toner-input" placeholder="Caută toner..." oninput="filterTonersTable()" class="search-input">
+              <button class="btn btn-success" onclick="openAddStockModal()">
+                <i class="fa-solid fa-plus"></i> Adaugă Stoc Toner
+              </button>
+            </div>
+          </div>
+
+          <!-- CARTOAȘE SUMAR STOC -->
+          <div class="stats-row">
+            <div class="stat-card">
+              <div class="stat-icon bg-cyan"><i class="fa-solid fa-box"></i></div>
+              <div>
+                <span class="stat-value" id="stat-total-tonere">0</span>
+                <span class="stat-label">Tipuri Tonere</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon bg-green"><i class="fa-solid fa-cubes"></i></div>
+              <div>
+                <span class="stat-value" id="stat-stoc-total">0</span>
+                <span class="stat-label">Bucăți în Stoc</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon bg-red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+              <div>
+                <span class="stat-value" id="stat-stoc-critic">0</span>
+                <span class="stat-label">Stoc Critic (≤ 2 buc)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- TABEL TONERE -->
+          <div class="table-card">
+            <table class="custom-table" id="toners-table">
+              <thead>
+                <tr>
+                  <th>Denumire & Model Toner</th>
+                  <th>Punct de Lucru (Office)</th>
+                  <th>Culoare</th>
+                  <th>Stoc Curent</th>
+                  <th>Consum Referință</th>
+                  <th>Aparate Compatibile</th>
+                  <th>Acțiuni Rapid</th>
+                </tr>
+              </thead>
+              <tbody id="toners-table-body">
+                <!-- Se populează dinamic -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SECȚIUNEA 2: FORMULAR RAPID ÎNREGISTRARE SCHIMBARE TONER -->
+        <div id="section-schimbare" class="app-section">
+          <div class="section-header">
+            <div>
+              <h3><i class="fa-solid fa-rotate text-magenta"></i> Înregistrare Schimbare Toner</h3>
+              <p class="section-subtitle">Formular rapid pentru operatorii PIM la înlocuirea unui toner în aparat</p>
+            </div>
+          </div>
+
+          <div class="form-container-card">
+            <form id="change-toner-form" onsubmit="handleTonerChangeSubmit(event)">
+              
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="select-aparat"><i class="fa-solid fa-print"></i> Selectează Aparat / Imprimantă *</label>
+                  <select id="select-aparat" onchange="onAparatSelected(this.value)" required>
+                    <option value="">-- Alege Aparatul --</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="select-toner-compatibil"><i class="fa-solid fa-fill-drip"></i> Selectează Toner Inserat *</label>
+                  <select id="select-toner-compatibil" required>
+                    <option value="">-- Selectează mai întâi aparatul --</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="input-contor"><i class="fa-solid fa-gauge-high"></i> Contor Curent Pagini Aparat *</label>
+                  <input type="number" id="input-contor" placeholder="ex: 4520300" required>
+                  <span class="form-help">Numărul total de pagini afișat de aparatul PIM.</span>
+                </div>
+
+                <div class="form-group">
+                  <label><i class="fa-solid fa-user-check"></i> Operator Înregistrare</label>
+                  <input type="text" id="input-operator-name" readonly class="readonly-input">
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fa-solid fa-check"></i> Înregistrează Schimbarea și Actualizează Stocul
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- SECȚIUNEA 3: ISTORIC ÎNLOCUIRI TONERE -->
+        <div id="section-istoric" class="app-section">
+          <div class="section-header">
+            <div>
+              <h3><i class="fa-solid fa-clock-rotate-left text-yellow"></i> Istoric Schimbări Tonere</h3>
+              <p class="section-subtitle">Jurnalul complet al schimburilor de toner efectuate în punctele PIM Iași</p>
+            </div>
+          </div>
+
+          <div class="table-card">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Data & Ora</th>
+                  <th>Aparat</th>
+                  <th>Toner Înlocuit</th>
+                  <th>Contor Pagini</th>
+                  <th>Copii Realizate</th>
+                  <th>Randament vs Referință</th>
+                  <th>Operator</th>
+                </tr>
+              </thead>
+              <tbody id="history-table-body">
+                <!-- Se populează dinamic -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SECȚIUNEA 4: MANAGEMENT UTILIZATORI (ADMIN ONLY) -->
+        <div id="section-utilizatori" class="app-section">
+          <div class="section-header">
+            <div>
+              <h3><i class="fa-solid fa-users-gear text-cyan"></i> Administrare Utilizatori & Setare PIN 6 Cifre</h3>
+              <p class="section-subtitle">Gestiunea conturilor angajaților PIM, rolurilor și codurilor PIN</p>
+            </div>
+            
+            <button class="btn btn-success" onclick="openAddUserModal()">
+              <i class="fa-solid fa-user-plus"></i> Adaugă Utilizator Nou
+            </button>
+          </div>
+
+          <div class="table-card">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Nume Completu & Username</th>
+                  <th>Rol Access</th>
+                  <th>Punct Lucru (Office)</th>
+                  <th>Stare Cod PIN</th>
+                  <th>Status Cont</th>
+                  <th>Acțiuni Admin</th>
+                </tr>
+              </thead>
+              <tbody id="users-table-body">
+                <!-- Se populează dinamic -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </section>
+
+  <!-- MODAL 1: ADAUGĂ / SUPLIMENTEAZĂ STOC -->
+  <div id="modal-add-stock" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h4><i class="fa-solid fa-cubes-stacked"></i> Suplimentare Stoc Toner</h4>
+        <button class="modal-close-btn" onclick="closeModal('modal-add-stock')">&times;</button>
+      </div>
+      <form onsubmit="handleAddStockSubmit(event)">
+        <div class="form-group">
+          <label for="stock-modal-toner">Selectează Toner *</label>
+          <select id="stock-modal-toner" required>
+            <!-- Populat dinamic -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="stock-modal-qty">Cantitate Adăugată (+bucăți) *</label>
+          <input type="number" id="stock-modal-qty" min="1" value="1" required>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-add-stock')">Renunță</button>
+          <button type="submit" class="btn btn-success">Adaugă în Stoc</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 </html>
