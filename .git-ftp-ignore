@@ -1,0 +1,4 @@
+pimcopyr_toner.sql
+*.sql
+*.md
+.gitignore
