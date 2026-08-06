@@ -1,18 +1,5 @@
-# Dependencies
+# Dependencies & build
 node_modules/
-
-# Production build output
 dist/
-
-# IDE/Editor configurations
-.vscode/
-.idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# System files
 .DS_Store
-Thumbs.db
+*.log
