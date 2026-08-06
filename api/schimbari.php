@@ -36,43 +36,88 @@ if ($action === 'list') {
         // Mock istoric din pimcopyr_toner.sql
         $mockSchimbari = [
             [
-                'id_istoric_schimbare' => 86,
-                'nume_aparat' => 'UMF-AN5',
-                'denumire_tip' => 'TN14 Black',
-                'contor' => 33994234,
-                'data_schimbare' => '2026-08-06 18:50:00',
-                'nume_operator' => 'Florin C.',
-                'username' => 'florinc',
-                'copii_realizate' => 102450,
+                'id_istoric_schimbare' => 11897,
+                'nume_aparat' => 'TIPO-2250-5-ST',
+                'denumire_tip' => 'TN14',
+                'contor' => 39823159,
+                'data_schimbare' => '2026-08-06 19:19:00',
+                'nume_operator' => 'Andreea Poturu',
+                'username' => 'poturuandreea',
+                'copii_realizate' => 64216,
                 'consum_referinta' => 105000,
-                'procent_realizat' => 97.5
+                'procent_realizat' => 61.16
             ],
             [
-                'id_istoric_schimbare' => 85,
-                'nume_aparat' => 'UMF-AN3',
-                'denumire_tip' => 'TN14 Black',
-                'contor' => 4511306,
-                'data_schimbare' => '2026-08-05 14:35:00',
-                'nume_operator' => 'Liviu C.',
-                'username' => 'liviuc',
-                'copii_realizate' => 98400,
+                'id_istoric_schimbare' => 11896,
+                'nume_aparat' => 'TIPO-2250-5-DR',
+                'denumire_tip' => 'TN14',
+                'contor' => 39823097,
+                'data_schimbare' => '2026-08-06 19:19:00',
+                'nume_operator' => 'Andreea Poturu',
+                'username' => 'poturuandreea',
+                'copii_realizate' => 64216,
                 'consum_referinta' => 105000,
-                'procent_realizat' => 93.7
+                'procent_realizat' => 61.16
             ],
             [
-                'id_istoric_schimbare' => 83,
-                'nume_aparat' => 'UMF-C1100-1',
-                'denumire_tip' => 'TN622M Magenta',
-                'contor' => 12794059,
-                'data_schimbare' => '2026-08-04 12:19:00',
-                'nume_operator' => 'Valentin S.',
-                'username' => 'valentin',
-                'copii_realizate' => 89200,
-                'consum_referinta' => 92000,
-                'procent_realizat' => 96.9
+                'id_istoric_schimbare' => 11894,
+                'nume_aparat' => 'TIPO-2250-4-ST',
+                'denumire_tip' => 'TN14',
+                'contor' => 80270366,
+                'data_schimbare' => '2026-08-06 10:03:00',
+                'nume_operator' => 'Alina',
+                'username' => 'alina',
+                'copii_realizate' => 62013,
+                'consum_referinta' => 105000,
+                'procent_realizat' => 59.06
             ]
         ];
         sendResponse(true, 'Istoric mock încărcat.', $mockSchimbari);
+    }
+}
+elseif ($action === 'get-last-index') {
+    $idAparat = (int)($_GET['id_aparat'] ?? 0);
+    $idToner = (int)($_GET['id_toner'] ?? 0);
+    
+    if ($idAparat <= 0 || $idToner <= 0) {
+        sendResponse(false, 'Aparatul și tonerul sunt obligatorii.', null, 400);
+    }
+    
+    if ($db) {
+        // Caută ultimul contor ("Index Vechi")
+        $stmt = $db->prepare("SELECT contor FROM istoric_schimbari WHERE id_aparat = :aparat AND id_toner = :toner ORDER BY data_schimbare DESC, id_istoric_schimbare DESC LIMIT 1");
+        $stmt->execute([':aparat' => $idAparat, ':toner' => $idToner]);
+        $row = $stmt->fetch();
+        $indexVechi = $row ? (int)$row['contor'] : 0;
+        
+        // Preluare consum referință pentru calcul min/max
+        $stmtRef = $db->prepare("SELECT tt.consum_referinta 
+                                 FROM tonere t 
+                                 JOIN tipuri_toner tt ON t.id_tip_toner = tt.id_tip_toner 
+                                 WHERE t.id_toner = :toner");
+        $stmtRef->execute([':toner' => $idToner]);
+        $refRow = $stmtRef->fetch();
+        $consumReferinta = $refRow ? (int)$refRow['consum_referinta'] : 105000;
+        
+        $minContor = $indexVechi + 1;
+        $maxContor = $indexVechi + ($consumReferinta * 2);
+        
+        sendResponse(true, 'Index vechi calculat cu succes.', [
+            'index_vechi' => $indexVechi,
+            'consum_referinta' => $consumReferinta,
+            'min_contor' => $minContor,
+            'max_contor' => $maxContor
+        ]);
+    } else {
+        // Mock fallback
+        $mockIndex = 39823097;
+        $mockRef = 105000;
+        sendResponse(true, 'Index vechi mock calculat.', [
+            'index_vechi' => $mockIndex,
+            'consum_referinta' => $mockRef,
+            'min_contor' => $mockIndex + 1,
+            'max_contor' => $mockIndex + ($mockRef * 2)
+        ]);
     }
 }
 elseif ($action === 'add') {
@@ -89,14 +134,12 @@ elseif ($action === 'add') {
     
     if ($db) {
         // Caută schimbarea anterioară pentru calculul de copii realizate
-        $stmtPrev = $db->prepare("SELECT contor FROM istoric_schimbari WHERE id_aparat = :aparat AND id_toner = :toner ORDER BY data_schimbare DESC LIMIT 1");
+        $stmtPrev = $db->prepare("SELECT contor FROM istoric_schimbari WHERE id_aparat = :aparat AND id_toner = :toner ORDER BY data_schimbare DESC, id_istoric_schimbare DESC LIMIT 1");
         $stmtPrev->execute([':aparat' => $idAparat, ':toner' => $idToner]);
         $prevEntry = $stmtPrev->fetch();
         
-        $copiiRealizate = 0;
-        if ($prevEntry && $contor > $prevEntry['contor']) {
-            $copiiRealizate = $contor - (int)$prevEntry['contor'];
-        }
+        $indexVechi = $prevEntry ? (int)$prevEntry['contor'] : 0;
+        $copiiRealizate = ($contor > $indexVechi) ? ($contor - $indexVechi) : 0;
         
         // Preluare consum referință
         $stmtRef = $db->prepare("SELECT tt.consum_referinta 
@@ -105,7 +148,16 @@ elseif ($action === 'add') {
                                  WHERE t.id_toner = :toner");
         $stmtRef->execute([':toner' => $idToner]);
         $refEntry = $stmtRef->fetch();
-        $consumReferinta = $refEntry ? (int)$refEntry['consum_referinta'] : 0;
+        $consumReferinta = $refEntry ? (int)$refEntry['consum_referinta'] : 105000;
+        
+        // Validare strictă minim și maxim (max 200% din consumul de referință)
+        $maxAllowed = $indexVechi + ($consumReferinta * 2);
+        if ($indexVechi > 0 && $contor <= $indexVechi) {
+            sendResponse(false, "Contorul introdus ({$contor}) trebuie să fie mai mare decât Indexul Vechi ({$indexVechi}).", null, 400);
+        }
+        if ($indexVechi > 0 && $contor > $maxAllowed) {
+            sendResponse(false, "Contorul introdus depășește maximul permis ({$maxAllowed}), echivalent cu 200% din consumul de referință.", null, 400);
+        }
         
         $procentRealizat = ($consumReferinta > 0 && $copiiRealizate > 0) ? round(($copiiRealizate / $consumReferinta) * 100, 2) : 0;
         
@@ -135,8 +187,8 @@ elseif ($action === 'add') {
     } else {
         sendResponse(true, 'Schimbarea de toner a fost înregistrată cu succes! (Demo)', [
             'id_schimbare' => rand(100, 999),
-            'copii_realizate' => 95400,
-            'procent_realizat' => 95.4
+            'copii_realizate' => 64216,
+            'procent_realizat' => 61.16
         ]);
     }
 }

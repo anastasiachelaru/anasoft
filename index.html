@@ -75,7 +75,7 @@
           </div>
 
           <div class="demo-hint">
-            <i class="fa-solid fa-lightbulb"></i> PIN Demo Angajat: <code>123456</code> sau <code>8122</code> | Admin: <code>000000</code>
+            <i class="fa-solid fa-lightbulb"></i> PIN Demo Angajat: <code>123456</code> | Admin: <code>000000</code>
           </div>
         </div>
 
@@ -84,7 +84,7 @@
           <form id="login-pass-form" onsubmit="handlePassLogin(event)">
             <div class="form-group">
               <label for="input-username"><i class="fa-solid fa-user"></i> Utilizator (Username)</label>
-              <input type="text" id="input-username" placeholder="ex: liviuc sau admin" required>
+              <input type="text" id="input-username" placeholder="ex: poturuandreea sau admin" required>
             </div>
             
             <div class="form-group">
@@ -107,7 +107,7 @@
     </div>
   </section>
 
-  <!-- APLICAȚIA PRINCIPALĂ (DASHBOARD PENTRU ANGAJAȚI ȘI ADMINI) -->
+  <!-- APLICAȚIA PRINCIPALĂ (DASHBOARD ANGAJAȚI ȘI ADMINI) -->
   <section id="app-screen" class="screen-view">
     
     <!-- BARĂ NAVIGARE (HEADER) -->
@@ -133,7 +133,7 @@
       <div class="header-right">
         <div class="user-badge">
           <span class="user-role-tag" id="user-role-badge">Angajat</span>
-          <span class="user-name" id="user-name-display">Liviu C.</span>
+          <span class="user-name" id="user-name-display">Operator</span>
         </div>
         
         <button class="btn btn-icon-danger" onclick="logout()" title="Deconectare">
@@ -147,26 +147,79 @@
       
       <!-- NAVIGARE SECȚIUNI -->
       <nav class="app-nav">
-        <button class="nav-btn active" id="nav-tonere-btn" onclick="switchSection('tonere')">
-          <i class="fa-solid fa-boxes-stacked"></i> Stoc & Listă Tonere
+        <button class="nav-btn active" id="nav-schimbare-btn" onclick="switchSection('schimbare')">
+          <i class="fa-solid fa-rotate text-magenta"></i> Înlocuire Toner (Wizard)
         </button>
-        <button class="nav-btn" id="nav-schimbare-btn" onclick="switchSection('schimbare')">
-          <i class="fa-solid fa-rotate"></i> Înregistrează Schimbare
+        <button class="nav-btn" id="nav-tonere-btn" onclick="switchSection('tonere')">
+          <i class="fa-solid fa-boxes-stacked"></i> Stoc Tonere
         </button>
         <button class="nav-btn" id="nav-istoric-btn" onclick="switchSection('istoric')">
-          <i class="fa-solid fa-clock-rotate-left"></i> Istoric Înlocuiri
+          <i class="fa-solid fa-clock-rotate-left"></i> Istoric Schimbări
         </button>
         
         <!-- OPȚIUNI EXCLUSIVE PENTRU ADMIN -->
         <button class="nav-btn admin-only hidden" id="nav-utilizatori-btn" onclick="switchSection('utilizatori')">
-          <i class="fa-solid fa-users-gear"></i> Management Utilizatori & PIN-uri
+          <i class="fa-solid fa-users-gear"></i> Management Utilizatori
         </button>
       </nav>
 
       <main class="main-content">
         
-        <!-- SECȚIUNEA 1: STOC ȘI LISTĂ TONERE -->
-        <div id="section-tonere" class="app-section active">
+        <!-- SECȚIUNEA 1: ÎNLOCUIRE TONER WIZARD -->
+        <div id="section-schimbare" class="app-section active">
+          <div class="section-header">
+            <div>
+              <h3><i class="fa-solid fa-rotate text-magenta"></i> Înlocuire Nouă Toner</h3>
+              <p class="section-subtitle">Asistent wizard pas cu pas pentru operatorii PIM Iași</p>
+            </div>
+
+            <button class="btn btn-primary btn-lg pulse-btn" onclick="openWizardModal()">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Schimbă un Toner Acum
+            </button>
+          </div>
+
+          <!-- BANNER WIZARD PROMINENT -->
+          <div class="wizard-cta-banner">
+            <div class="banner-icon">
+              <i class="fa-solid fa-print"></i>
+            </div>
+            <div class="banner-text">
+              <h4>Apasă pe butonul de mai sus pentru a porni Asistentul Wizard</h4>
+              <p>În 3 pași simpli: Selectează Aparatul din punctul tău de lucru &rarr; Alege Tonerul &rarr; Introdu Contorul cu verificare automată Min/Max.</p>
+            </div>
+            <button class="btn btn-success btn-lg" onclick="openWizardModal()">
+              <i class="fa-solid fa-play"></i> Pornește Wizard
+            </button>
+          </div>
+
+          <!-- ISTORIC RECENT PE SEDIU -->
+          <div class="table-card margin-top">
+            <div class="table-card-header">
+              <h4><i class="fa-solid fa-clock-rotate-left"></i> Ultimele Schimbări Înregistrate</h4>
+            </div>
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Număr</th>
+                  <th>Aparat</th>
+                  <th>Tip Toner</th>
+                  <th>Sediu</th>
+                  <th>Utilizator</th>
+                  <th>Contor / Consum Ref.</th>
+                  <th>Nr. Copii</th>
+                  <th>Procent</th>
+                  <th>Data Schimbare</th>
+                </tr>
+              </thead>
+              <tbody id="wizard-recent-tbody">
+                <!-- Populat dinamic -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SECȚIUNEA 2: STOC ȘI LISTĂ TONERE -->
+        <div id="section-tonere" class="app-section">
           <div class="section-header">
             <div>
               <h3><i class="fa-solid fa-boxes-stacked text-cyan"></i> Stoc Curent Tonere PIM</h3>
@@ -212,7 +265,7 @@
               <thead>
                 <tr>
                   <th>Denumire & Model Toner</th>
-                  <th>Punct de Lucru (Office)</th>
+                  <th>Punct de Lucru (Sediu)</th>
                   <th>Culoare</th>
                   <th>Stoc Curent</th>
                   <th>Consum Referință</th>
@@ -224,54 +277,6 @@
                 <!-- Se populează dinamic -->
               </tbody>
             </table>
-          </div>
-        </div>
-
-        <!-- SECȚIUNEA 2: FORMULAR RAPID ÎNREGISTRARE SCHIMBARE TONER -->
-        <div id="section-schimbare" class="app-section">
-          <div class="section-header">
-            <div>
-              <h3><i class="fa-solid fa-rotate text-magenta"></i> Înregistrare Schimbare Toner</h3>
-              <p class="section-subtitle">Formular rapid pentru operatorii PIM la înlocuirea unui toner în aparat</p>
-            </div>
-          </div>
-
-          <div class="form-container-card">
-            <form id="change-toner-form" onsubmit="handleTonerChangeSubmit(event)">
-              
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="select-aparat"><i class="fa-solid fa-print"></i> Selectează Aparat / Imprimantă *</label>
-                  <select id="select-aparat" onchange="onAparatSelected(this.value)" required>
-                    <option value="">-- Alege Aparatul --</option>
-                  </select>
-                </div>
-
-                <div class="form-group">
-                  <label for="select-toner-compatibil"><i class="fa-solid fa-fill-drip"></i> Selectează Toner Inserat *</label>
-                  <select id="select-toner-compatibil" required>
-                    <option value="">-- Selectează mai întâi aparatul --</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="input-contor"><i class="fa-solid fa-gauge-high"></i> Contor Curent Pagini Aparat *</label>
-                  <input type="number" id="input-contor" placeholder="ex: 4520300" required>
-                  <span class="form-help">Numărul total de pagini afișat de aparatul PIM.</span>
-                </div>
-
-                <div class="form-group">
-                  <label><i class="fa-solid fa-user-check"></i> Operator Înregistrare</label>
-                  <input type="text" id="input-operator-name" readonly class="readonly-input">
-                </div>
-              </div>
-
-              <button type="submit" class="btn btn-primary btn-lg">
-                <i class="fa-solid fa-check"></i> Înregistrează Schimbarea și Actualizează Stocul
-              </button>
-            </form>
           </div>
         </div>
 
@@ -288,13 +293,15 @@
             <table class="custom-table">
               <thead>
                 <tr>
-                  <th>Data & Ora</th>
+                  <th>Număr</th>
                   <th>Aparat</th>
-                  <th>Toner Înlocuit</th>
-                  <th>Contor Pagini</th>
-                  <th>Copii Realizate</th>
-                  <th>Randament vs Referință</th>
-                  <th>Operator</th>
+                  <th>Tip Toner</th>
+                  <th>Sediu</th>
+                  <th>Utilizator</th>
+                  <th>Contor / Consum Ref.</th>
+                  <th>Nr. Copii</th>
+                  <th>Procent</th>
+                  <th>Data Schimbare</th>
                 </tr>
               </thead>
               <tbody id="history-table-body">
@@ -311,10 +318,6 @@
               <h3><i class="fa-solid fa-users-gear text-cyan"></i> Administrare Utilizatori & Setare PIN 6 Cifre</h3>
               <p class="section-subtitle">Gestiunea conturilor angajaților PIM, rolurilor și codurilor PIN</p>
             </div>
-            
-            <button class="btn btn-success" onclick="openAddUserModal()">
-              <i class="fa-solid fa-user-plus"></i> Adaugă Utilizator Nou
-            </button>
           </div>
 
           <div class="table-card">
@@ -323,10 +326,9 @@
                 <tr>
                   <th>Nume Completu & Username</th>
                   <th>Rol Access</th>
-                  <th>Punct Lucru (Office)</th>
+                  <th>Punct Lucru (Sediu)</th>
                   <th>Stare Cod PIN</th>
                   <th>Status Cont</th>
-                  <th>Acțiuni Admin</th>
                 </tr>
               </thead>
               <tbody id="users-table-body">
@@ -340,7 +342,146 @@
     </div>
   </section>
 
-  <!-- MODAL 1: ADAUGĂ / SUPLIMENTEAZĂ STOC -->
+  <!-- ----------------------------------------------------
+       MODAL WIZARD SCHIMBARE TONER (MULTI-STEP)
+  ---------------------------------------------------- -->
+  <div id="modal-wizard" class="modal-overlay hidden">
+    <div class="wizard-modal-card">
+      
+      <div class="wizard-header">
+        <div class="wizard-title-wrap">
+          <div class="wizard-icon-box"><i class="fa-solid fa-rotate"></i></div>
+          <div>
+            <h3>Înlocuire Nouă Toner</h3>
+            <span class="wizard-subtitle" id="wizard-office-label">Punct de lucru: Sediu Operator</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="closeWizardModal()">&times;</button>
+      </div>
+
+      <!-- INDICATOR PASI WIZARD -->
+      <div class="wizard-steps-bar">
+        <div class="wizard-step-item active" id="step-indicator-1">
+          <div class="step-num">1</div>
+          <span class="step-title">Selectare Aparat</span>
+        </div>
+        <div class="step-connector" id="connector-1"></div>
+        
+        <div class="wizard-step-item" id="step-indicator-2">
+          <div class="step-num">2</div>
+          <span class="step-title">Selectare Tip Toner</span>
+        </div>
+        <div class="step-connector" id="connector-2"></div>
+        
+        <div class="wizard-step-item" id="step-indicator-3">
+          <div class="step-num">3</div>
+          <span class="step-title">Contor & Validare</span>
+        </div>
+      </div>
+
+      <!-- CORPUL PASILOR WIZARD -->
+      <div class="wizard-body">
+        
+        <!-- PASUL 1: SELECTARE APARAT -->
+        <div id="wizard-step-1" class="wizard-step-content active">
+          <h4 class="step-heading"><i class="fa-solid fa-print"></i> Pasul 1: Alege aparatul unde înlocuiești tonerul</h4>
+          <p class="step-subheading">Sunt afișate doar aparatele din punctul tău de lucru:</p>
+          
+          <input type="text" id="wizard-aparat-search" placeholder="Filtrează aparatul..." oninput="filterWizardAparateList()" class="search-input full-width">
+
+          <div class="aparate-grid" id="wizard-aparate-container">
+            <!-- Populat dinamic cu cartoașe aparate -->
+          </div>
+        </div>
+
+        <!-- PASUL 2: SELECTARE TIP TONER -->
+        <div id="wizard-step-2" class="wizard-step-content">
+          <div class="step-top-bar">
+            <button class="btn btn-secondary btn-sm" onclick="goToWizardStep(1)">
+              <i class="fa-solid fa-arrow-left"></i> Înapoi la Aparate
+            </button>
+            <span class="selected-summary-badge" id="summary-aparat-badge">Aparat: UMF-AN3</span>
+          </div>
+
+          <h4 class="step-heading"><i class="fa-solid fa-fill-drip"></i> Pasul 2: Alege tipul de toner inserat</h4>
+          <p class="step-subheading">Sunt afișate doar tonerele compatibile cu aparatul selectat:</p>
+
+          <div class="tonere-grid" id="wizard-tonere-container">
+            <!-- Populat dinamic cu opțiuni tonere -->
+          </div>
+        </div>
+
+        <!-- PASUL 3: CONTOR & VALIDARE MIN/MAX -->
+        <div id="wizard-step-3" class="wizard-step-content">
+          <div class="step-top-bar">
+            <button class="btn btn-secondary btn-sm" onclick="goToWizardStep(2)">
+              <i class="fa-solid fa-arrow-left"></i> Schimbă Tonerul / Aparatul
+            </button>
+            
+            <div class="summary-badges-wrap">
+              <span class="selected-summary-badge" id="summary-aparat-badge-final">Aparat: UMF-AN3</span>
+              <span class="selected-summary-badge cyan" id="summary-toner-badge-final">Toner: TN14</span>
+            </div>
+          </div>
+
+          <h4 class="step-heading"><i class="fa-solid fa-gauge-high"></i> Pasul 3: Introdu contorul actual al aparatului</h4>
+
+          <div class="wizard-index-box">
+            <div class="index-old-header">
+              <span>INDEX VECHI (Ultima schimbare înregistrată):</span>
+              <strong id="display-index-vechi" class="index-vechi-val">0</strong>
+            </div>
+
+            <div class="index-limits-row">
+              <div class="limit-tag min">
+                <i class="fa-solid fa-arrow-down-short-wide"></i> MINIM Permis: <span id="display-min-allowed">0</span>
+              </div>
+              <div class="limit-tag max">
+                <i class="fa-solid fa-arrow-up-wide-short"></i> MAXIM Permis (200%): <span id="display-max-allowed">0</span>
+              </div>
+            </div>
+          </div>
+
+          <form id="wizard-form-step3" onsubmit="handleWizardSubmit(event)">
+            <div class="form-group margin-top">
+              <label for="input-wizard-contor"><i class="fa-solid fa-tachometer-alt"></i> Contor Nou Aparat *</label>
+              <input type="number" id="input-wizard-contor" placeholder="Introdu contorul afișat de aparat..." oninput="calculateWizardMetrics()" required class="contor-input-lg">
+            </div>
+
+            <!-- CARTOAȘE REZULTATE ÎN TIMP REAL -->
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <span class="metric-label">Copii Realizate</span>
+                <strong class="metric-value" id="display-copii-realizate">0</strong>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">Consum de Referință</span>
+                <strong class="metric-value" id="display-consum-ref">0</strong>
+              </div>
+              <div class="metric-card highlight">
+                <span class="metric-label">Procent Realizat</span>
+                <strong class="metric-value" id="display-procent-realizat">0,00%</strong>
+              </div>
+            </div>
+
+            <div id="wizard-validation-alert" class="alert alert-danger hidden">
+              <i class="fa-solid fa-triangle-exclamation"></i> <span id="wizard-validation-text">Contorul este în afara limitelor permise.</span>
+            </div>
+
+            <div class="wizard-footer">
+              <button type="button" class="btn btn-secondary" onclick="closeWizardModal()">Renunță</button>
+              <button type="submit" id="btn-submit-wizard" class="btn btn-success btn-lg">
+                <i class="fa-solid fa-floppy-disk"></i> Salvează Schimbarea
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL SUPLIMENTARE STOC -->
   <div id="modal-add-stock" class="modal-overlay hidden">
     <div class="modal-card">
       <div class="modal-header">

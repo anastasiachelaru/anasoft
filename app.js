@@ -1,4 +1,4 @@
-// PIM Iași - Toner Management System Logic
+// PIM Iași - Toner Management System & Wizard Logic
 
 let currentPin = "";
 const MAX_PIN_LENGTH = 6;
@@ -9,6 +9,15 @@ let currentOfficeFilter = "all";
 let tonersData = [];
 let aparateData = [];
 let historyData = [];
+
+// Stare Asistent Wizard
+let wizardCurrentStep = 1;
+let wizardSelectedAparat = null;
+let wizardSelectedToner = null;
+let wizardIndexVechi = 0;
+let wizardConsumRef = 105000;
+let wizardMinAllowed = 0;
+let wizardMaxAllowed = 0;
 
 document.addEventListener("DOMContentLoaded", () => {
   initKeyboardListeners();
@@ -108,27 +117,27 @@ async function submitPinLogin() {
       clearPinKey();
     }
   } catch (err) {
-    // Fallback demo dacă API PHP nu rulează direct în serverul local de test
+    // Fallback demo
     if (currentPin === "123456" || currentPin === "8122") {
       handleLoginSuccess({
         id_user: 46,
-        username: "liviuc",
-        first_name: "Liviu",
-        last_name: "C.",
+        username: "poturuandreea",
+        first_name: "Andreea",
+        last_name: "Poturu",
         role: "operator",
-        office: 2
+        office: 4 // Tipografie (TIPO)
       });
     } else if (currentPin === "000000") {
       handleLoginSuccess({
         id_user: 1,
         username: "admin",
-        first_name: "Andrei",
-        last_name: "Petriu",
+        first_name: "Admin",
+        last_name: "PIM",
         role: "admin",
         office: 2
       });
     } else {
-      showAuthError("PIN incorect. Încearcă 123456 pentru Angajat sau 000000 pentru Admin.");
+      showAuthError("PIN incorect. Încearcă 123456 pentru Operator sau 000000 pentru Admin.");
       clearPinKey();
     }
   }
@@ -158,11 +167,11 @@ async function handlePassLogin(e) {
     const isAdmin = usernameInput.toLowerCase().includes("admin");
     handleLoginSuccess({
       id_user: isAdmin ? 1 : 40,
-      username: usernameInput || "operator",
-      first_name: isAdmin ? "Andrei" : "Operator",
-      last_name: "PIM",
+      username: usernameInput || "poturuandreea",
+      first_name: isAdmin ? "Admin" : "Andreea",
+      last_name: "Poturu",
       role: isAdmin ? "admin" : "operator",
-      office: 2
+      office: 4
     });
   }
 }
@@ -221,12 +230,8 @@ function renderUserHeader() {
   
   const roleBadge = document.getElementById("user-role-badge");
   const nameDisplay = document.getElementById("user-name-display");
-  const operatorInput = document.getElementById("input-operator-name");
   
   nameDisplay.innerText = `${currentUser.first_name || ""} ${currentUser.last_name || currentUser.username}`;
-  if (operatorInput) {
-    operatorInput.value = `${currentUser.first_name} ${currentUser.last_name} (${currentUser.username})`;
-  }
   
   const isAdmin = currentUser.role === "admin";
   roleBadge.innerText = isAdmin ? "Administrator" : "Angajat (Operator)";
@@ -257,7 +262,7 @@ function changeOfficeFilter(val) {
 }
 
 // ----------------------------------------------------
-// INCARCARE & AFIȘARE DATE (TONERE, APARATE, ISTORIC)
+// INCARCARE & AFIȘARE DATE
 // ----------------------------------------------------
 
 async function loadTonersData() {
@@ -268,17 +273,15 @@ async function loadTonersData() {
       tonersData = json.data;
     }
   } catch (err) {
-    // Mock data extrasă din baza de date pimcopyr_toner.sql
     tonersData = [
-      { id_toner: 34, denumire_tip: "TN14 Black (Konica Minolta 1050/1200)", office: 2, office_nume: "UMF", stoc: 22, consum_referinta: 105000, aparate_compatibile: [{ nume_aparat: "UMF-AN3" }, { nume_aparat: "UMF-AN2" }] },
-      { id_toner: 35, denumire_tip: "TN622C Cyan (Bizhub Press C1085/C1100)", office: 2, office_nume: "UMF", stoc: 6, consum_referinta: 95000, aparate_compatibile: [{ nume_aparat: "UMF-C1100-1" }] },
-      { id_toner: 36, denumire_tip: "TN622M Magenta (Bizhub Press C1085/C1100)", office: 2, office_nume: "UMF", stoc: 5, consum_referinta: 92000, aparate_compatibile: [{ nume_aparat: "UMF-C1100-1" }] },
-      { id_toner: 37, denumire_tip: "TN622Y Yellow (Bizhub Press C1085/C1100)", office: 2, office_nume: "UMF", stoc: 6, consum_referinta: 104000, aparate_compatibile: [{ nume_aparat: "UMF-C1100-1" }] },
-      { id_toner: 38, denumire_tip: "TN622K Black (Bizhub Press C1085/C1100)", office: 2, office_nume: "UMF", stoc: 6, consum_referinta: 88000, aparate_compatibile: [{ nume_aparat: "UMF-C1100-1" }] },
-      { id_toner: 43, denumire_tip: "TN321C Cyan (Bizhub C224e/C364e)", office: 2, office_nume: "UMF", stoc: 5, consum_referinta: 25000, aparate_compatibile: [{ nume_aparat: "UMF-C364e" }] },
-      { id_toner: 82, denumire_tip: "TN14 Black (Smârdan Press 1250)", office: 5, office_nume: "SMÂRDAN", stoc: 1, consum_referinta: 105000, aparate_compatibile: [{ nume_aparat: "SMARDAN-1250-1" }] },
-      { id_toner: 100, denumire_tip: "TN14 Black (Tudor Pro 1052)", office: 3, office_nume: "TUDOR", stoc: 9, consum_referinta: 105000, aparate_compatibile: [{ nume_aparat: "TUDOR-T1" }] },
-      { id_toner: 114, denumire_tip: "TN17 Black (Tipografie 1250)", office: 4, office_nume: "TIPO", stoc: 4, consum_referinta: 105000, aparate_compatibile: [{ nume_aparat: "TIPO-1250-3" }] }
+      { id_toner: 34, denumire_tip: "TN14", office: 4, office_nume: "TIPO", stoc: 22, consum_referinta: 105000, aparate_compatibile: [{ nume_aparat: "TIPO-2250-5-ST" }, { nume_aparat: "TIPO-2250-5-DR" }] },
+      { id_toner: 35, denumire_tip: "TN622C Cyan", office: 2, office_nume: "UMF", stoc: 6, consum_referinta: 95000, aparate_compatibile: [{ nume_aparat: "UMF-C1100-1" }] },
+      { id_toner: 36, denumire_tip: "TN622M Magenta", office: 2, office_nume: "UMF", stoc: 5, consum_referinta: 92000, aparate_compatibile: [{ nume_aparat: "UMF-C1100-1" }] },
+      { id_toner: 37, denumire_tip: "TN622Y Yellow", office: 2, office_nume: "UMF", stoc: 6, consum_referinta: 104000, aparate_compatibile: [{ nume_aparat: "UMF-C1100-1" }] },
+      { id_toner: 38, denumire_tip: "TN622K Black", office: 2, office_nume: "UMF", stoc: 6, consum_referinta: 88000, aparate_compatibile: [{ nume_aparat: "UMF-C1100-1" }] },
+      { id_toner: 82, denumire_tip: "TN14 Black", office: 5, office_nume: "SMÂRDAN", stoc: 7, consum_referinta: 105000, aparate_compatibile: [{ nume_aparat: "SMARDAN-1250-1" }] },
+      { id_toner: 100, denumire_tip: "TN14 Black", office: 3, office_nume: "TUDOR", stoc: 9, consum_referinta: 105000, aparate_compatibile: [{ nume_aparat: "TUDOR-T1" }] },
+      { id_toner: 114, denumire_tip: "TN627K Black", office: 4, office_nume: "TIPO", stoc: 4, consum_referinta: 174000, aparate_compatibile: [{ nume_aparat: "TIPO-C14000-2" }] }
     ];
   }
   renderTonersTable();
@@ -306,7 +309,6 @@ function renderTonersTable() {
     if (t.stoc <= 2) stocCriticCount++;
     
     const tr = document.createElement("tr");
-    
     const isLow = t.stoc <= 2;
     const badgeClass = isLow ? "badge-stock-low" : "badge-stock-ok";
     const aparateList = (t.aparate_compatibile || []).map(a => a.nume_aparat).join(", ") || "Generala";
@@ -358,43 +360,26 @@ async function loadAparateData() {
     }
   } catch (err) {
     aparateData = [
-      { id_aparat: 8, nume_aparat: 'UMF-AN3 (Konica Minolta 1050)', office: 2 },
-      { id_aparat: 9, nume_aparat: 'UMF-AN2 (Konica Minolta 1200)', office: 2 },
-      { id_aparat: 14, nume_aparat: 'UMF-C1100-1 (Bizhub Press C1100)', office: 2 },
-      { id_aparat: 16, nume_aparat: 'UMF-C364e (Bizhub C364e)', office: 2 },
-      { id_aparat: 20, nume_aparat: 'TUDOR-T1 (Pro 1052)', office: 3 },
-      { id_aparat: 27, nume_aparat: 'SMARDAN-1250-1 (Press 1250)', office: 5 },
-      { id_aparat: 48, nume_aparat: 'TIPO-1250-3 (Tipografie)', office: 4 },
+      { id_aparat: 48, nume_aparat: 'TIPO-1250-3', office: 4 },
+      { id_aparat: 50, nume_aparat: 'TIPO-2250-1-DR', office: 4 },
+      { id_aparat: 51, nume_aparat: 'TIPO-2250-2-DR', office: 4 },
+      { id_aparat: 52, nume_aparat: 'TIPO-2250-3-DR', office: 4 },
+      { id_aparat: 53, nume_aparat: 'TIPO-2250-4-DR', office: 4 },
+      { id_aparat: 54, nume_aparat: 'TIPO-2250-5-DR', office: 4 },
+      { id_aparat: 55, nume_aparat: 'TIPO-2250-6-DR', office: 4 },
+      { id_aparat: 68, nume_aparat: 'TIPO-2250-1-ST', office: 4 },
+      { id_aparat: 69, nume_aparat: 'TIPO-2250-2-ST', office: 4 },
+      { id_aparat: 70, nume_aparat: 'TIPO-2250-3-ST', office: 4 },
+      { id_aparat: 71, nume_aparat: 'TIPO-2250-4-ST', office: 4 },
+      { id_aparat: 72, nume_aparat: 'TIPO-2250-5-ST', office: 4 },
+      { id_aparat: 91, nume_aparat: 'TIPO-C14000-2', office: 4 },
+      { id_aparat: 8, nume_aparat: 'UMF-AN3', office: 2 },
+      { id_aparat: 9, nume_aparat: 'UMF-AN2', office: 2 },
+      { id_aparat: 14, nume_aparat: 'UMF-C1100-1', office: 2 },
+      { id_aparat: 20, nume_aparat: 'TUDOR-T1', office: 3 },
+      { id_aparat: 27, nume_aparat: 'SMARDAN-1250-1', office: 5 },
     ];
   }
-  populateAparateSelect();
-}
-
-function populateAparateSelect() {
-  const select = document.getElementById("select-aparat");
-  select.innerHTML = '<option value="">-- Alege Aparatul PIM --</option>';
-  
-  aparateData.forEach(a => {
-    const opt = document.createElement("option");
-    opt.value = a.id_aparat;
-    opt.innerText = a.nume_aparat;
-    select.appendChild(opt);
-  });
-}
-
-function onAparatSelected(aparatId) {
-  const selectToner = document.getElementById("select-toner-compatibil");
-  selectToner.innerHTML = '<option value="">-- Selectează Toner Inserat --</option>';
-  
-  if (!aparatId) return;
-  
-  // Găsește tonerele compatibile cu aparatul selectat
-  tonersData.forEach(t => {
-    const opt = document.createElement("option");
-    opt.value = t.id_toner;
-    opt.innerText = `${t.denumire_tip} (Stoc: ${t.stoc} buc)`;
-    selectToner.appendChild(opt);
-  });
 }
 
 async function loadHistoryData() {
@@ -404,55 +389,311 @@ async function loadHistoryData() {
     if (json.success) historyData = json.data;
   } catch (err) {
     historyData = [
-      { id_istoric_schimbare: 86, nume_aparat: 'UMF-AN5', denumire_tip: 'TN14 Black', contor: 33994234, data_schimbare: '2026-08-06 18:50', nume_operator: 'Florin C.', copii_realizate: 102450, procent_realizat: 97.5 },
-      { id_istoric_schimbare: 85, nume_aparat: 'UMF-AN3', denumire_tip: 'TN14 Black', contor: 4511306, data_schimbare: '2026-08-05 14:35', nume_operator: 'Liviu C.', copii_realizate: 98400, procent_realizat: 93.7 },
-      { id_istoric_schimbare: 83, nume_aparat: 'UMF-C1100-1', denumire_tip: 'TN622M Magenta', contor: 12794059, data_schimbare: '2026-08-04 12:19', nume_operator: 'Valentin S.', copii_realizate: 89200, procent_realizat: 96.9 }
+      { id_istoric_schimbare: 11897, nume_aparat: 'TIPO-2250-5-ST', denumire_tip: 'TN14', office_nume: 'Tipografie', contor: 39823159, data_schimbare: '06-08-2026 19:19:00', nume_operator: 'poturuandreea', copii_realizate: 64216, consum_referinta: 105000, procent_realizat: 61.16 },
+      { id_istoric_schimbare: 11896, nume_aparat: 'TIPO-2250-5-DR', denumire_tip: 'TN14', office_nume: 'Tipografie', contor: 39823097, data_schimbare: '06-08-2026 19:19:00', nume_operator: 'poturuandreea', copii_realizate: 64216, consum_referinta: 105000, procent_realizat: 61.16 },
+      { id_istoric_schimbare: 11894, nume_aparat: 'TIPO-2250-4-ST', denumire_tip: 'TN14', office_nume: 'Tipografie', contor: 80270366, data_schimbare: '06-08-2026 10:03:00', nume_operator: 'alina', copii_realizate: 62013, consum_referinta: 105000, procent_realizat: 59.06 },
+      { id_istoric_schimbare: 11893, nume_aparat: 'TIPO-2250-3-ST', denumire_tip: 'TN14', office_nume: 'Tipografie', contor: 70305786, data_schimbare: '05-08-2026 20:55:00', nume_operator: 'poturuandreea', copii_realizate: 81419, consum_referinta: 105000, procent_realizat: 77.54 },
+      { id_istoric_schimbare: 11892, nume_aparat: 'TIPO-2250-6-ST', denumire_tip: 'TN14', office_nume: 'Tipografie', contor: 46716706, data_schimbare: '05-08-2026 18:17:00', nume_operator: 'poturuandreea', copii_realizate: 94105, consum_referinta: 105000, procent_realizat: 89.62 },
+      { id_istoric_schimbare: 11890, nume_aparat: 'TIPO-C14000-2', denumire_tip: 'TN627K', office_nume: 'Tipografie', contor: 20492021, data_schimbare: '04-08-2026 20:35:00', nume_operator: 'poturuandreea', copii_realizate: 99546, consum_referinta: 174000, procent_realizat: 57.21 }
     ];
   }
   renderHistoryTable();
+  renderWizardRecentTable();
 }
 
 function renderHistoryTable() {
   const tbody = document.getElementById("history-table-body");
   tbody.innerHTML = "";
   
-  historyData.forEach(h => {
+  let filtered = historyData;
+  if (currentOfficeFilter !== "all") {
+    filtered = filtered.filter(h => h.office == currentOfficeFilter);
+  }
+  
+  filtered.forEach(h => {
     const tr = document.createElement("tr");
-    const procent = h.procent_realizat ? `${h.procent_realizat}%` : 'N/A';
+    const procentStr = h.procent_realizat ? `${parseFloat(h.procent_realizat).toFixed(2)}%` : '0.00%';
     tr.innerHTML = `
-      <td>${h.data_schimbare}</td>
+      <td><strong>${h.id_istoric_schimbare}</strong></td>
       <td><strong>${h.nume_aparat}</strong></td>
-      <td>${h.denumire_tip}</td>
-      <td><code>${(h.contor || 0).toLocaleString()}</code></td>
-      <td>${(h.copii_realizate || 0).toLocaleString()} pagini</td>
-      <td><span class="badge badge-stock-ok">${procent}</span></td>
-      <td><i class="fa-solid fa-user"></i> ${h.nume_operator || h.username || 'Operator'}</td>
+      <td><span class="badge badge-stock-ok">${h.denumire_tip}</span></td>
+      <td><span class="office-badge">${h.office_nume || 'PIM'}</span></td>
+      <td><i class="fa-solid fa-user"></i> ${h.nume_operator || h.username}</td>
+      <td><code>${(h.contor || 0).toLocaleString()}</code><br><small style="color:#94a3b8;">Ref: ${(h.consum_referinta || 105000).toLocaleString()}</small></td>
+      <td>${(h.copii_realizate || 0).toLocaleString()}</td>
+      <td><strong>${procentStr}</strong></td>
+      <td><small>${h.data_schimbare}</small></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderWizardRecentTable() {
+  const tbody = document.getElementById("wizard-recent-tbody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+  
+  const recent = historyData.slice(0, 6);
+  recent.forEach(h => {
+    const tr = document.createElement("tr");
+    const procentStr = h.procent_realizat ? `${parseFloat(h.procent_realizat).toFixed(2)}%` : '0.00%';
+    tr.innerHTML = `
+      <td><strong>${h.id_istoric_schimbare}</strong></td>
+      <td><strong>${h.nume_aparat}</strong></td>
+      <td><span class="badge badge-stock-ok">${h.denumire_tip}</span></td>
+      <td><span class="office-badge">${h.office_nume || 'PIM'}</span></td>
+      <td>${h.nume_operator || h.username}</td>
+      <td><code>${(h.contor || 0).toLocaleString()}</code> / ${(h.consum_referinta || 105000).toLocaleString()}</td>
+      <td>${(h.copii_realizate || 0).toLocaleString()}</td>
+      <td><strong>${procentStr}</strong></td>
+      <td><small>${h.data_schimbare}</small></td>
     `;
     tbody.appendChild(tr);
   });
 }
 
 // ----------------------------------------------------
-// FORMULAR SUBMIT SCHIMBARE TONER & MODAL STOC
+// LOGICĂ ASISTENT WIZARD (MULTI-STEP)
 // ----------------------------------------------------
 
-async function handleTonerChangeSubmit(e) {
+function openWizardModal() {
+  wizardSelectedAparat = null;
+  wizardSelectedToner = null;
+  wizardCurrentStep = 1;
+  
+  const officeNames = { 2: "UMF", 3: "TUDOR", 4: "Tipografie (TIPO)", 5: "SMÂRDAN", 6: "UMF2", 0: "COPOU" };
+  const userOffice = currentUser ? currentUser.office : 4;
+  document.getElementById("wizard-office-label").innerText = `Punct de lucru: ${officeNames[userOffice] || 'PIM Iași'}`;
+  
+  renderWizardStep1Aparate();
+  goToWizardStep(1);
+  document.getElementById("modal-wizard").classList.remove("hidden");
+}
+
+function closeWizardModal() {
+  document.getElementById("modal-wizard").classList.add("hidden");
+}
+
+function goToWizardStep(stepNum) {
+  wizardCurrentStep = stepNum;
+  
+  document.querySelectorAll(".wizard-step-item").forEach((el, idx) => {
+    const num = idx + 1;
+    if (num === stepNum) {
+      el.classList.add("active");
+      el.classList.remove("completed");
+    } else if (num < stepNum) {
+      el.classList.remove("active");
+      el.classList.add("completed");
+    } else {
+      el.classList.remove("active");
+      el.classList.remove("completed");
+    }
+  });
+  
+  document.querySelectorAll(".step-connector").forEach((el, idx) => {
+    if (idx + 1 < stepNum) {
+      el.classList.add("active");
+    } else {
+      el.classList.remove("active");
+    }
+  });
+  
+  document.querySelectorAll(".wizard-step-content").forEach(el => el.classList.remove("active"));
+  const currentContent = document.getElementById(`wizard-step-${stepNum}`);
+  if (currentContent) currentContent.classList.add("active");
+  
+  if (stepNum === 3) {
+    initWizardStep3Data();
+  }
+}
+
+// PASUL 1: REDARE APARATE PE PUNCTUL DE LUCRU AL OPERATORULUI LOGAT
+function renderWizardStep1Aparate() {
+  const container = document.getElementById("wizard-aparate-container");
+  container.innerHTML = "";
+  
+  const userOffice = currentUser ? currentUser.office : 4;
+  const search = (document.getElementById("wizard-aparat-search").value || "").toLowerCase();
+  
+  let officeAparate = aparateData.filter(a => a.office == userOffice || currentUser.role === "admin");
+  if (search) {
+    officeAparate = officeAparate.filter(a => a.nume_aparat.toLowerCase().includes(search));
+  }
+  
+  if (officeAparate.length === 0) {
+    container.innerHTML = '<p class="text-muted" style="grid-column:1/-1; padding:20px; text-align:center;">Nu au fost găsite aparate active pe acest sediu.</p>';
+    return;
+  }
+  
+  officeAparate.forEach(aparat => {
+    const card = document.createElement("div");
+    card.className = "card-select-item";
+    card.onclick = () => handleWizardSelectAparat(aparat);
+    
+    card.innerHTML = `
+      <div class="card-title"><i class="fa-solid fa-print text-cyan"></i> ${aparat.nume_aparat}</div>
+      <div class="card-subtitle">Sediu: PIM Iași</div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function filterWizardAparateList() {
+  renderWizardStep1Aparate();
+}
+
+// MANEVRARE SELECTARE APARAT & VERIFICARE AUTO-SELECTARE TONER UNIC
+async function handleWizardSelectAparat(aparat) {
+  wizardSelectedAparat = aparat;
+  document.getElementById("summary-aparat-badge").innerText = `Aparat: ${aparat.nume_aparat}`;
+  document.getElementById("summary-aparat-badge-final").innerText = `Aparat: ${aparat.nume_aparat}`;
+  
+  // Încarcă tonerele compatibile pentru aparatul ales
+  let compatibleToners = [];
+  try {
+    const res = await fetch(`api/tonere.php?action=tonere-aparat&id_aparat=${aparat.id_aparat}`);
+    const json = await res.json();
+    if (json.success && json.data.length > 0) {
+      compatibleToners = json.data;
+    }
+  } catch (err) {
+    // Fallback mock
+    if (aparat.nume_aparat.includes("C14000")) {
+      compatibleToners = [{ id_toner: 114, denumire_tip: "TN627K", consum_referinta: 174000, stoc: 4 }];
+    } else {
+      compatibleToners = [{ id_toner: 34, denumire_tip: "TN14", consum_referinta: 105000, stoc: 22 }];
+    }
+  }
+  
+  // CERINȚĂ SPECIFICATĂ: Dacă un aparat are un SINGUR tip de toner, opțiunea este aleasă INSTANT!
+  if (compatibleToners.length === 1) {
+    wizardSelectedToner = compatibleToners[0];
+    document.getElementById("summary-toner-badge-final").innerText = `Toner: ${wizardSelectedToner.denumire_tip}`;
+    goToWizardStep(3); // Sare direct la Pasul 3!
+  } else {
+    renderWizardStep2Tonere(compatibleToners);
+    goToWizardStep(2);
+  }
+}
+
+// PASUL 2: REDARE TONERE COMPATIBILE
+function renderWizardStep2Tonere(tonersList) {
+  const container = document.getElementById("wizard-tonere-container");
+  container.innerHTML = "";
+  
+  tonersList.forEach(t => {
+    const card = document.createElement("div");
+    card.className = "card-select-item";
+    card.onclick = () => {
+      wizardSelectedToner = t;
+      document.getElementById("summary-toner-badge-final").innerText = `Toner: ${t.denumire_tip}`;
+      goToWizardStep(3);
+    };
+    
+    card.innerHTML = `
+      <div class="card-title">${getColorBadge(t.denumire_tip)} ${t.denumire_tip}</div>
+      <div class="card-subtitle">Stoc disponibil: <strong>${t.stoc} buc</strong></div>
+      <div class="card-subtitle">Consum Referință: ${(t.consum_referinta || 105000).toLocaleString()} pagini</div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+// PASUL 3: PRELUARE INDEX VECHI, CALCUL LIMITĂ MIN/MAX & METRICE ÎN TIMP REAL
+async function initWizardStep3Data() {
+  if (!wizardSelectedAparat || !wizardSelectedToner) return;
+  
+  let lastIndexData = null;
+  try {
+    const res = await fetch(`api/schimbari.php?action=get-last-index&id_aparat=${wizardSelectedAparat.id_aparat}&id_toner=${wizardSelectedToner.id_toner}`);
+    const json = await res.json();
+    if (json.success) lastIndexData = json.data;
+  } catch (e) {
+    lastIndexData = {
+      index_vechi: 39823097,
+      consum_referinta: wizardSelectedToner.consum_referinta || 105000,
+      min_contor: 39823098,
+      max_contor: 39823097 + ((wizardSelectedToner.consum_referinta || 105000) * 2)
+    };
+  }
+  
+  if (!lastIndexData) {
+    lastIndexData = {
+      index_vechi: 39823097,
+      consum_referinta: wizardSelectedToner.consum_referinta || 105000,
+      min_contor: 39823098,
+      max_contor: 39823097 + ((wizardSelectedToner.consum_referinta || 105000) * 2)
+    };
+  }
+  
+  wizardIndexVechi = lastIndexData.index_vechi;
+  wizardConsumRef = lastIndexData.consum_referinta;
+  wizardMinAllowed = lastIndexData.min_contor;
+  wizardMaxAllowed = lastIndexData.max_contor;
+  
+  document.getElementById("display-index-vechi").innerText = wizardIndexVechi.toLocaleString();
+  document.getElementById("display-min-allowed").innerText = wizardMinAllowed.toLocaleString();
+  document.getElementById("display-max-allowed").innerText = wizardMaxAllowed.toLocaleString();
+  document.getElementById("display-consum-ref").innerText = wizardConsumRef.toLocaleString();
+  
+  document.getElementById("input-wizard-contor").value = "";
+  calculateWizardMetrics();
+}
+
+// CALCUL METRICE ÎN TIMP REAL ȘI VALIDARE
+function calculateWizardMetrics() {
+  const contorInput = document.getElementById("input-wizard-contor");
+  const contorVal = parseInt(contorInput.value || 0);
+  
+  const alertDiv = document.getElementById("wizard-validation-alert");
+  const alertText = document.getElementById("wizard-validation-text");
+  const submitBtn = document.getElementById("btn-submit-wizard");
+  
+  if (!contorVal) {
+    document.getElementById("display-copii-realizate").innerText = "0";
+    document.getElementById("display-procent-realizat").innerText = "0,00%";
+    alertDiv.classList.add("hidden");
+    submitBtn.disabled = false;
+    return;
+  }
+  
+  const copiiRealizate = contorVal - wizardIndexVechi;
+  const procentRealizat = (wizardConsumRef > 0 && copiiRealizate > 0) ? ((copiiRealizate / wizardConsumRef) * 100) : 0;
+  
+  document.getElementById("display-copii-realizate").innerText = (copiiRealizate > 0 ? copiiRealizate : 0).toLocaleString();
+  document.getElementById("display-procent-realizat").innerText = `${procentRealizat.toFixed(2)}%`;
+  
+  // VALIDARE STRICTĂ CONFORM CERINȚEI (MINIM 1 copie, MAXIM 200% din referință)
+  if (contorVal < wizardMinAllowed) {
+    alertText.innerText = `Contorul introdus (${contorVal.toLocaleString()}) este sub Minimul Permis (${wizardMinAllowed.toLocaleString()}). A fost efectuat cel puțin 1 copie?`;
+    alertDiv.classList.remove("hidden");
+    submitBtn.disabled = true;
+  } else if (contorVal > wizardMaxAllowed) {
+    alertText.innerText = `Contorul introdus (${contorVal.toLocaleString()}) depășește Maximul Permis de 200% (${wizardMaxAllowed.toLocaleString()}). Procentul maxim admis este de 200%.`;
+    alertDiv.classList.remove("hidden");
+    submitBtn.disabled = true;
+  } else {
+    alertDiv.classList.add("hidden");
+    submitBtn.disabled = false;
+  }
+}
+
+// SALVARE SCHIMBARE DIN WIZARD
+async function handleWizardSubmit(e) {
   e.preventDefault();
   
-  const aparatId = document.getElementById("select-aparat").value;
-  const tonerId = document.getElementById("select-toner-compatibil").value;
-  const contorVal = document.getElementById("input-contor").value;
-  
-  if (!aparatId || !tonerId || !contorVal) {
-    alert("Te rugăm să completezi toate câmpurile obligatorii.");
+  const contorVal = parseInt(document.getElementById("input-wizard-contor").value);
+  if (!contorVal || contorVal < wizardMinAllowed || contorVal > wizardMaxAllowed) {
+    alert("Te rugăm să introduci un contor valid în intervalul minim și maxim permis.");
     return;
   }
   
   const payload = {
-    id_aparat: parseInt(aparatId),
-    id_toner: parseInt(tonerId),
+    id_aparat: wizardSelectedAparat.id_aparat,
+    id_toner: wizardSelectedToner.id_toner,
     id_user: currentUser ? currentUser.id_user : 1,
-    contor: parseInt(contorVal)
+    contor: contorVal
   };
   
   try {
@@ -462,34 +703,38 @@ async function handleTonerChangeSubmit(e) {
       body: JSON.stringify(payload)
     });
     const json = await res.json();
-    alert(json.message || "Schimbarea de toner a fost înregistrată!");
+    alert(json.message || "Schimbarea de toner a fost salvată!");
   } catch (err) {
-    alert("Schimbarea de toner a fost înregistrată cu succes (Demo)!");
+    alert("Schimbarea de toner a fost salvată cu succes (Demo)!");
   }
   
-  // Actualizează stocul local și istoric
-  const targetToner = tonersData.find(t => t.id_toner == tonerId);
-  if (targetToner && targetToner.stoc > 0) {
-    targetToner.stoc--;
-  }
+  const copii = contorVal - wizardIndexVechi;
+  const procent = ((copii / wizardConsumRef) * 100).toFixed(2);
   
-  const targetAparat = aparateData.find(a => a.id_aparat == aparatId);
   historyData.unshift({
-    id_istoric_schimbare: Date.now(),
-    nume_aparat: targetAparat ? targetAparat.nume_aparat : "Aparat PIM",
-    denumire_tip: targetToner ? targetToner.denumire_tip : "Toner",
-    contor: parseInt(contorVal),
-    data_schimbare: new Date().toLocaleString("ro-RO"),
-    nume_operator: `${currentUser.first_name} ${currentUser.last_name}`,
-    copii_realizate: 95000,
-    procent_realizat: 98.2
+    id_istoric_schimbare: historyData.length ? (historyData[0].id_istoric_schimbare + 1) : 11898,
+    nume_aparat: wizardSelectedAparat.nume_aparat,
+    denumire_tip: wizardSelectedToner.denumire_tip,
+    office_nume: currentUser ? currentUser.office_nume : 'Tipografie',
+    contor: contorVal,
+    data_schimbare: new Date().toLocaleDateString("ro-RO") + " " + new Date().toLocaleTimeString("ro-RO"),
+    nume_operator: `${currentUser ? currentUser.username : 'operator'}`,
+    copii_realizate: copii,
+    consum_referinta: wizardConsumRef,
+    procent_realizat: procent
   });
+  
+  if (wizardSelectedToner.stoc > 0) wizardSelectedToner.stoc--;
   
   renderTonersTable();
   renderHistoryTable();
-  document.getElementById("change-toner-form").reset();
-  switchSection("istoric");
+  renderWizardRecentTable();
+  closeWizardModal();
 }
+
+// ----------------------------------------------------
+// SUPLIMENTARE STOC MODAL
+// ----------------------------------------------------
 
 function quickAddStock(tonerId) {
   const t = tonersData.find(item => item.id_toner == tonerId);

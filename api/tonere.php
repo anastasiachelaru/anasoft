@@ -54,7 +54,7 @@ if ($action === 'list') {
             ['id_toner' => 36, 'id_tip_toner' => 7, 'denumire_tip' => 'TN622M Magenta (Bizhub Press C1085/C1100)', 'office' => 2, 'office_nume' => 'UMF', 'stoc' => 5, 'consum_referinta' => 92000, 'aparate_compatibile' => [['id_aparat' => 14, 'nume_aparat' => 'UMF-C1100-1']]],
             ['id_toner' => 37, 'id_tip_toner' => 8, 'denumire_tip' => 'TN622Y Yellow (Bizhub Press C1085/C1100)', 'office' => 2, 'office_nume' => 'UMF', 'stoc' => 6, 'consum_referinta' => 104000, 'aparate_compatibile' => [['id_aparat' => 14, 'nume_aparat' => 'UMF-C1100-1']]],
             ['id_toner' => 38, 'id_tip_toner' => 9, 'denumire_tip' => 'TN622K Black (Bizhub Press C1085/C1100)', 'office' => 2, 'office_nume' => 'UMF', 'stoc' => 6, 'consum_referinta' => 88000, 'aparate_compatibile' => [['id_aparat' => 14, 'nume_aparat' => 'UMF-C1100-1']]],
-            ['id_toner' => 43, 'id_tip_toner' => 14, 'denumire_tip' => 'TN321C Cyan (Bizhub C224e/C284e/C364e)', 'office' => 2, 'office_nume' => 'UMF', 'stoc' => 5, 'consum_referinta' => 25000, 'aparate_compatibile' => [['id_aparat' => 16, 'nume_aparat' => 'UMF-C364e']]],
+            ['id_toner' => 43, 'id_tip_toner' => 14, 'denumire_tip' => 'TN321C Cyan (Bizhub C224e/C364e)', 'office' => 2, 'office_nume' => 'UMF', 'stoc' => 5, 'consum_referinta' => 25000, 'aparate_compatibile' => [['id_aparat' => 16, 'nume_aparat' => 'UMF-C364e']]],
             ['id_toner' => 82, 'id_tip_toner' => 19, 'denumire_tip' => 'TN14 Black (Smârdan Press 1250)', 'office' => 5, 'office_nume' => 'SMÂRDAN', 'stoc' => 7, 'consum_referinta' => 105000, 'aparate_compatibile' => [['id_aparat' => 27, 'nume_aparat' => 'SMARDAN-1250-1']]],
             ['id_toner' => 100, 'id_tip_toner' => 19, 'denumire_tip' => 'TN14 Black (Tudor Pro 1052)', 'office' => 3, 'office_nume' => 'TUDOR', 'stoc' => 9, 'consum_referinta' => 105000, 'aparate_compatibile' => [['id_aparat' => 20, 'nume_aparat' => 'TUDOR-T1']]],
             ['id_toner' => 114, 'id_tip_toner' => 42, 'denumire_tip' => 'TN17 Black (Tipografie 1250)', 'office' => 4, 'office_nume' => 'TIPO', 'stoc' => 4, 'consum_referinta' => 105000, 'aparate_compatibile' => [['id_aparat' => 48, 'nume_aparat' => 'TIPO-1250-3']]],
@@ -88,6 +88,12 @@ elseif ($action === 'aparate') {
             ['id_aparat' => 20, 'nume_aparat' => 'TUDOR-T1', 'office' => 3],
             ['id_aparat' => 27, 'nume_aparat' => 'SMARDAN-1250-1', 'office' => 5],
             ['id_aparat' => 48, 'nume_aparat' => 'TIPO-1250-3', 'office' => 4],
+            ['id_aparat' => 50, 'nume_aparat' => 'TIPO-2250-1-DR', 'office' => 4],
+            ['id_aparat' => 51, 'nume_aparat' => 'TIPO-2250-2-DR', 'office' => 4],
+            ['id_aparat' => 52, 'nume_aparat' => 'TIPO-2250-3-DR', 'office' => 4],
+            ['id_aparat' => 53, 'nume_aparat' => 'TIPO-2250-4-DR', 'office' => 4],
+            ['id_aparat' => 54, 'nume_aparat' => 'TIPO-2250-5-DR', 'office' => 4],
+            ['id_aparat' => 55, 'nume_aparat' => 'TIPO-2250-6-DR', 'office' => 4],
         ];
         if ($officeId !== null) {
             $mockAparate = array_values(array_filter($mockAparate, function($a) use ($officeId) {
@@ -95,6 +101,26 @@ elseif ($action === 'aparate') {
             }));
         }
         sendResponse(true, 'Aparate mock încărcate.', $mockAparate);
+    }
+}
+elseif ($action === 'tonere-aparat') {
+    $idAparat = (int)($_GET['id_aparat'] ?? 0);
+    
+    if ($db) {
+        $sql = "SELECT t.id_toner, t.id_tip_toner, t.office, t.stoc, tt.denumire_tip, tt.consum_referinta
+                FROM tonere_aparate ta
+                JOIN tonere t ON ta.id_toner = t.id_toner
+                JOIN tipuri_toner tt ON t.id_tip_toner = tt.id_tip_toner
+                WHERE ta.id_aparat = :aparat AND t.toner_activ = 1";
+        $stmt = $db->prepare($sql);
+        $stmt->execute([':aparat' => $idAparat]);
+        sendResponse(true, 'Tonere compatibile încărcate.', $stmt->fetchAll());
+    } else {
+        // Mock fallback
+        $mockRes = [
+            ['id_toner' => 34, 'id_tip_toner' => 19, 'denumire_tip' => 'TN14', 'stoc' => 22, 'consum_referinta' => 105000]
+        ];
+        sendResponse(true, 'Tonere compatibile mock.', $mockRes);
     }
 }
 elseif ($action === 'add-stock') {
