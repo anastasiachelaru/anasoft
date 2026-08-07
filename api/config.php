@@ -25,8 +25,18 @@ function getDBConnection() {
         ]);
         return $pdo;
     } catch (PDOException $e) {
-        // Returnăm null dacă DB nu e conectată pe localhost
-        return null;
+        try {
+            $altHost = (DB_HOST === 'localhost') ? '127.0.0.1' : 'localhost';
+            $dsn = "mysql:host=" . $altHost . ";dbname=" . DB_NAME . ";charset=utf8mb4";
+            $pdo = new PDO($dsn, DB_USER, DB_PASS, [
+                PDO::ATTR_ERRMODE => PDO_ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES => false,
+            ]);
+            return $pdo;
+        } catch (PDOException $e2) {
+            return null;
+        }
     }
 }
 
