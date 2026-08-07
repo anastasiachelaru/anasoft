@@ -5,9 +5,18 @@ $db = getDBConnection();
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
 
+$officesMap = [
+    2 => 'UMF',
+    3 => 'TUDOR',
+    4 => 'TIPO',
+    5 => 'SMÂRDAN',
+    6 => 'UMF2',
+    0 => 'COPOU'
+];
+
 if ($action === 'list') {
     $officeId = isset($_GET['office']) ? (int)$_GET['office'] : null;
-    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
+    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 100;
     
     if ($db) {
         $sql = "SELECT s.id_istoric_schimbare, s.id_aparat, s.id_toner, s.contor, s.data_schimbare, 
@@ -16,10 +25,10 @@ if ($action === 'list') {
                        tt.denumire_tip,
                        CONCAT(u.first_name, ' ', u.last_name) AS nume_operator, u.username
                 FROM istoric_schimbari s
-                JOIN aparate a ON s.id_aparat = a.id_aparat
-                JOIN tonere t ON s.id_toner = t.id_toner
-                JOIN tipuri_toner tt ON t.id_tip_toner = tt.id_tip_toner
-                JOIN users u ON s.id_user = u.id_user";
+                LEFT JOIN aparate a ON s.id_aparat = a.id_aparat
+                LEFT JOIN tonere t ON s.id_toner = t.id_toner
+                LEFT JOIN tipuri_toner tt ON t.id_tip_toner = tt.id_tip_toner
+                LEFT JOIN users u ON s.id_user = u.id_user";
         
         $params = [];
         if ($officeId !== null) {
@@ -27,11 +36,19 @@ if ($action === 'list') {
             $params[':office'] = $officeId;
         }
         
-        $sql .= " ORDER BY s.data_schimbare DESC LIMIT " . $limit;
+        $sql .= " ORDER BY s.data_schimbare DESC, s.id_istoric_schimbare DESC LIMIT " . $limit;
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
+        $schimbari = $stmt->fetchAll();
         
-        sendResponse(true, 'Istoric schimbări încărcat.', $stmt->fetchAll());
+        foreach ($schimbari as &$s) {
+            $s['office_nume'] = $officesMap[$s['office'] ?? 0] ?? 'PIM';
+            if (empty(trim($s['nume_operator'] ?? ''))) {
+                $s['nume_operator'] = $s['username'] ?? 'operator';
+            }
+        }
+        
+        sendResponse(true, 'Istoric schimbări încărcat.', $schimbari);
     } else {
         // Mock istoric din pimcopyr_toner.sql
         $mockSchimbari = [

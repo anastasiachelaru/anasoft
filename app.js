@@ -703,33 +703,17 @@ async function handleWizardSubmit(e) {
       body: JSON.stringify(payload)
     });
     const json = await res.json();
-    alert(json.message || "Schimbarea de toner a fost salvată!");
+    if (json.success) {
+      alert(json.message || "Schimbarea de toner a fost salvată!");
+      await loadHistoryData();
+      await loadTonersData();
+      closeWizardModal();
+    } else {
+      alert("Eroare la salvare: " + (json.message || "Nu s-a putut efectua salvarea."));
+    }
   } catch (err) {
-    alert("Schimbarea de toner a fost salvată cu succes (Demo)!");
+    alert("Eroare la salvarea schimbării: " + err.message);
   }
-  
-  const copii = contorVal - wizardIndexVechi;
-  const procent = ((copii / wizardConsumRef) * 100).toFixed(2);
-  
-  historyData.unshift({
-    id_istoric_schimbare: historyData.length ? (historyData[0].id_istoric_schimbare + 1) : 11898,
-    nume_aparat: wizardSelectedAparat.nume_aparat,
-    denumire_tip: wizardSelectedToner.denumire_tip,
-    office_nume: currentUser ? currentUser.office_nume : 'Tipografie',
-    contor: contorVal,
-    data_schimbare: new Date().toLocaleDateString("ro-RO") + " " + new Date().toLocaleTimeString("ro-RO"),
-    nume_operator: `${currentUser ? currentUser.username : 'operator'}`,
-    copii_realizate: copii,
-    consum_referinta: wizardConsumRef,
-    procent_realizat: procent
-  });
-  
-  if (wizardSelectedToner.stoc > 0) wizardSelectedToner.stoc--;
-  
-  renderTonersTable();
-  renderHistoryTable();
-  renderWizardRecentTable();
-  closeWizardModal();
 }
 
 // ----------------------------------------------------
