@@ -53,7 +53,6 @@ if ($action === 'list') {
         } catch (Throwable $e) {
             sendResponse(false, 'Eroare SQL istoric: ' . $e->getMessage(), null, 200);
         }
-    }
     } else {
         // Mock istoric din pimcopyr_toner.sql
         $mockSchimbari = [
