@@ -11,9 +11,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 define('DB_HOST', '127.0.0.1');
-define('DB_NAME', 'pimcopyr_toner');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+define('DB_NAME', 'anasoftr_tonere');
+define('DB_USER', 'anasoftr_anasoftr');
+define('DB_PASS', 'iT0*8IgO#66Hlm');
 
 function getDBConnection() {
     try {
