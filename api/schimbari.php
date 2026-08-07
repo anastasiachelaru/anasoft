@@ -19,36 +19,41 @@ if ($action === 'list') {
     $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 100;
     
     if ($db) {
-        $sql = "SELECT s.id_istoric_schimbare, s.id_aparat, s.id_toner, s.contor, s.data_schimbare, 
-                       s.id_user, s.copii_realizate, s.consum_referinta, s.procent_realizat,
-                       a.nume_aparat, a.office,
-                       tt.denumire_tip,
-                       CONCAT(u.first_name, ' ', u.last_name) AS nume_operator, u.username
-                FROM istoric_schimbari s
-                LEFT JOIN aparate a ON s.id_aparat = a.id_aparat
-                LEFT JOIN tonere t ON s.id_toner = t.id_toner
-                LEFT JOIN tipuri_toner tt ON t.id_tip_toner = tt.id_tip_toner
-                LEFT JOIN users u ON s.id_user = u.id_user";
-        
-        $params = [];
-        if ($officeId !== null) {
-            $sql .= " WHERE a.office = :office";
-            $params[':office'] = $officeId;
-        }
-        
-        $sql .= " ORDER BY s.data_schimbare DESC, s.id_istoric_schimbare DESC LIMIT " . $limit;
-        $stmt = $db->prepare($sql);
-        $stmt->execute($params);
-        $schimbari = $stmt->fetchAll();
-        
-        foreach ($schimbari as &$s) {
-            $s['office_nume'] = $officesMap[$s['office'] ?? 0] ?? 'PIM';
-            if (empty(trim($s['nume_operator'] ?? ''))) {
-                $s['nume_operator'] = $s['username'] ?? 'operator';
+        try {
+            $sql = "SELECT s.id_istoric_schimbare, s.id_aparat, s.id_toner, s.contor, s.data_schimbare, 
+                           s.id_user, s.copii_realizate, s.consum_referinta, s.procent_realizat,
+                           a.nume_aparat, a.office,
+                           tt.denumire_tip,
+                           CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) AS nume_operator, u.username
+                    FROM istoric_schimbari s
+                    LEFT JOIN aparate a ON s.id_aparat = a.id_aparat
+                    LEFT JOIN tonere t ON s.id_toner = t.id_toner
+                    LEFT JOIN tipuri_toner tt ON t.id_tip_toner = tt.id_tip_toner
+                    LEFT JOIN users u ON s.id_user = u.id_user";
+            
+            $params = [];
+            if ($officeId !== null) {
+                $sql .= " WHERE a.office = :office";
+                $params[':office'] = $officeId;
             }
+            
+            $sql .= " ORDER BY s.data_schimbare DESC, s.id_istoric_schimbare DESC LIMIT " . $limit;
+            $stmt = $db->prepare($sql);
+            $stmt->execute($params);
+            $schimbari = $stmt->fetchAll();
+            
+            foreach ($schimbari as &$s) {
+                $s['office_nume'] = $officesMap[$s['office'] ?? 0] ?? 'PIM';
+                if (empty(trim($s['nume_operator'] ?? ''))) {
+                    $s['nume_operator'] = !empty($s['username']) ? $s['username'] : 'operator';
+                }
+            }
+            
+            sendResponse(true, 'Istoric schimbări încărcat.', $schimbari);
+        } catch (Throwable $e) {
+            sendResponse(false, 'Eroare SQL istoric: ' . $e->getMessage(), null, 200);
         }
-        
-        sendResponse(true, 'Istoric schimbări încărcat.', $schimbari);
+    }
     } else {
         // Mock istoric din pimcopyr_toner.sql
         $mockSchimbari = [
