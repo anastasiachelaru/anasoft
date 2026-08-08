@@ -433,7 +433,12 @@ function renderWizardRecentTable() {
   if (!tbody) return;
   tbody.innerHTML = "";
   
-  const recent = historyData.slice(0, 6);
+  let filtered = historyData;
+  if (currentOfficeFilter !== "all") {
+    filtered = filtered.filter(h => h.office == currentOfficeFilter);
+  }
+  
+  const recent = filtered.slice(0, 6);
   recent.forEach(h => {
     const tr = document.createElement("tr");
     const procentStr = h.procent_realizat ? `${parseFloat(h.procent_realizat).toFixed(2)}%` : '0.00%';
@@ -529,14 +534,18 @@ function renderWizardStep1Aparate() {
     return;
   }
   
+  const officeNames = { 2: "UMF", 3: "TUDOR", 4: "Tipografie (TIPO)", 5: "SMÂRDAN", 6: "UMF2", 0: "COPOU" };
+  
   officeAparate.forEach(aparat => {
     const card = document.createElement("div");
     card.className = "card-select-item";
     card.onclick = () => handleWizardSelectAparat(aparat);
     
+    const officeLabel = officeNames[aparat.office] || 'PIM Iași';
+    
     card.innerHTML = `
       <div class="card-title"><i class="fa-solid fa-print text-cyan"></i> ${aparat.nume_aparat}</div>
-      <div class="card-subtitle">Sediu: PIM Iași</div>
+      <div class="card-subtitle">Sediu: ${officeLabel}</div>
     `;
     container.appendChild(card);
   });
@@ -562,19 +571,29 @@ async function handleWizardSelectAparat(aparat) {
     }
   } catch (err) {
     // Fallback mock
-    if (aparat.nume_aparat.includes("C14000")) {
-      compatibleToners = [{ id_toner: 114, denumire_tip: "TN627K", consum_referinta: 174000, stoc: 4 }];
+  }
+
+  if (compatibleToners.length === 0) {
+    const lowerName = aparat.nume_aparat.toLowerCase();
+    if (lowerName.includes("c1100") || lowerName.includes("c1070") || lowerName.includes("c364") || lowerName.includes("c14010") || lowerName.includes("c6501") || lowerName.includes("224e")) {
+      compatibleToners = [
+        { id_toner: 35, denumire_tip: "TN622C Cyan", consum_referinta: 95000, stoc: 6 },
+        { id_toner: 36, denumire_tip: "TN622M Magenta", consum_referinta: 92000, stoc: 5 },
+        { id_toner: 37, denumire_tip: "TN622Y Yellow", consum_referinta: 104000, stoc: 6 },
+        { id_toner: 38, denumire_tip: "TN622K Black", consum_referinta: 88000, stoc: 6 }
+      ];
     } else {
       compatibleToners = [{ id_toner: 34, denumire_tip: "TN14", consum_referinta: 105000, stoc: 22 }];
     }
   }
   
-  // CERINȚĂ SPECIFICATĂ: Dacă un aparat are un SINGUR tip de toner, opțiunea este aleasă INSTANT!
+  // CERINȚĂ STRICTĂ: Se sare la Pasul 3 (auto-selectare) DOAR dacă aparatul are UN SINGUR toner compatibil!
   if (compatibleToners.length === 1) {
     wizardSelectedToner = compatibleToners[0];
     document.getElementById("summary-toner-badge-final").innerText = `Toner: ${wizardSelectedToner.denumire_tip}`;
     goToWizardStep(3); // Sare direct la Pasul 3!
   } else {
+    // Dacă aparatul are multiple tonere (ex: C1100, C1070 etc.), afișează Pasul 2 pentru alegerea tonerului!
     renderWizardStep2Tonere(compatibleToners);
     goToWizardStep(2);
   }
