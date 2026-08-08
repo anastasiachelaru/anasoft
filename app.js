@@ -234,17 +234,38 @@ function renderUserHeader() {
   nameDisplay.innerText = `${currentUser.first_name || ""} ${currentUser.last_name || currentUser.username}`;
   
   const isAdmin = currentUser.role === "admin";
+  const selectElem = document.getElementById("office-filter-select");
+  
   roleBadge.innerText = isAdmin ? "Administrator" : "Angajat (Operator)";
   if (isAdmin) {
     roleBadge.classList.add("admin");
     document.querySelectorAll(".admin-only").forEach(el => el.classList.remove("hidden"));
+    document.getElementById("nav-istoric-btn")?.classList.remove("hidden");
+    if (selectElem) {
+      selectElem.disabled = false;
+    }
+    loadUsersData();
   } else {
     roleBadge.classList.remove("admin");
     document.querySelectorAll(".admin-only").forEach(el => el.classList.add("hidden"));
+    document.getElementById("nav-istoric-btn")?.classList.add("hidden");
+    
+    // Operatorul vede DOAR sediul la care a fost asignat!
+    currentOfficeFilter = String(currentUser.office);
+    if (selectElem) {
+      selectElem.value = currentUser.office;
+      selectElem.disabled = true;
+    }
+    switchSection("schimbare");
   }
 }
 
 function switchSection(secId) {
+  // Operatorii nu au voie pe istoric sau utilizatori
+  if (currentUser && currentUser.role !== "admin" && (secId === "istoric" || secId === "utilizatori")) {
+    secId = "schimbare";
+  }
+
   document.querySelectorAll(".nav-btn").forEach(btn => btn.classList.remove("active"));
   document.querySelectorAll(".app-section").forEach(sec => sec.classList.remove("active"));
   
@@ -253,6 +274,140 @@ function switchSection(secId) {
   
   if (targetBtn) targetBtn.classList.add("active");
   if (targetSec) targetSec.classList.add("active");
+}
+
+// ----------------------------------------------------
+// MANAGEMENT UTILIZATORI (ADMIN ONLY)
+// ----------------------------------------------------
+
+let usersData = [];
+
+async function loadUsersData() {
+  const tbody = document.getElementById("users-table-body");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+  
+  try {
+    const res = await fetch("api/users.php?action=list");
+    const json = await res.json();
+    if (json.success) usersData = json.data;
+  } catch (err) {
+    usersData = [
+      { id_user: 1, username: 'admin', role: 'admin', office: 2, office_nume: 'UMF', full_name: 'Admin PIM', cont_active: 1, pin_code: '000000', password: 'admin' },
+      { id_user: 46, username: 'operator', role: 'operator', office: 2, office_nume: 'UMF', full_name: 'Operator UMF', cont_active: 1, pin_code: '123456', password: 'operator' }
+    ];
+  }
+  
+  renderUsersTable();
+}
+
+function renderUsersTable() {
+  const tbody = document.getElementById("users-table-body");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+  
+  const officeNames = { 2: "UMF", 3: "TUDOR", 4: "Tipografie (TIPO)", 5: "SMÂRDAN", 6: "UMF2", 0: "COPOU" };
+
+  usersData.forEach(u => {
+    const tr = document.createElement("tr");
+    const isAdmin = u.role === "admin";
+    const roleBadgeClass = isAdmin ? "badge-primary" : "badge-secondary";
+    const roleLabel = isAdmin ? "Administrator" : "Operator (Angajat)";
+    const isActive = parseInt(u.cont_active) === 1;
+    const statusBadge = isActive 
+      ? '<span class="badge badge-stock-ok">Activ</span>' 
+      : '<span class="badge badge-stock-low">Inactiv</span>';
+    
+    const pinDisplay = u.pin_code ? `<code style="color:#00f2fe; font-weight:700;">PIN: ${u.pin_code}</code>` : '<small style="color:#94a3b8;">Fără PIN</small>';
+
+    tr.innerHTML = `
+      <td>
+        <strong>${u.full_name || u.username}</strong>
+        <br><small style="color:#94a3b8;">@${u.username} (ID #${u.id_user})</small>
+      </td>
+      <td><span class="badge ${roleBadgeClass}">${roleLabel}</span></td>
+      <td><span class="office-badge">${officeNames[u.office] || u.office_nume || 'PIM'}</span></td>
+      <td>${pinDisplay}</td>
+      <td>${statusBadge}</td>
+      <td>
+        <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="toggleUserStatus(${u.id_user})">
+          ${isActive ? 'Dezactivează' : 'Activează'}
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function openNewUserModal() {
+  document.getElementById("newuser-username").value = "";
+  document.getElementById("newuser-fullname").value = "";
+  document.getElementById("newuser-password").value = "";
+  document.getElementById("newuser-confirm-password").value = "";
+  document.getElementById("newuser-pin").value = "";
+  document.getElementById("modal-new-user").classList.remove("hidden");
+}
+
+async function handleCreateUserSubmit(e) {
+  e.preventDefault();
+  
+  const office = document.getElementById("newuser-office").value;
+  const username = document.getElementById("newuser-username").value.trim();
+  const role = document.getElementById("newuser-role").value;
+  const fullName = document.getElementById("newuser-fullname").value.trim();
+  const password = document.getElementById("newuser-password").value;
+  const confirmPassword = document.getElementById("newuser-confirm-password").value;
+  const pin = document.getElementById("newuser-pin").value.trim();
+  
+  if (password !== confirmPassword) {
+    alert("Parolele introduse nu se potrivesc!");
+    return;
+  }
+  
+  try {
+    const res = await fetch("api/users.php?action=create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        office,
+        username,
+        role,
+        full_name: fullName,
+        password,
+        confirm_password: confirmPassword,
+        pin
+      })
+    });
+    
+    const json = await res.json();
+    if (json.success) {
+      alert(`Contul utilizatorului @${username} a fost creat cu succes!\n\nCod PIN atribuit pentru autentificare: ${json.data.pin_code}`);
+      closeModal("modal-new-user");
+      await loadUsersData();
+    } else {
+      alert("Eroare creare cont: " + json.message);
+    }
+  } catch (err) {
+    alert("Eroare de rețea la crearea contului.");
+  }
+}
+
+async function toggleUserStatus(idUser) {
+  try {
+    const res = await fetch("api/users.php?action=toggle-status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id_user: idUser })
+    });
+    const json = await res.json();
+    if (json.success) {
+      await loadUsersData();
+    } else {
+      alert("Eroare status: " + json.message);
+    }
+  } catch (err) {
+    alert("Eroare conectare server.");
+  }
 }
 
 async function changeOfficeFilter(val) {
