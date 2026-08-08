@@ -555,11 +555,19 @@ function filterWizardAparateList() {
   renderWizardStep1Aparate();
 }
 
+let currentMachineTonersCount = 0;
+
 // MANEVRARE SELECTARE APARAT & VERIFICARE AUTO-SELECTARE TONER UNIC
 async function handleWizardSelectAparat(aparat) {
   wizardSelectedAparat = aparat;
+  wizardSelectedToner = null; // Resetare toner ales anterior
+  
   document.getElementById("summary-aparat-badge").innerText = `Aparat: ${aparat.nume_aparat}`;
   document.getElementById("summary-aparat-badge-final").innerText = `Aparat: ${aparat.nume_aparat}`;
+  
+  // Golește containerul de tonere din Pasul 2 pentru a preveni îmbinarea sau opțiunile rămase de la aparatul anterior!
+  const containerStep2 = document.getElementById("wizard-tonere-container");
+  if (containerStep2) containerStep2.innerHTML = "";
   
   // Încarcă tonerele compatibile pentru aparatul ales
   let compatibleToners = [];
@@ -587,15 +595,33 @@ async function handleWizardSelectAparat(aparat) {
     }
   }
   
+  currentMachineTonersCount = compatibleToners.length;
+  
+  // Actualizăm eticheta butonului Înapoi din Pasul 3
+  const step3BackText = document.getElementById("step3-back-btn-text");
+  if (step3BackText) {
+    step3BackText.innerText = (currentMachineTonersCount > 1) 
+      ? "Înapoi la Selectare Tonere" 
+      : "Înlocuiește Aparatul";
+  }
+  
   // CERINȚĂ STRICTĂ: Se sare la Pasul 3 (auto-selectare) DOAR dacă aparatul are UN SINGUR toner compatibil!
   if (compatibleToners.length === 1) {
     wizardSelectedToner = compatibleToners[0];
     document.getElementById("summary-toner-badge-final").innerText = `Toner: ${wizardSelectedToner.denumire_tip}`;
     goToWizardStep(3); // Sare direct la Pasul 3!
   } else {
-    // Dacă aparatul are multiple tonere (ex: C1100, C1070 etc.), afișează Pasul 2 pentru alegerea tonerului!
+    // Dacă aparatul are mai multe tonere (ex: C1100, C1070 etc.), afișează Pasul 2 pentru alegerea tonerului!
     renderWizardStep2Tonere(compatibleToners);
     goToWizardStep(2);
+  }
+}
+
+function handleStep3Back() {
+  if (currentMachineTonersCount > 1) {
+    goToWizardStep(2);
+  } else {
+    goToWizardStep(1);
   }
 }
 
