@@ -565,7 +565,7 @@ async function handleWizardSelectAparat(aparat) {
   document.getElementById("summary-aparat-badge").innerText = `Aparat: ${aparat.nume_aparat}`;
   document.getElementById("summary-aparat-badge-final").innerText = `Aparat: ${aparat.nume_aparat}`;
   
-  // Golește containerul de tonere din Pasul 2 pentru a preveni îmbinarea sau opțiunile rămase de la aparatul anterior!
+  // Golește containerul de tonere din Pasul 2 pentru a preveni opțiunile rămase de la aparatul anterior!
   const containerStep2 = document.getElementById("wizard-tonere-container");
   if (containerStep2) containerStep2.innerHTML = "";
   
@@ -574,29 +574,15 @@ async function handleWizardSelectAparat(aparat) {
   try {
     const res = await fetch(`api/tonere.php?action=tonere-aparat&id_aparat=${aparat.id_aparat}`);
     const json = await res.json();
-    if (json.success && json.data.length > 0) {
+    if (json.success && Array.isArray(json.data)) {
       compatibleToners = json.data;
     }
   } catch (err) {
-    // Fallback mock
+    compatibleToners = [];
   }
 
-  if (compatibleToners.length === 0) {
-    const lowerName = aparat.nume_aparat.toLowerCase();
-    if (lowerName.includes("c1100") || lowerName.includes("c1070") || lowerName.includes("c364") || lowerName.includes("c14010") || lowerName.includes("c6501") || lowerName.includes("224e")) {
-      compatibleToners = [
-        { id_toner: 35, denumire_tip: "TN622C Cyan", consum_referinta: 95000, stoc: 6 },
-        { id_toner: 36, denumire_tip: "TN622M Magenta", consum_referinta: 92000, stoc: 5 },
-        { id_toner: 37, denumire_tip: "TN622Y Yellow", consum_referinta: 104000, stoc: 6 },
-        { id_toner: 38, denumire_tip: "TN622K Black", consum_referinta: 88000, stoc: 6 }
-      ];
-    } else {
-      compatibleToners = [{ id_toner: 34, denumire_tip: "TN14", consum_referinta: 105000, stoc: 22 }];
-    }
-  }
-  
   currentMachineTonersCount = compatibleToners.length;
-  
+
   // Actualizăm eticheta butonului Înapoi din Pasul 3
   const step3BackText = document.getElementById("step3-back-btn-text");
   if (step3BackText) {
@@ -605,13 +591,33 @@ async function handleWizardSelectAparat(aparat) {
       : "Înlocuiește Aparatul";
   }
   
-  // CERINȚĂ STRICTĂ: Se sare la Pasul 3 (auto-selectare) DOAR dacă aparatul are UN SINGUR toner compatibil!
+  // 1. DACA APARATUL NU ARE NICIUN TONER ÎN BAZA DE DATE (ex: UMF-KIP7970)
+  if (compatibleToners.length === 0) {
+    if (containerStep2) {
+      containerStep2.innerHTML = `
+        <div style="grid-column: 1/-1; padding: 28px; text-align: center; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 16px;">
+          <i class="fa-solid fa-triangle-exclamation" style="font-size: 2rem; margin-bottom: 12px; display: block; color: #fca5a5;"></i>
+          <h4 style="font-weight: 700; margin-bottom: 8px; color: #fca5a5; font-size: 1.1rem;">
+            Nu aveți tipuri de toner pentru aparatul selectat! Contactați administratorul!.
+          </h4>
+          <p style="font-size: 0.9rem; color: #cbd5e1; margin-bottom: 16px;">Echipamentul "${aparat.nume_aparat}" nu are asociate tipuri de toner în baza de date.</p>
+          <button class="btn btn-secondary" onclick="goToWizardStep(1)">
+            <i class="fa-solid fa-arrow-left"></i> Înapoi la Aparate
+          </button>
+        </div>
+      `;
+    }
+    goToWizardStep(2); // Deschide Pasul 2 cu mesajul roșu de avertizare!
+    return;
+  }
+
+  // 2. DACA APARATUL ARE UN SINGUR TONER COMPATIBIL
   if (compatibleToners.length === 1) {
     wizardSelectedToner = compatibleToners[0];
     document.getElementById("summary-toner-badge-final").innerText = `Toner: ${wizardSelectedToner.denumire_tip}`;
     goToWizardStep(3); // Sare direct la Pasul 3!
   } else {
-    // Dacă aparatul are mai multe tonere (ex: C1100, C1070 etc.), afișează Pasul 2 pentru alegerea tonerului!
+    // 3. DACA APARATUL ARE MULTIPLE TONERE COMPATIBILE (ex: Color)
     renderWizardStep2Tonere(compatibleToners);
     goToWizardStep(2);
   }

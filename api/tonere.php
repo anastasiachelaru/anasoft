@@ -117,41 +117,12 @@ elseif ($action === 'tonere-aparat') {
             $stmt->execute([':aparat' => $idAparat]);
             $res = $stmt->fetchAll();
             
-            if (empty($res)) {
-                $stmtApp = $db->prepare("SELECT nume_aparat, office FROM aparate WHERE id_aparat = :aparat");
-                $stmtApp->execute([':aparat' => $idAparat]);
-                $apInfo = $stmtApp->fetch();
-                
-                if ($apInfo) {
-                    $office = (int)$apInfo['office'];
-                    $nameLower = strtolower($apInfo['nume_aparat']);
-                    $isColor = (strpos($nameLower, 'c1100') !== false || strpos($nameLower, 'c1070') !== false || strpos($nameLower, 'c364') !== false || strpos($nameLower, 'c14010') !== false || strpos($nameLower, 'c6501') !== false || strpos($nameLower, '224e') !== false);
-                    
-                    if ($isColor) {
-                        $sql = "SELECT t.id_toner, t.id_tip_toner, t.office, t.stoc, tt.denumire_tip, tt.consum_referinta
-                                FROM tonere t
-                                JOIN tipuri_toner tt ON t.id_tip_toner = tt.id_tip_toner
-                                WHERE t.office = :office AND t.toner_activ = 1 AND (tt.denumire_tip LIKE '%Cyan%' OR tt.denumire_tip LIKE '%Magenta%' OR tt.denumire_tip LIKE '%Yellow%' OR tt.denumire_tip LIKE '%TN622%' OR tt.denumire_tip LIKE '%TN627%' OR tt.denumire_tip LIKE '%TN321%' OR tt.denumire_tip LIKE '%TN612%')";
-                    } else {
-                        $sql = "SELECT t.id_toner, t.id_tip_toner, t.office, t.stoc, tt.denumire_tip, tt.consum_referinta
-                                FROM tonere t
-                                JOIN tipuri_toner tt ON t.id_tip_toner = tt.id_tip_toner
-                                WHERE t.office = :office AND t.toner_activ = 1 AND (tt.denumire_tip LIKE '%TN14%' OR tt.denumire_tip LIKE '%TN17%' OR tt.denumire_tip LIKE '%Black%') LIMIT 1";
-                    }
-                    $stmtAlt = $db->prepare($sql);
-                    $stmtAlt->execute([':office' => $office]);
-                    $res = $stmtAlt->fetchAll();
-                }
-            }
-            
             sendResponse(true, 'Tonere compatibile încărcate.', $res);
         } catch (Throwable $e) {
             sendResponse(false, 'Eroare tonere-aparat: ' . $e->getMessage(), null, 200);
         }
     } else {
-        $mockRes = [
-            ['id_toner' => 34, 'id_tip_toner' => 19, 'denumire_tip' => 'TN14', 'stoc' => 22, 'consum_referinta' => 105000]
-        ];
+        $mockRes = [];
         sendResponse(true, 'Tonere compatibile mock.', $mockRes);
     }
 }
