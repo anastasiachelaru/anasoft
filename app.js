@@ -255,10 +255,10 @@ function switchSection(secId) {
   if (targetSec) targetSec.classList.add("active");
 }
 
-function changeOfficeFilter(val) {
+async function changeOfficeFilter(val) {
   currentOfficeFilter = val;
   renderTonersTable();
-  renderHistoryTable();
+  await loadHistoryData();
 }
 
 // ----------------------------------------------------
@@ -384,18 +384,14 @@ async function loadAparateData() {
 
 async function loadHistoryData() {
   try {
-    const res = await fetch("api/schimbari.php?action=list");
+    const url = (currentOfficeFilter !== "all") 
+      ? `api/schimbari.php?action=list&office=${currentOfficeFilter}` 
+      : "api/schimbari.php?action=list";
+    const res = await fetch(url);
     const json = await res.json();
     if (json.success) historyData = json.data;
   } catch (err) {
-    historyData = [
-      { id_istoric_schimbare: 11897, nume_aparat: 'TIPO-2250-5-ST', denumire_tip: 'TN14', office_nume: 'Tipografie', contor: 39823159, data_schimbare: '06-08-2026 19:19:00', nume_operator: 'poturuandreea', copii_realizate: 64216, consum_referinta: 105000, procent_realizat: 61.16 },
-      { id_istoric_schimbare: 11896, nume_aparat: 'TIPO-2250-5-DR', denumire_tip: 'TN14', office_nume: 'Tipografie', contor: 39823097, data_schimbare: '06-08-2026 19:19:00', nume_operator: 'poturuandreea', copii_realizate: 64216, consum_referinta: 105000, procent_realizat: 61.16 },
-      { id_istoric_schimbare: 11894, nume_aparat: 'TIPO-2250-4-ST', denumire_tip: 'TN14', office_nume: 'Tipografie', contor: 80270366, data_schimbare: '06-08-2026 10:03:00', nume_operator: 'alina', copii_realizate: 62013, consum_referinta: 105000, procent_realizat: 59.06 },
-      { id_istoric_schimbare: 11893, nume_aparat: 'TIPO-2250-3-ST', denumire_tip: 'TN14', office_nume: 'Tipografie', contor: 70305786, data_schimbare: '05-08-2026 20:55:00', nume_operator: 'poturuandreea', copii_realizate: 81419, consum_referinta: 105000, procent_realizat: 77.54 },
-      { id_istoric_schimbare: 11892, nume_aparat: 'TIPO-2250-6-ST', denumire_tip: 'TN14', office_nume: 'Tipografie', contor: 46716706, data_schimbare: '05-08-2026 18:17:00', nume_operator: 'poturuandreea', copii_realizate: 94105, consum_referinta: 105000, procent_realizat: 89.62 },
-      { id_istoric_schimbare: 11890, nume_aparat: 'TIPO-C14000-2', denumire_tip: 'TN627K', office_nume: 'Tipografie', contor: 20492021, data_schimbare: '04-08-2026 20:35:00', nume_operator: 'poturuandreea', copii_realizate: 99546, consum_referinta: 174000, procent_realizat: 57.21 }
-    ];
+    historyData = [];
   }
   renderHistoryTable();
   renderWizardRecentTable();
