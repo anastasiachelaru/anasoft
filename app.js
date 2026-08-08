@@ -462,8 +462,8 @@ function openWizardModal() {
   wizardCurrentStep = 1;
   
   const officeNames = { 2: "UMF", 3: "TUDOR", 4: "Tipografie (TIPO)", 5: "SMÂRDAN", 6: "UMF2", 0: "COPOU" };
-  const userOffice = currentUser ? currentUser.office : 4;
-  document.getElementById("wizard-office-label").innerText = `Punct de lucru: ${officeNames[userOffice] || 'PIM Iași'}`;
+  const effectiveOffice = (currentOfficeFilter !== 'all') ? parseInt(currentOfficeFilter) : (currentUser ? currentUser.office : 4);
+  document.getElementById("wizard-office-label").innerText = `Punct de lucru: ${officeNames[effectiveOffice] || 'Toate Punctele PIM Iași'}`;
   
   renderWizardStep1Aparate();
   goToWizardStep(1);
@@ -508,15 +508,18 @@ function goToWizardStep(stepNum) {
   }
 }
 
-// PASUL 1: REDARE APARATE PE PUNCTUL DE LUCRU AL OPERATORULUI LOGAT
+// PASUL 1: REDARE APARATE PE PUNCTUL DE LUCRU SELECTAT
 function renderWizardStep1Aparate() {
   const container = document.getElementById("wizard-aparate-container");
   container.innerHTML = "";
   
-  const userOffice = currentUser ? currentUser.office : 4;
+  const effectiveOffice = (currentOfficeFilter !== 'all') ? parseInt(currentOfficeFilter) : (currentUser ? currentUser.office : 4);
   const search = (document.getElementById("wizard-aparat-search").value || "").toLowerCase();
   
-  let officeAparate = aparateData.filter(a => a.office == userOffice || currentUser.role === "admin");
+  let officeAparate = (currentOfficeFilter === 'all')
+    ? aparateData 
+    : aparateData.filter(a => a.office == effectiveOffice);
+
   if (search) {
     officeAparate = officeAparate.filter(a => a.nume_aparat.toLowerCase().includes(search));
   }
