@@ -130,6 +130,11 @@ elseif ($action === 'add-stock' || $action === 'update-stock') {
     $idToner = (int)($input['id_toner'] ?? 0);
     $cantitate = (int)($input['cantitate'] ?? 0);
     $operation = $input['operation'] ?? 'add';
+    $userRole = $input['user_role'] ?? ($input['role'] ?? '');
+    
+    if (!empty($userRole) && $userRole !== 'admin') {
+        sendResponse(false, 'Acces restricționat! Doar administratorii au permisiunea de a modifica stocul de tonere.', null, 403);
+    }
     
     if ($idToner <= 0 || $cantitate <= 0) {
         sendResponse(false, 'Selectează un toner și introdu o cantitate validă.', null, 400);

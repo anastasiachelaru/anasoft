@@ -923,6 +923,10 @@ async function handleWizardSubmit(e) {
 let currentStockOp = 'add';
 
 function openAddStockModal() {
+  if (!currentUser || currentUser.role !== "admin") {
+    alert("Acces restricționat! Doar administratorii au permisiunea de a modifica stocul de tonere.");
+    return;
+  }
   populateAddStockModalSelect();
   toggleStockOp('add');
   document.getElementById("modal-add-stock").classList.remove("hidden");
@@ -1005,6 +1009,12 @@ function updateStockModalPreview() {
 
 async function handleAddStockSubmit(e) {
   e.preventDefault();
+  if (!currentUser || currentUser.role !== "admin") {
+    alert("Acces restricționat! Doar administratorii au permisiunea de a modifica stocul de tonere.");
+    closeModal("modal-add-stock");
+    return;
+  }
+
   const select = document.getElementById("stock-modal-toner");
   const tonerId = select.value;
   const qty = parseInt(document.getElementById("stock-modal-qty").value || 1);
@@ -1019,7 +1029,8 @@ async function handleAddStockSubmit(e) {
       body: JSON.stringify({
         id_toner: tonerId,
         cantitate: qty,
-        operation: op
+        operation: op,
+        user_role: currentUser ? currentUser.role : 'operator'
       })
     });
     
