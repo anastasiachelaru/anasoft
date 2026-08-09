@@ -293,8 +293,8 @@ async function loadUsersData() {
     if (json.success) usersData = json.data;
   } catch (err) {
     usersData = [
-      { id_user: 1, username: 'admin', role: 'admin', office: 2, office_nume: 'UMF', full_name: 'Admin PIM', cont_active: 1, pin_code: '000000', password: 'admin' },
-      { id_user: 46, username: 'operator', role: 'operator', office: 2, office_nume: 'UMF', full_name: 'Operator UMF', cont_active: 1, pin_code: '123456', password: 'operator' }
+      { id_user: 1, username: 'admin', role: 'admin', office: 2, office_nume: 'Independenței', full_name: 'Admin PIM', cont_active: 1, pin_code: '000000', password: 'admin' },
+      { id_user: 46, username: 'operator', role: 'operator', office: 2, office_nume: 'Independenței', full_name: 'Operator Independenței', cont_active: 1, pin_code: '123456', password: 'operator' }
     ];
   }
   
@@ -306,7 +306,7 @@ function renderUsersTable() {
   if (!tbody) return;
   tbody.innerHTML = "";
   
-  const officeNames = { 2: "UMF", 3: "TUDOR", 4: "Tipografie (TIPO)", 5: "SMÂRDAN", 6: "UMF2", 0: "COPOU" };
+  const officeNames = { 2: "Independenței", 3: "TUDOR", 4: "Tipografie (TIPO)", 5: "SMÂRDAN", 6: "UMF2" };
 
   usersData.forEach(u => {
     const tr = document.createElement("tr");
@@ -430,10 +430,10 @@ async function loadTonersData() {
   } catch (err) {
     tonersData = [
       { id_toner: 34, denumire_tip: "TN14", office: 4, office_nume: "TIPO", stoc: 22, consum_referinta: 105000, aparate_compatibile: [{ nume_aparat: "TIPO-2250-5-ST" }, { nume_aparat: "TIPO-2250-5-DR" }] },
-      { id_toner: 35, denumire_tip: "TN622C Cyan", office: 2, office_nume: "UMF", stoc: 6, consum_referinta: 95000, aparate_compatibile: [{ nume_aparat: "UMF-C1100-1" }] },
-      { id_toner: 36, denumire_tip: "TN622M Magenta", office: 2, office_nume: "UMF", stoc: 5, consum_referinta: 92000, aparate_compatibile: [{ nume_aparat: "UMF-C1100-1" }] },
-      { id_toner: 37, denumire_tip: "TN622Y Yellow", office: 2, office_nume: "UMF", stoc: 6, consum_referinta: 104000, aparate_compatibile: [{ nume_aparat: "UMF-C1100-1" }] },
-      { id_toner: 38, denumire_tip: "TN622K Black", office: 2, office_nume: "UMF", stoc: 6, consum_referinta: 88000, aparate_compatibile: [{ nume_aparat: "UMF-C1100-1" }] },
+      { id_toner: 35, denumire_tip: "TN622C Cyan", office: 2, office_nume: "Independenței", stoc: 6, consum_referinta: 95000, aparate_compatibile: [{ nume_aparat: "UMF-C1100-1" }] },
+      { id_toner: 36, denumire_tip: "TN622M Magenta", office: 2, office_nume: "Independenței", stoc: 5, consum_referinta: 92000, aparate_compatibile: [{ nume_aparat: "UMF-C1100-1" }] },
+      { id_toner: 37, denumire_tip: "TN622Y Yellow", office: 2, office_nume: "Independenței", stoc: 6, consum_referinta: 104000, aparate_compatibile: [{ nume_aparat: "UMF-C1100-1" }] },
+      { id_toner: 38, denumire_tip: "TN622K Black", office: 2, office_nume: "Independenței", stoc: 6, consum_referinta: 88000, aparate_compatibile: [{ nume_aparat: "UMF-C1100-1" }] },
       { id_toner: 82, denumire_tip: "TN14 Black", office: 5, office_nume: "SMÂRDAN", stoc: 7, consum_referinta: 105000, aparate_compatibile: [{ nume_aparat: "SMARDAN-1250-1" }] },
       { id_toner: 100, denumire_tip: "TN14 Black", office: 3, office_nume: "TUDOR", stoc: 9, consum_referinta: 105000, aparate_compatibile: [{ nume_aparat: "TUDOR-T1" }] },
       { id_toner: 114, denumire_tip: "TN627K Black", office: 4, office_nume: "TIPO", stoc: 4, consum_referinta: 174000, aparate_compatibile: [{ nume_aparat: "TIPO-C14000-2" }] }
@@ -612,7 +612,7 @@ function openWizardModal() {
   wizardSelectedToner = null;
   wizardCurrentStep = 1;
   
-  const officeNames = { 2: "UMF", 3: "TUDOR", 4: "Tipografie (TIPO)", 5: "SMÂRDAN", 6: "UMF2", 0: "COPOU" };
+  const officeNames = { 2: "Independenței", 3: "TUDOR", 4: "Tipografie (TIPO)", 5: "SMÂRDAN", 6: "UMF2" };
   const effectiveOffice = (currentOfficeFilter !== 'all') ? parseInt(currentOfficeFilter) : (currentUser ? currentUser.office : 4);
   document.getElementById("wizard-office-label").innerText = `Punct de lucru: ${officeNames[effectiveOffice] || 'Toate Punctele PIM Iași'}`;
   
@@ -680,7 +680,7 @@ function renderWizardStep1Aparate() {
     return;
   }
   
-  const officeNames = { 2: "UMF", 3: "TUDOR", 4: "Tipografie (TIPO)", 5: "SMÂRDAN", 6: "UMF2", 0: "COPOU" };
+  const officeNames = { 2: "Independenței", 3: "TUDOR", 4: "Tipografie (TIPO)", 5: "SMÂRDAN", 6: "UMF2" };
   
   officeAparate.forEach(aparat => {
     const card = document.createElement("div");

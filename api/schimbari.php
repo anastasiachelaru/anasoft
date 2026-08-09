@@ -6,12 +6,11 @@ $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
 
 $officesMap = [
-    2 => 'UMF',
+    2 => 'Independenței',
     3 => 'TUDOR',
     4 => 'TIPO',
     5 => 'SMÂRDAN',
-    6 => 'UMF2',
-    0 => 'COPOU'
+    6 => 'UMF2'
 ];
 
 if ($action === 'list') {

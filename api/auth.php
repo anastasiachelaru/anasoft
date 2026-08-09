@@ -51,7 +51,7 @@ if ($action === 'login-pin') {
                     'first_name' => $isAdmin ? 'Andrei' : 'Liviu',
                     'last_name' => $isAdmin ? 'Petriu' : 'C.',
                     'role' => $isAdmin ? 'admin' : 'operator',
-                    'office' => 2, // UMF
+                    'office' => 2, // Independenței
                     'email' => 'operator@pimcopy.ro'
                 ],
                 'token' => 'demo_token_' . time()

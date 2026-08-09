@@ -7,12 +7,11 @@ $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
 $officeId = isset($_GET['office']) ? (int)$_GET['office'] : null;
 
 $officesMap = [
-    2 => 'UMF',
+    2 => 'Independenței',
     3 => 'TUDOR',
     4 => 'TIPO',
     5 => 'SMÂRDAN',
-    6 => 'UMF2',
-    0 => 'COPOU'
+    6 => 'UMF2'
 ];
 
 if ($action === 'list') {
@@ -49,12 +48,12 @@ if ($action === 'list') {
     } else {
         // Data mock completă extrasă din pimcopyr_toner.sql pentru vizualizare directă
         $mockTonere = [
-            ['id_toner' => 34, 'id_tip_toner' => 19, 'denumire_tip' => 'TN14 (Konica Minolta 1050/1200)', 'office' => 2, 'office_nume' => 'UMF', 'stoc' => 22, 'consum_referinta' => 105000, 'aparate_compatibile' => [['id_aparat' => 8, 'nume_aparat' => 'UMF-AN3'], ['id_aparat' => 9, 'nume_aparat' => 'UMF-AN2']]],
-            ['id_toner' => 35, 'id_tip_toner' => 6, 'denumire_tip' => 'TN622C Cyan (Bizhub Press C1085/C1100)', 'office' => 2, 'office_nume' => 'UMF', 'stoc' => 6, 'consum_referinta' => 95000, 'aparate_compatibile' => [['id_aparat' => 14, 'nume_aparat' => 'UMF-C1100-1']]],
-            ['id_toner' => 36, 'id_tip_toner' => 7, 'denumire_tip' => 'TN622M Magenta (Bizhub Press C1085/C1100)', 'office' => 2, 'office_nume' => 'UMF', 'stoc' => 5, 'consum_referinta' => 92000, 'aparate_compatibile' => [['id_aparat' => 14, 'nume_aparat' => 'UMF-C1100-1']]],
-            ['id_toner' => 37, 'id_tip_toner' => 8, 'denumire_tip' => 'TN622Y Yellow (Bizhub Press C1085/C1100)', 'office' => 2, 'office_nume' => 'UMF', 'stoc' => 6, 'consum_referinta' => 104000, 'aparate_compatibile' => [['id_aparat' => 14, 'nume_aparat' => 'UMF-C1100-1']]],
-            ['id_toner' => 38, 'id_tip_toner' => 9, 'denumire_tip' => 'TN622K Black (Bizhub Press C1085/C1100)', 'office' => 2, 'office_nume' => 'UMF', 'stoc' => 6, 'consum_referinta' => 88000, 'aparate_compatibile' => [['id_aparat' => 14, 'nume_aparat' => 'UMF-C1100-1']]],
-            ['id_toner' => 43, 'id_tip_toner' => 14, 'denumire_tip' => 'TN321C Cyan (Bizhub C224e/C364e)', 'office' => 2, 'office_nume' => 'UMF', 'stoc' => 5, 'consum_referinta' => 25000, 'aparate_compatibile' => [['id_aparat' => 16, 'nume_aparat' => 'UMF-C364e']]],
+            ['id_toner' => 34, 'id_tip_toner' => 19, 'denumire_tip' => 'TN14 (Konica Minolta 1050/1200)', 'office' => 2, 'office_nume' => 'Independenței', 'stoc' => 22, 'consum_referinta' => 105000, 'aparate_compatibile' => [['id_aparat' => 8, 'nume_aparat' => 'UMF-AN3'], ['id_aparat' => 9, 'nume_aparat' => 'UMF-AN2']]],
+            ['id_toner' => 35, 'id_tip_toner' => 6, 'denumire_tip' => 'TN622C Cyan (Bizhub Press C1085/C1100)', 'office' => 2, 'office_nume' => 'Independenței', 'stoc' => 6, 'consum_referinta' => 95000, 'aparate_compatibile' => [['id_aparat' => 14, 'nume_aparat' => 'UMF-C1100-1']]],
+            ['id_toner' => 36, 'id_tip_toner' => 7, 'denumire_tip' => 'TN622M Magenta (Bizhub Press C1085/C1100)', 'office' => 2, 'office_nume' => 'Independenței', 'stoc' => 5, 'consum_referinta' => 92000, 'aparate_compatibile' => [['id_aparat' => 14, 'nume_aparat' => 'UMF-C1100-1']]],
+            ['id_toner' => 37, 'id_tip_toner' => 8, 'denumire_tip' => 'TN622Y Yellow (Bizhub Press C1085/C1100)', 'office' => 2, 'office_nume' => 'Independenței', 'stoc' => 6, 'consum_referinta' => 104000, 'aparate_compatibile' => [['id_aparat' => 14, 'nume_aparat' => 'UMF-C1100-1']]],
+            ['id_toner' => 38, 'id_tip_toner' => 9, 'denumire_tip' => 'TN622K Black (Bizhub Press C1085/C1100)', 'office' => 2, 'office_nume' => 'Independenței', 'stoc' => 6, 'consum_referinta' => 88000, 'aparate_compatibile' => [['id_aparat' => 14, 'nume_aparat' => 'UMF-C1100-1']]],
+            ['id_toner' => 43, 'id_tip_toner' => 14, 'denumire_tip' => 'TN321C Cyan (Bizhub C224e/C364e)', 'office' => 2, 'office_nume' => 'Independenței', 'stoc' => 5, 'consum_referinta' => 25000, 'aparate_compatibile' => [['id_aparat' => 16, 'nume_aparat' => 'UMF-C364e']]],
             ['id_toner' => 82, 'id_tip_toner' => 19, 'denumire_tip' => 'TN14 Black (Smârdan Press 1250)', 'office' => 5, 'office_nume' => 'SMÂRDAN', 'stoc' => 7, 'consum_referinta' => 105000, 'aparate_compatibile' => [['id_aparat' => 27, 'nume_aparat' => 'SMARDAN-1250-1']]],
             ['id_toner' => 100, 'id_tip_toner' => 19, 'denumire_tip' => 'TN14 Black (Tudor Pro 1052)', 'office' => 3, 'office_nume' => 'TUDOR', 'stoc' => 9, 'consum_referinta' => 105000, 'aparate_compatibile' => [['id_aparat' => 20, 'nume_aparat' => 'TUDOR-T1']]],
             ['id_toner' => 114, 'id_tip_toner' => 42, 'denumire_tip' => 'TN17 Black (Tipografie 1250)', 'office' => 4, 'office_nume' => 'TIPO', 'stoc' => 4, 'consum_referinta' => 105000, 'aparate_compatibile' => [['id_aparat' => 48, 'nume_aparat' => 'TIPO-1250-3']]],

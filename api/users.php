@@ -7,12 +7,11 @@ $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 $action = $input['action'] ?? $_GET['action'] ?? 'list';
 
 $officesMap = [
-    2 => 'UMF',
+    2 => 'Independenței',
     3 => 'TUDOR',
     4 => 'TIPO',
     5 => 'SMÂRDAN',
-    6 => 'UMF2',
-    0 => 'COPOU'
+    6 => 'UMF2'
 ];
 
 if ($action === 'list') {
@@ -23,7 +22,7 @@ if ($action === 'list') {
             $users = $stmt->fetchAll();
             
             foreach ($users as &$u) {
-                $u['office_nume'] = $officesMap[$u['office']] ?? 'Desconoscut';
+                $u['office_nume'] = $officesMap[$u['office']] ?? 'Necunoscut';
                 if (empty($u['first_name']) && empty($u['last_name'])) {
                     $u['full_name'] = $u['username'];
                 } else {
@@ -38,8 +37,8 @@ if ($action === 'list') {
     } else {
         // Mock data
         sendResponse(true, 'Mock utilizatori.', [
-            ['id_user' => 1, 'username' => 'admin', 'role' => 'admin', 'office' => 2, 'office_nume' => 'UMF', 'full_name' => 'Admin PIM', 'cont_active' => 1, 'pin_code' => '000000', 'password' => 'admin123'],
-            ['id_user' => 46, 'username' => 'operator', 'role' => 'operator', 'office' => 2, 'office_nume' => 'UMF', 'full_name' => 'Operator UMF', 'cont_active' => 1, 'pin_code' => '123456', 'password' => 'operator123']
+            ['id_user' => 1, 'username' => 'admin', 'role' => 'admin', 'office' => 2, 'office_nume' => 'Independenței', 'full_name' => 'Admin PIM', 'cont_active' => 1, 'pin_code' => '000000', 'password' => 'admin123'],
+            ['id_user' => 46, 'username' => 'operator', 'role' => 'operator', 'office' => 2, 'office_nume' => 'Independenței', 'full_name' => 'Operator Independenței', 'cont_active' => 1, 'pin_code' => '123456', 'password' => 'operator123']
         ]);
     }
 }
