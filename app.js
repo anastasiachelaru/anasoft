@@ -475,11 +475,6 @@ function renderTonersTable() {
       <td><span class="badge ${badgeClass}">${t.stoc} buc</span></td>
       <td>${(t.consum_referinta || 0).toLocaleString()} pagini</td>
       <td><small style="color:#94a3b8;">${aparateList}</small></td>
-      <td>
-        <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="quickAddStock(${t.id_toner})">
-          +1 Stoc
-        </button>
-      </td>
     `;
     tbody.appendChild(tr);
   });
@@ -922,19 +917,16 @@ async function handleWizardSubmit(e) {
 }
 
 // ----------------------------------------------------
-// SUPLIMENTARE STOC MODAL
+// GESTIUNE STOC MODAL (ADĂUGARE / SCĂDERE)
 // ----------------------------------------------------
 
-function quickAddStock(tonerId) {
-  const t = tonersData.find(item => item.id_toner == tonerId);
-  if (t) {
-    t.stoc++;
-    renderTonersTable();
-  }
-}
+let currentStockOp = 'add';
 
 function openAddStockModal() {
+  populateAddStockModalSelect();
+  toggleStockOp('add');
   document.getElementById("modal-add-stock").classList.remove("hidden");
+  updateStockModalPreview();
 }
 
 function closeModal(modalId) {
@@ -945,23 +937,119 @@ function populateAddStockModalSelect() {
   const select = document.getElementById("stock-modal-toner");
   if (!select) return;
   select.innerHTML = "";
-  tonersData.forEach(t => {
+  
+  let availableToners = tonersData;
+  if (currentOfficeFilter !== 'all') {
+    availableToners = tonersData.filter(t => t.office == currentOfficeFilter);
+  }
+  if (availableToners.length === 0) availableToners = tonersData;
+
+  availableToners.forEach(t => {
     const opt = document.createElement("option");
     opt.value = t.id_toner;
-    opt.innerText = `${t.denumire_tip} (${t.office_nume || 'PIM'})`;
+    opt.innerText = `${t.denumire_tip} (${t.office_nume || 'PIM'}) - Stoc: ${t.stoc} buc`;
     select.appendChild(opt);
   });
 }
 
-function handleAddStockSubmit(e) {
-  e.preventDefault();
-  const tonerId = document.getElementById("stock-modal-toner").value;
-  const qty = parseInt(document.getElementById("stock-modal-qty").value || 1);
+function toggleStockOp(opType) {
+  currentStockOp = opType;
+  const addLabel = document.getElementById("op-label-add");
+  const subLabel = document.getElementById("op-label-sub");
+  const submitBtn = document.getElementById("stock-modal-submit-btn");
   
-  const t = tonersData.find(item => item.id_toner == tonerId);
-  if (t) {
-    t.stoc += qty;
-    renderTonersTable();
+  if (opType === 'add') {
+    addLabel.classList.add("active");
+    subLabel.classList.remove("active");
+    if (submitBtn) {
+      submitBtn.className = "btn btn-success";
+      submitBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Adaugă în Stoc';
+    }
+  } else {
+    subLabel.classList.add("active");
+    addLabel.classList.remove("active");
+    if (submitBtn) {
+      submitBtn.className = "btn btn-danger-custom";
+      submitBtn.innerHTML = '<i class="fa-solid fa-minus"></i> Scade din Stoc';
+    }
   }
-  closeModal("modal-add-stock");
+  updateStockModalPreview();
+}
+
+function updateStockModalPreview() {
+  const select = document.getElementById("stock-modal-toner");
+  if (!select || select.value === "") return;
+  
+  const tonerId = select.value;
+  const qtyInput = document.getElementById("stock-modal-qty");
+  const qty = parseInt(qtyInput ? qtyInput.value : 0) || 0;
+  const t = tonersData.find(item => item.id_toner == tonerId);
+  
+  if (!t) return;
+  
+  const currentStoc = parseInt(t.stoc || 0);
+  let newStoc = currentStoc;
+  
+  if (currentStockOp === 'add') {
+    newStoc = currentStoc + qty;
+  } else {
+    newStoc = Math.max(0, currentStoc - qty);
+  }
+  
+  const curElem = document.getElementById("preview-current-stock");
+  const newElem = document.getElementById("preview-new-stock");
+  
+  if (curElem) curElem.innerText = `${currentStoc} bucăți`;
+  if (newElem) newElem.innerText = `${newStoc} bucăți`;
+}
+
+async function handleAddStockSubmit(e) {
+  e.preventDefault();
+  const select = document.getElementById("stock-modal-toner");
+  const tonerId = select.value;
+  const qty = parseInt(document.getElementById("stock-modal-qty").value || 1);
+  const op = currentStockOp;
+  
+  if (!tonerId || qty <= 0) return;
+
+  try {
+    const res = await fetch("api/tonere.php?action=update-stock", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id_toner: tonerId,
+        cantitate: qty,
+        operation: op
+      })
+    });
+    
+    const json = await res.json();
+    if (json.success) {
+      const t = tonersData.find(item => item.id_toner == tonerId);
+      if (t) {
+        if (op === 'add') {
+          t.stoc = parseInt(t.stoc || 0) + qty;
+        } else {
+          t.stoc = Math.max(0, parseInt(t.stoc || 0) - qty);
+        }
+      }
+      renderTonersTable();
+      closeModal("modal-add-stock");
+      alert(json.message || `Stocul a fost actualizat cu succes (${op === 'add' ? '+' : '-'}${qty} buc).`);
+    } else {
+      alert("Eroare la actualizarea stocului: " + json.message);
+    }
+  } catch (err) {
+    const t = tonersData.find(item => item.id_toner == tonerId);
+    if (t) {
+      if (op === 'add') {
+        t.stoc = parseInt(t.stoc || 0) + qty;
+      } else {
+        t.stoc = Math.max(0, parseInt(t.stoc || 0) - qty);
+      }
+      renderTonersTable();
+    }
+    closeModal("modal-add-stock");
+    alert(`Stoc actualizat (${op === 'add' ? '+' : '-'}${qty} buc).`);
+  }
 }

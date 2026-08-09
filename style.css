@@ -317,6 +317,58 @@ body {
   box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.25);
 }
 
+/* Stilizare Barette de Căutare (Caută toner / Filtrează aparatul) */
+.search-box-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-box-wrap .search-icon {
+  position: absolute;
+  left: 14px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  pointer-events: none;
+  transition: var(--transition-fast);
+}
+
+.search-input {
+  background: rgba(15, 23, 42, 0.6) !important;
+  border: 1px solid var(--border-color) !important;
+  color: #ffffff !important;
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 10px 16px 10px 38px !important;
+  border-radius: 10px;
+  outline: none;
+  width: 260px;
+  transition: var(--transition-fast);
+}
+
+.search-box-wrap.full-width {
+  width: 100%;
+}
+
+.search-box-wrap.full-width .search-input {
+  width: 100% !important;
+}
+
+.search-input:focus {
+  border-color: #00f2fe !important;
+  background: rgba(15, 23, 42, 0.9) !important;
+  box-shadow: 0 0 0 3px rgba(0, 242, 254, 0.25) !important;
+}
+
+.search-box-wrap:focus-within .search-icon {
+  color: #00f2fe;
+}
+
+.search-input::placeholder {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
 .full-width {
   width: 100%;
 }
@@ -1141,3 +1193,94 @@ select option {
 .text-cyan { color: var(--cyan-accent); }
 .text-magenta { color: var(--magenta-accent); }
 .text-yellow { color: var(--yellow-accent); }
+
+/* Stilizare Modal Operațiune Stoc (Adăugare / Scădere) */
+.stock-op-toggle {
+  display: flex;
+  gap: 12px;
+}
+
+.op-option {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-color);
+  padding: 12px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  transition: var(--transition-fast);
+  user-select: none;
+}
+
+.op-option:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.op-option.active#op-label-add {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.5);
+  color: #34d399;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.op-option.active#op-label-sub {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #f87171;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
+.text-green { color: #34d399; }
+.text-red { color: #f87171; }
+
+.btn-danger-custom {
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+}
+
+.btn-danger-custom:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.6);
+}
+
+/* Casetă Preview Stoc */
+.stock-preview-box {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px dashed var(--border-color);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stock-preview-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.stock-preview-row.highlight {
+  color: #fff;
+  font-weight: 600;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.stock-preview-row.highlight strong {
+  font-size: 1.15rem;
+  color: var(--cyan-accent);
+}

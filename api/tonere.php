@@ -126,20 +126,28 @@ elseif ($action === 'tonere-aparat') {
         sendResponse(true, 'Tonere compatibile mock.', $mockRes);
     }
 }
-elseif ($action === 'add-stock') {
+elseif ($action === 'add-stock' || $action === 'update-stock') {
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
     $idToner = (int)($input['id_toner'] ?? 0);
     $cantitate = (int)($input['cantitate'] ?? 0);
+    $operation = $input['operation'] ?? 'add';
     
     if ($idToner <= 0 || $cantitate <= 0) {
         sendResponse(false, 'Selectează un toner și introdu o cantitate validă.', null, 400);
     }
     
     if ($db) {
-        $stmt = $db->prepare("UPDATE tonere SET stoc = stoc + :cantitate WHERE id_toner = :id");
-        $stmt->execute([':cantitate' => $cantitate, ':id' => $idToner]);
-        sendResponse(true, "Stocul a fost suplimentat cu +{$cantitate} bucăți.");
+        if ($operation === 'subtract') {
+            $stmt = $db->prepare("UPDATE tonere SET stoc = GREATEST(0, stoc - :cantitate) WHERE id_toner = :id");
+            $stmt->execute([':cantitate' => $cantitate, ':id' => $idToner]);
+            sendResponse(true, "Stocul a fost redus cu -{$cantitate} bucăți.");
+        } else {
+            $stmt = $db->prepare("UPDATE tonere SET stoc = stoc + :cantitate WHERE id_toner = :id");
+            $stmt->execute([':cantitate' => $cantitate, ':id' => $idToner]);
+            sendResponse(true, "Stocul a fost suplimentat cu +{$cantitate} bucăți.");
+        }
     } else {
-        sendResponse(true, "Stocul a fost suplimentat cu +{$cantitate} bucăți (Demo).");
+        $sign = ($operation === 'subtract') ? '-' : '+';
+        sendResponse(true, "Stocul a fost actualizat cu {$sign}{$cantitate} bucăți (Demo).");
     }
 }
