@@ -10,6 +10,11 @@ let tonersData = [];
 let aparateData = [];
 let historyData = [];
 
+// Stare Paginație
+let historyCurrentPage = 1;
+let recentCurrentPage = 1;
+const PAGE_SIZE = 10;
+
 // Stare Asistent Wizard
 let wizardCurrentStep = 1;
 let wizardSelectedAparat = null;
@@ -248,7 +253,7 @@ function renderUserHeader() {
   } else {
     roleBadge.classList.remove("admin");
     document.querySelectorAll(".admin-only").forEach(el => el.classList.add("hidden"));
-    document.getElementById("nav-istoric-btn")?.classList.add("hidden");
+    document.getElementById("nav-istoric-btn")?.classList.remove("hidden");
     
     // Operatorul vede DOAR sediul la care a fost asignat!
     currentOfficeFilter = String(currentUser.office);
@@ -261,8 +266,8 @@ function renderUserHeader() {
 }
 
 function switchSection(secId) {
-  // Operatorii nu au voie pe istoric sau utilizatori
-  if (currentUser && currentUser.role !== "admin" && (secId === "istoric" || secId === "utilizatori")) {
+  // Operatorii nu au voie pe utilizatori
+  if (currentUser && currentUser.role !== "admin" && secId === "utilizatori") {
     secId = "schimbare";
   }
 
@@ -412,6 +417,8 @@ async function toggleUserStatus(idUser) {
 
 async function changeOfficeFilter(val) {
   currentOfficeFilter = val;
+  historyCurrentPage = 1;
+  recentCurrentPage = 1;
   renderTonersTable();
   await loadHistoryData();
 }
@@ -488,17 +495,65 @@ function filterTonersTable() {
   renderTonersTable();
 }
 
-function getColorBadge(name) {
-  const lower = name.toLowerCase();
-  if (lower.includes("cyan") || lower.includes("c10") || lower.includes("tn622c")) {
-    return '<span style="color:#00f2fe; font-weight:700;"><i class="fa-solid fa-droplet"></i> Cyan</span>';
-  } else if (lower.includes("magenta") || lower.includes("tn622m")) {
-    return '<span style="color:#ff0844; font-weight:700;"><i class="fa-solid fa-droplet"></i> Magenta</span>';
-  } else if (lower.includes("yellow") || lower.includes("tn622y")) {
-    return '<span style="color:#ffb199; font-weight:700;"><i class="fa-solid fa-droplet"></i> Yellow</span>';
-  } else {
-    return '<span style="color:#cbd5e1; font-weight:700;"><i class="fa-solid fa-droplet"></i> Black</span>';
+function getColorBadgeInfo(name) {
+  const str = (name || "").trim();
+  const lower = str.toLowerCase();
+  
+  // 1. Check Cyan
+  if (
+    lower.includes("cyan") || 
+    /\b[a-z0-9]+c\b/i.test(str) || 
+    /\b[a-z0-9]+c[\s\(\-]/.test(str) ||
+    /toner c\b/i.test(str) ||
+    lower.endsWith("c")
+  ) {
+    return {
+      color: "cyan",
+      label: "Cyan",
+      badgeHtml: '<span class="color-tag cyan-tag"><i class="fa-solid fa-droplet"></i> Cyan</span>'
+    };
   }
+  
+  // 2. Check Magenta
+  if (
+    lower.includes("magenta") || 
+    /\b[a-z0-9]+m\b/i.test(str) || 
+    /\b[a-z0-9]+m[\s\(\-]/.test(str) ||
+    /toner m\b/i.test(str) ||
+    lower.endsWith("m")
+  ) {
+    return {
+      color: "magenta",
+      label: "Magenta",
+      badgeHtml: '<span class="color-tag magenta-tag"><i class="fa-solid fa-droplet"></i> Magenta</span>'
+    };
+  }
+  
+  // 3. Check Yellow
+  if (
+    lower.includes("yellow") || 
+    /\b[a-z0-9]+y\b/i.test(str) || 
+    /\b[a-z0-9]+y[\s\(\-]/.test(str) ||
+    /toner y\b/i.test(str) ||
+    lower.endsWith("y")
+  ) {
+    return {
+      color: "yellow",
+      label: "Yellow",
+      badgeHtml: '<span class="color-tag yellow-tag"><i class="fa-solid fa-droplet"></i> Yellow</span>'
+    };
+  }
+  
+  // Default: Black
+  return {
+    color: "black",
+    label: "Black",
+    badgeHtml: '<span class="color-tag black-tag"><i class="fa-solid fa-droplet"></i> Black</span>'
+  };
+}
+
+function getColorBadge(name) {
+  return getColorBadgeInfo(name).badgeHtml;
 }
 
 async function loadAparateData() {
@@ -547,8 +602,77 @@ async function loadHistoryData() {
   renderWizardRecentTable();
 }
 
+function renderPaginationControls(containerId, infoId, currentPage, totalItems, pageSize, onPageChange) {
+  const container = document.getElementById(containerId);
+  const infoElem = document.getElementById(infoId);
+  if (!container || !infoElem) return;
+  
+  container.innerHTML = "";
+  const totalPages = Math.ceil(totalItems / pageSize) || 1;
+  const startIdx = totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0;
+  const endIdx = Math.min(currentPage * pageSize, totalItems);
+  
+  infoElem.innerHTML = `Afișare <strong>${startIdx}-${endIdx}</strong> din <strong>${totalItems}</strong> înregistrări (Pagina ${currentPage} din ${totalPages})`;
+  
+  if (totalPages <= 1) return;
+  
+  const prevBtn = document.createElement("button");
+  prevBtn.className = "page-btn";
+  prevBtn.disabled = currentPage === 1;
+  prevBtn.innerHTML = '<i class="fa-solid fa-angle-left"></i>';
+  prevBtn.onclick = () => onPageChange(currentPage - 1);
+  container.appendChild(prevBtn);
+  
+  let startPage = Math.max(1, currentPage - 2);
+  let endPage = Math.min(totalPages, currentPage + 2);
+  
+  if (startPage > 1) {
+    const p1 = document.createElement("button");
+    p1.className = "page-btn";
+    p1.innerText = "1";
+    p1.onclick = () => onPageChange(1);
+    container.appendChild(p1);
+    if (startPage > 2) {
+      const ellipsis = document.createElement("span");
+      ellipsis.className = "page-ellipsis";
+      ellipsis.innerText = "...";
+      container.appendChild(ellipsis);
+    }
+  }
+  
+  for (let p = startPage; p <= endPage; p++) {
+    const btn = document.createElement("button");
+    btn.className = `page-btn ${p === currentPage ? "active" : ""}`;
+    btn.innerText = p;
+    btn.onclick = () => onPageChange(p);
+    container.appendChild(btn);
+  }
+  
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) {
+      const ellipsis = document.createElement("span");
+      ellipsis.className = "page-ellipsis";
+      ellipsis.innerText = "...";
+      container.appendChild(ellipsis);
+    }
+    const pLast = document.createElement("button");
+    pLast.className = "page-btn";
+    pLast.innerText = totalPages;
+    pLast.onclick = () => onPageChange(totalPages);
+    container.appendChild(pLast);
+  }
+  
+  const nextBtn = document.createElement("button");
+  nextBtn.className = "page-btn";
+  nextBtn.disabled = currentPage === totalPages;
+  nextBtn.innerHTML = '<i class="fa-solid fa-angle-right"></i>';
+  nextBtn.onclick = () => onPageChange(currentPage + 1);
+  container.appendChild(nextBtn);
+}
+
 function renderHistoryTable() {
   const tbody = document.getElementById("history-table-body");
+  if (!tbody) return;
   tbody.innerHTML = "";
   
   let filtered = historyData;
@@ -556,13 +680,23 @@ function renderHistoryTable() {
     filtered = filtered.filter(h => h.office == currentOfficeFilter);
   }
   
-  filtered.forEach(h => {
+  const totalItems = filtered.length;
+  const totalPages = Math.ceil(totalItems / PAGE_SIZE) || 1;
+  if (historyCurrentPage > totalPages) historyCurrentPage = totalPages;
+  if (historyCurrentPage < 1) historyCurrentPage = 1;
+  
+  const startIdx = (historyCurrentPage - 1) * PAGE_SIZE;
+  const pageItems = filtered.slice(startIdx, startIdx + PAGE_SIZE);
+  
+  pageItems.forEach(h => {
     const tr = document.createElement("tr");
     const procentStr = h.procent_realizat ? `${parseFloat(h.procent_realizat).toFixed(2)}%` : '0.00%';
+    const colorBadge = getColorBadge(h.denumire_tip || '');
+    
     tr.innerHTML = `
       <td><strong>${h.id_istoric_schimbare}</strong></td>
       <td><strong>${h.nume_aparat}</strong></td>
-      <td><span class="badge badge-stock-ok">${h.denumire_tip}</span></td>
+      <td>${colorBadge} <strong>${h.denumire_tip}</strong></td>
       <td><span class="office-badge">${h.office_nume || 'PIM'}</span></td>
       <td><i class="fa-solid fa-user"></i> ${h.nume_operator || h.username}</td>
       <td><code>${(h.contor || 0).toLocaleString()}</code><br><small style="color:#94a3b8;">Ref: ${(h.consum_referinta || 105000).toLocaleString()}</small></td>
@@ -572,6 +706,18 @@ function renderHistoryTable() {
     `;
     tbody.appendChild(tr);
   });
+  
+  renderPaginationControls(
+    "history-pagination-controls",
+    "history-pagination-info",
+    historyCurrentPage,
+    totalItems,
+    PAGE_SIZE,
+    (newPage) => {
+      historyCurrentPage = newPage;
+      renderHistoryTable();
+    }
+  );
 }
 
 function renderWizardRecentTable() {
@@ -584,14 +730,23 @@ function renderWizardRecentTable() {
     filtered = filtered.filter(h => h.office == currentOfficeFilter);
   }
   
-  const recent = filtered.slice(0, 6);
-  recent.forEach(h => {
+  const totalItems = filtered.length;
+  const totalPages = Math.ceil(totalItems / PAGE_SIZE) || 1;
+  if (recentCurrentPage > totalPages) recentCurrentPage = totalPages;
+  if (recentCurrentPage < 1) recentCurrentPage = 1;
+  
+  const startIdx = (recentCurrentPage - 1) * PAGE_SIZE;
+  const pageItems = filtered.slice(startIdx, startIdx + PAGE_SIZE);
+  
+  pageItems.forEach(h => {
     const tr = document.createElement("tr");
     const procentStr = h.procent_realizat ? `${parseFloat(h.procent_realizat).toFixed(2)}%` : '0.00%';
+    const colorBadge = getColorBadge(h.denumire_tip || '');
+    
     tr.innerHTML = `
       <td><strong>${h.id_istoric_schimbare}</strong></td>
       <td><strong>${h.nume_aparat}</strong></td>
-      <td><span class="badge badge-stock-ok">${h.denumire_tip}</span></td>
+      <td>${colorBadge} <strong>${h.denumire_tip}</strong></td>
       <td><span class="office-badge">${h.office_nume || 'PIM'}</span></td>
       <td>${h.nume_operator || h.username}</td>
       <td><code>${(h.contor || 0).toLocaleString()}</code> / ${(h.consum_referinta || 105000).toLocaleString()}</td>
@@ -601,6 +756,18 @@ function renderWizardRecentTable() {
     `;
     tbody.appendChild(tr);
   });
+  
+  renderPaginationControls(
+    "recent-pagination-controls",
+    "recent-pagination-info",
+    recentCurrentPage,
+    totalItems,
+    PAGE_SIZE,
+    (newPage) => {
+      recentCurrentPage = newPage;
+      renderWizardRecentTable();
+    }
+  );
 }
 
 // ----------------------------------------------------
@@ -783,16 +950,17 @@ function renderWizardStep2Tonere(tonersList) {
   container.innerHTML = "";
   
   tonersList.forEach(t => {
+    const colorInfo = getColorBadgeInfo(t.denumire_tip);
     const card = document.createElement("div");
-    card.className = "card-select-item";
+    card.className = `card-select-item card-color-${colorInfo.color}`;
     card.onclick = () => {
       wizardSelectedToner = t;
-      document.getElementById("summary-toner-badge-final").innerText = `Toner: ${t.denumire_tip}`;
+      document.getElementById("summary-toner-badge-final").innerText = `Toner: ${colorInfo.label} ${t.denumire_tip}`;
       goToWizardStep(3);
     };
     
     card.innerHTML = `
-      <div class="card-title">${getColorBadge(t.denumire_tip)} ${t.denumire_tip}</div>
+      <div class="card-title">${colorInfo.badgeHtml} <strong>${t.denumire_tip}</strong></div>
       <div class="card-subtitle">Stoc disponibil: <strong>${t.stoc} buc</strong></div>
       <div class="card-subtitle">Consum Referință: ${(t.consum_referinta || 105000).toLocaleString()} pagini</div>
     `;

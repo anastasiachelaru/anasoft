@@ -15,7 +15,7 @@ $officesMap = [
 
 if ($action === 'list') {
     $officeId = isset($_GET['office']) ? (int)$_GET['office'] : null;
-    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 100;
+    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 5000;
     
     if ($db) {
         try {

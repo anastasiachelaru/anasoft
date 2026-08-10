@@ -121,7 +121,54 @@ elseif ($action === 'tonere-aparat') {
             sendResponse(false, 'Eroare tonere-aparat: ' . $e->getMessage(), null, 200);
         }
     } else {
-        $mockRes = [];
+        // Mock fallback pe baza aparatului selectat pentru prezentare demo
+        $mockMap = [
+            // UMF-C454e (id: 45) sau UMF-C364e (id: 16)
+            45 => [
+                ['id_toner' => 43, 'id_tip_toner' => 14, 'denumire_tip' => 'TN321C', 'stoc' => 5, 'consum_referinta' => 25000],
+                ['id_toner' => 44, 'id_tip_toner' => 15, 'denumire_tip' => 'TN321M', 'stoc' => 6, 'consum_referinta' => 25000],
+                ['id_toner' => 45, 'id_tip_toner' => 16, 'denumire_tip' => 'TN321Y', 'stoc' => 8, 'consum_referinta' => 25000],
+                ['id_toner' => 46, 'id_tip_toner' => 17, 'denumire_tip' => 'TN321K', 'stoc' => 3, 'consum_referinta' => 27000],
+                ['id_toner' => 137, 'id_tip_toner' => 51, 'denumire_tip' => 'TN512C', 'stoc' => 4, 'consum_referinta' => 105000],
+                ['id_toner' => 138, 'id_tip_toner' => 52, 'denumire_tip' => 'TN512M', 'stoc' => 5, 'consum_referinta' => 105000],
+                ['id_toner' => 139, 'id_tip_toner' => 53, 'denumire_tip' => 'TN512Y', 'stoc' => 4, 'consum_referinta' => 105000],
+                ['id_toner' => 140, 'id_tip_toner' => 54, 'denumire_tip' => 'TN512K', 'stoc' => 5, 'consum_referinta' => 105000],
+            ],
+            16 => [
+                ['id_toner' => 43, 'id_tip_toner' => 14, 'denumire_tip' => 'TN321C', 'stoc' => 5, 'consum_referinta' => 25000],
+                ['id_toner' => 44, 'id_tip_toner' => 15, 'denumire_tip' => 'TN321M', 'stoc' => 6, 'consum_referinta' => 25000],
+                ['id_toner' => 45, 'id_tip_toner' => 16, 'denumire_tip' => 'TN321Y', 'stoc' => 8, 'consum_referinta' => 25000],
+                ['id_toner' => 46, 'id_tip_toner' => 17, 'denumire_tip' => 'TN321K', 'stoc' => 3, 'consum_referinta' => 27000],
+            ],
+            14 => [
+                ['id_toner' => 35, 'id_tip_toner' => 6, 'denumire_tip' => 'TN622C', 'stoc' => 6, 'consum_referinta' => 95000],
+                ['id_toner' => 36, 'id_tip_toner' => 7, 'denumire_tip' => 'TN622M', 'stoc' => 5, 'consum_referinta' => 92000],
+                ['id_toner' => 37, 'id_tip_toner' => 8, 'denumire_tip' => 'TN622Y', 'stoc' => 6, 'consum_referinta' => 104000],
+                ['id_toner' => 38, 'id_tip_toner' => 9, 'denumire_tip' => 'TN622K', 'stoc' => 6, 'consum_referinta' => 88000],
+            ],
+            84 => [
+                ['id_toner' => 147, 'id_tip_toner' => 6, 'denumire_tip' => 'TN622C', 'stoc' => 6, 'consum_referinta' => 95000],
+                ['id_toner' => 148, 'id_tip_toner' => 7, 'denumire_tip' => 'TN622M', 'stoc' => 4, 'consum_referinta' => 92000],
+                ['id_toner' => 149, 'id_tip_toner' => 8, 'denumire_tip' => 'TN622Y', 'stoc' => 4, 'consum_referinta' => 104000],
+                ['id_toner' => 150, 'id_tip_toner' => 9, 'denumire_tip' => 'TN622K', 'stoc' => 3, 'consum_referinta' => 88000],
+            ],
+            91 => [
+                ['id_toner' => 119, 'id_tip_toner' => 43, 'denumire_tip' => 'TN627C', 'stoc' => 3, 'consum_referinta' => 208000],
+                ['id_toner' => 117, 'id_tip_toner' => 44, 'denumire_tip' => 'TN627M', 'stoc' => 4, 'consum_referinta' => 180000],
+                ['id_toner' => 118, 'id_tip_toner' => 45, 'denumire_tip' => 'TN627Y', 'stoc' => 5, 'consum_referinta' => 173000],
+                ['id_toner' => 120, 'id_tip_toner' => 46, 'denumire_tip' => 'TN627K', 'stoc' => 4, 'consum_referinta' => 174000],
+            ],
+            34 => [
+                ['id_toner' => 87, 'id_tip_toner' => 24, 'denumire_tip' => 'TN619C', 'stoc' => 2, 'consum_referinta' => 45000],
+                ['id_toner' => 88, 'id_tip_toner' => 25, 'denumire_tip' => 'TN619M', 'stoc' => 2, 'consum_referinta' => 45000],
+                ['id_toner' => 89, 'id_tip_toner' => 26, 'denumire_tip' => 'TN619Y', 'stoc' => 2, 'consum_referinta' => 45000],
+                ['id_toner' => 90, 'id_tip_toner' => 27, 'denumire_tip' => 'TN619K', 'stoc' => 2, 'consum_referinta' => 45000],
+            ]
+        ];
+
+        $mockRes = $mockMap[$idAparat] ?? [
+            ['id_toner' => 34, 'id_tip_toner' => 19, 'denumire_tip' => 'TN14', 'stoc' => 22, 'consum_referinta' => 105000]
+        ];
         sendResponse(true, 'Tonere compatibile mock.', $mockRes);
     }
 }
