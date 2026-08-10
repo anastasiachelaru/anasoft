@@ -499,7 +499,9 @@ function getColorBadgeInfo(name) {
   const str = (name || "").trim();
   const lower = str.toLowerCase();
   
-  // 1. Check Cyan
+  let color = "black";
+  let label = "Black";
+  
   if (
     lower.includes("cyan") || 
     /\b[a-z0-9]+c\b/i.test(str) || 
@@ -507,48 +509,38 @@ function getColorBadgeInfo(name) {
     /toner c\b/i.test(str) ||
     lower.endsWith("c")
   ) {
-    return {
-      color: "cyan",
-      label: "Cyan",
-      badgeHtml: '<span class="color-tag cyan-tag"><i class="fa-solid fa-droplet"></i> Cyan</span>'
-    };
-  }
-  
-  // 2. Check Magenta
-  if (
+    color = "cyan";
+    label = "Cyan";
+  } else if (
     lower.includes("magenta") || 
     /\b[a-z0-9]+m\b/i.test(str) || 
     /\b[a-z0-9]+m[\s\(\-]/.test(str) ||
     /toner m\b/i.test(str) ||
     lower.endsWith("m")
   ) {
-    return {
-      color: "magenta",
-      label: "Magenta",
-      badgeHtml: '<span class="color-tag magenta-tag"><i class="fa-solid fa-droplet"></i> Magenta</span>'
-    };
-  }
-  
-  // 3. Check Yellow
-  if (
+    color = "magenta";
+    label = "Magenta";
+  } else if (
     lower.includes("yellow") || 
     /\b[a-z0-9]+y\b/i.test(str) || 
     /\b[a-z0-9]+y[\s\(\-]/.test(str) ||
     /toner y\b/i.test(str) ||
     lower.endsWith("y")
   ) {
-    return {
-      color: "yellow",
-      label: "Yellow",
-      badgeHtml: '<span class="color-tag yellow-tag"><i class="fa-solid fa-droplet"></i> Yellow</span>'
-    };
+    color = "yellow";
+    label = "Yellow";
   }
   
-  // Default: Black
+  let cleanModel = str;
+  cleanModel = cleanModel.replace(/^(cyan|magenta|yellow|black)\s+/i, '');
+  const displayText = `${label} ${cleanModel}`;
+  const badgeHtml = `<span class="toner-color-text toner-color-${color}"><i class="fa-solid fa-droplet"></i> ${displayText}</span>`;
+  
   return {
-    color: "black",
-    label: "Black",
-    badgeHtml: '<span class="color-tag black-tag"><i class="fa-solid fa-droplet"></i> Black</span>'
+    color,
+    label,
+    displayText,
+    badgeHtml
   };
 }
 
@@ -955,13 +947,13 @@ function renderWizardStep2Tonere(tonersList) {
     card.className = `card-select-item card-color-${colorInfo.color}`;
     card.onclick = () => {
       wizardSelectedToner = t;
-      document.getElementById("summary-toner-badge-final").innerText = `Toner: ${colorInfo.label} ${t.denumire_tip}`;
+      document.getElementById("summary-toner-badge-final").innerText = `Toner: ${colorInfo.displayText}`;
       goToWizardStep(3);
     };
     
     card.innerHTML = `
-      <div class="card-title">${colorInfo.badgeHtml} <strong>${t.denumire_tip}</strong></div>
-      <div class="card-subtitle">Stoc disponibil: <strong>${t.stoc} buc</strong></div>
+      <div class="card-title">${colorInfo.badgeHtml}</div>
+      <div class="card-subtitle" style="margin-top: 6px;">Stoc disponibil: <strong>${t.stoc} buc</strong></div>
       <div class="card-subtitle">Consum Referință: ${(t.consum_referinta || 105000).toLocaleString()} pagini</div>
     `;
     container.appendChild(card);
