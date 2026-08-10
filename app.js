@@ -474,11 +474,12 @@ function renderTonersTable() {
     const isLow = t.stoc <= 2;
     const badgeClass = isLow ? "badge-stock-low" : "badge-stock-ok";
     const aparateList = (t.aparate_compatibile || []).map(a => a.nume_aparat).join(", ") || "Generala";
+    const colorInfo = getColorBadgeInfo(t.denumire_tip);
     
     tr.innerHTML = `
-      <td><strong>${t.denumire_tip}</strong></td>
+      <td>${colorInfo.badgeHtml}</td>
       <td><span class="office-badge">${t.office_nume || 'PIM'}</span></td>
-      <td>${getColorBadge(t.denumire_tip)}</td>
+      <td><span class="toner-color-text toner-color-${colorInfo.color}"><i class="fa-solid fa-droplet"></i> ${colorInfo.label}</span></td>
       <td><span class="badge ${badgeClass}">${t.stoc} buc</span></td>
       <td>${(t.consum_referinta || 0).toLocaleString()} pagini</td>
       <td><small style="color:#94a3b8;">${aparateList}</small></td>
@@ -688,7 +689,7 @@ function renderHistoryTable() {
     tr.innerHTML = `
       <td><strong>${h.id_istoric_schimbare}</strong></td>
       <td><strong>${h.nume_aparat}</strong></td>
-      <td>${colorBadge} <strong>${h.denumire_tip}</strong></td>
+      <td>${colorBadge}</td>
       <td><span class="office-badge">${h.office_nume || 'PIM'}</span></td>
       <td><i class="fa-solid fa-user"></i> ${h.nume_operator || h.username}</td>
       <td><code>${(h.contor || 0).toLocaleString()}</code><br><small style="color:#94a3b8;">Ref: ${(h.consum_referinta || 105000).toLocaleString()}</small></td>
@@ -738,7 +739,7 @@ function renderWizardRecentTable() {
     tr.innerHTML = `
       <td><strong>${h.id_istoric_schimbare}</strong></td>
       <td><strong>${h.nume_aparat}</strong></td>
-      <td>${colorBadge} <strong>${h.denumire_tip}</strong></td>
+      <td>${colorBadge}</td>
       <td><span class="office-badge">${h.office_nume || 'PIM'}</span></td>
       <td>${h.nume_operator || h.username}</td>
       <td><code>${(h.contor || 0).toLocaleString()}</code> / ${(h.consum_referinta || 105000).toLocaleString()}</td>
