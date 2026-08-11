@@ -7,10 +7,10 @@ $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
 
 $officesMap = [
     2 => 'Independenței',
-    3 => 'TUDOR',
-    4 => 'TIPO',
-    5 => 'SMÂRDAN',
-    6 => 'UMF2'
+    3 => 'Tudor',
+    4 => 'Tipografie',
+    5 => 'Smârdan',
+    6 => 'UMF 2'
 ];
 
 if ($action === 'list') {

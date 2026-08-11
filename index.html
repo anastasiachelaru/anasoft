@@ -119,12 +119,12 @@
         <div class="office-selector-wrap">
           <i class="fa-solid fa-building"></i>
           <select id="office-filter-select" onchange="changeOfficeFilter(this.value)">
-            <option value="all">Toate Punctele PIM Iași</option>
-            <option value="2">Punct Independenței</option>
-            <option value="3">Punct TUDOR</option>
-            <option value="4">Punct TIPO (Tipografie)</option>
-            <option value="5">Punct SMÂRDAN</option>
-            <option value="6">Punct UMF 2</option>
+            <option value="all">Toate Sediile PIM Iași</option>
+            <option value="2">Sediu Independenței</option>
+            <option value="3">Sediu Tudor</option>
+            <option value="4">Sediu Tipografie</option>
+            <option value="5">Sediu Smârdan</option>
+            <option value="6">Sediu UMF 2</option>
           </select>
         </div>
       </div>
@@ -257,7 +257,7 @@
               <thead>
                 <tr>
                   <th>Denumire & Model Toner</th>
-                  <th>Punct de Lucru (Sediu)</th>
+                  <th>Sediu</th>
                   <th>Culoare</th>
                   <th>Stoc Curent</th>
                   <th>Consum Referință</th>
@@ -276,7 +276,7 @@
           <div class="section-header">
             <div>
               <h3><i class="fa-solid fa-clock-rotate-left text-yellow"></i> Istoric Schimbări Tonere</h3>
-              <p class="section-subtitle">Jurnalul complet al schimburilor de toner efectuate în punctele PIM Iași</p>
+              <p class="section-subtitle">Jurnalul complet al schimburilor de toner efectuate în sediile PIM Iași</p>
             </div>
           </div>
 
@@ -313,9 +313,14 @@
               <h3><i class="fa-solid fa-users-gear text-cyan"></i> Administrare Utilizatori & Setare PIN 6 Cifre</h3>
               <p class="section-subtitle">Gestiunea conturilor angajaților PIM, rolurilor și codurilor PIN</p>
             </div>
-            <button class="btn btn-primary btn-lg" onclick="openNewUserModal()">
-              <i class="fa-solid fa-user-plus"></i> Utilizator Nou
-            </button>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <button class="btn btn-secondary btn-lg" onclick="openEditUserModal()">
+                <i class="fa-solid fa-user-pen"></i> Modificare Date
+              </button>
+              <button class="btn btn-primary btn-lg" onclick="openNewUserModal()">
+                <i class="fa-solid fa-user-plus"></i> Utilizator Nou
+              </button>
+            </div>
           </div>
 
           <div class="table-card">
@@ -324,7 +329,7 @@
                 <tr>
                   <th>Nume Complet & Username</th>
                   <th>Rol Acces</th>
-                  <th>Punct Lucru (Sediu)</th>
+                  <th>Sediu</th>
                   <th>Cod PIN / Parolă</th>
                   <th>Status Cont</th>
                   <th>Acțiuni</th>
@@ -560,10 +565,10 @@
             <label for="newuser-office">Sediu *</label>
             <select id="newuser-office" required>
               <option value="2">Independenței</option>
-              <option value="3">TUDOR</option>
-              <option value="4" selected>Tipografie (TIPO)</option>
-              <option value="5">SMÂRDAN</option>
-              <option value="6">UMF2</option>
+              <option value="3">Tudor</option>
+              <option value="4" selected>Tipografie</option>
+              <option value="5">Smârdan</option>
+              <option value="6">UMF 2</option>
             </select>
           </div>
 
@@ -611,6 +616,86 @@
         <div class="modal-footer" style="margin-top: 24px;">
           <button type="button" class="btn btn-secondary" onclick="closeModal('modal-new-user')">Renunță</button>
           <button type="submit" class="btn btn-success"><i class="fa-solid fa-floppy-disk"></i> Salvează</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL MODIFICARE DATE UTILIZATOR -->
+  <div id="modal-edit-user" class="modal-overlay hidden">
+    <div class="modal-card" style="max-width: 680px;">
+      <div class="modal-header">
+        <h4 style="display: flex; align-items: center; gap: 10px; color: #3b82f6;">
+          <i class="fa-solid fa-user-pen"></i> MODIFICARE DATE UTILIZATOR
+        </h4>
+        <button class="modal-close-btn" onclick="closeModal('modal-edit-user')">&times;</button>
+      </div>
+
+      <form onsubmit="handleEditUserSubmit(event)">
+        <!-- SELECTARE UTILIZATOR -->
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label for="edituser-select" style="color: #60a5fa; font-weight: 700;">Selectează Angajat / Operator pentru Modificare *</label>
+          <select id="edituser-select" onchange="onEditUserSelectChange()" required style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(59, 130, 246, 0.4); color: #fff; padding: 10px; border-radius: 8px; width: 100%;">
+            <!-- Populat dinamic -->
+          </select>
+        </div>
+
+        <h5 style="color: #3b82f6; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px; border-bottom: 1px solid rgba(59, 130, 246, 0.3); padding-bottom: 6px;">
+          ACTUALIZARE DATE & PUNCT DE LUCRU
+        </h5>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label for="edituser-office">Sediu *</label>
+            <select id="edituser-office" required>
+              <option value="2">Independenței</option>
+              <option value="3">Tudor</option>
+              <option value="4">Tipografie</option>
+              <option value="5">Smârdan</option>
+              <option value="6">UMF 2</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="edituser-username">Nume de utilizator *</label>
+            <input type="text" id="edituser-username" placeholder="ex: ioanap" required>
+          </div>
+
+          <div class="form-group">
+            <label for="edituser-role">Rol Acces *</label>
+            <select id="edituser-role" required>
+              <option value="operator">Operator (Angajat)</option>
+              <option value="admin">Administrator</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="edituser-fullname">Nume complet</label>
+            <input type="text" id="edituser-fullname" placeholder="ex: Ioana Popescu">
+          </div>
+        </div>
+
+        <h5 style="color: #3b82f6; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 20px; margin-bottom: 12px; border-bottom: 1px solid rgba(59, 130, 246, 0.3); padding-bottom: 6px;">
+          SCHIMBARE PAROLĂ & PIN
+        </h5>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label for="edituser-pin">Cod PIN (6 cifre) *</label>
+            <input type="text" id="edituser-pin" maxlength="6" pattern="[0-9]{6}" placeholder="ex: 123456" required>
+          </div>
+
+          <div class="form-group">
+            <label for="edituser-password">Parolă Nouă (opțional)</label>
+            <input type="password" id="edituser-password" placeholder="••••••••">
+          </div>
+        </div>
+
+        <div class="modal-footer" style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 12px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-edit-user')">Anulează</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="fa-solid fa-floppy-disk"></i> Salvează Modificările
+          </button>
         </div>
       </form>
     </div>

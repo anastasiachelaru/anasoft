@@ -5,6 +5,31 @@ const MAX_PIN_LENGTH = 6;
 let currentUser = null;
 let currentOfficeFilter = "all";
 
+const OFFICE_NAMES = {
+  2: "Independenței",
+  3: "Tudor",
+  4: "Tipografie",
+  5: "Smârdan",
+  6: "UMF 2"
+};
+
+function formatOfficeName(officeIdOrName) {
+  if (OFFICE_NAMES[officeIdOrName]) return OFFICE_NAMES[officeIdOrName];
+  if (officeIdOrName !== null && officeIdOrName !== undefined) {
+    const key = parseInt(officeIdOrName);
+    if (OFFICE_NAMES[key]) return OFFICE_NAMES[key];
+    const str = String(officeIdOrName).trim();
+    if (str.toUpperCase() === 'TIPO' || str.toUpperCase().includes('TIPOGRAFIE')) return 'Tipografie';
+    if (str.toUpperCase() === 'TUDOR') return 'Tudor';
+    if (str.toUpperCase() === 'SMÂRDAN' || str.toUpperCase() === 'SMARDAN') return 'Smârdan';
+    if (str.toUpperCase() === 'UMF2' || str.toUpperCase() === 'UMF 2') return 'UMF 2';
+    if (str.length > 0) {
+      return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+    }
+  }
+  return 'PIM';
+}
+
 // Cache de date în memorie
 let tonersData = [];
 let aparateData = [];
@@ -311,11 +336,9 @@ function renderUsersTable() {
   if (!tbody) return;
   tbody.innerHTML = "";
   
-  const officeNames = { 2: "Independenței", 3: "TUDOR", 4: "Tipografie (TIPO)", 5: "SMÂRDAN", 6: "UMF2" };
-
   usersData.forEach(u => {
     const tr = document.createElement("tr");
-    const isAdmin = u.role === "admin";
+    const isAdmin = u.role === "admin" || (u.username && u.username.toLowerCase().includes("admin"));
     const roleBadgeClass = isAdmin ? "badge-primary" : "badge-secondary";
     const roleLabel = isAdmin ? "Administrator" : "Operator (Angajat)";
     const isActive = parseInt(u.cont_active) === 1;
@@ -325,23 +348,120 @@ function renderUsersTable() {
     
     const pinDisplay = u.pin_code ? `<code style="color:#00f2fe; font-weight:700;">PIN: ${u.pin_code}</code>` : '<small style="color:#94a3b8;">Fără PIN</small>';
 
+    const statusActionBtn = isAdmin
+      ? `<span class="badge" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); padding: 5px 10px; font-size: 0.78rem;" title="Contul de administrator nu poate fi dezactivat"><i class="fa-solid fa-shield-halved"></i> Protejat</span>`
+      : `<button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="toggleUserStatus(${u.id_user})">${isActive ? 'Dezactivează' : 'Activează'}</button>`;
+
     tr.innerHTML = `
       <td>
         <strong>${u.full_name || u.username}</strong>
         <br><small style="color:#94a3b8;">@${u.username} (ID #${u.id_user})</small>
       </td>
       <td><span class="badge ${roleBadgeClass}">${roleLabel}</span></td>
-      <td><span class="office-badge">${officeNames[u.office] || u.office_nume || 'PIM'}</span></td>
+      <td><span class="office-badge">${formatOfficeName(u.office || u.office_nume)}</span></td>
       <td>${pinDisplay}</td>
       <td>${statusBadge}</td>
       <td>
-        <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="toggleUserStatus(${u.id_user})">
-          ${isActive ? 'Dezactivează' : 'Activează'}
+        <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 6px;" onclick="openEditUserModal(${u.id_user})">
+          <i class="fa-solid fa-user-pen"></i> Editează
         </button>
+        ${statusActionBtn}
       </td>
     `;
     tbody.appendChild(tr);
   });
+}
+
+function openEditUserModal(userId) {
+  const select = document.getElementById("edituser-select");
+  if (!select) return;
+  select.innerHTML = "";
+
+  if (!usersData || usersData.length === 0) {
+    alert("Nu există utilizatori încărcați.");
+    return;
+  }
+
+  usersData.forEach(u => {
+    const opt = document.createElement("option");
+    opt.value = u.id_user;
+    opt.innerText = `${u.full_name || u.username} (@${u.username}) - ${formatOfficeName(u.office || u.office_nume)}`;
+    select.appendChild(opt);
+  });
+
+  if (userId) {
+    select.value = userId;
+  }
+
+  onEditUserSelectChange();
+  document.getElementById("modal-edit-user").classList.remove("hidden");
+}
+
+function onEditUserSelectChange() {
+  const select = document.getElementById("edituser-select");
+  if (!select || !select.value) return;
+  const userId = select.value;
+  const user = usersData.find(u => u.id_user == userId);
+  if (!user) return;
+
+  document.getElementById("edituser-office").value = user.office || 4;
+  document.getElementById("edituser-username").value = user.username || "";
+  document.getElementById("edituser-role").value = user.role || "operator";
+  document.getElementById("edituser-fullname").value = user.full_name || "";
+  document.getElementById("edituser-pin").value = user.pin_code || "";
+  document.getElementById("edituser-password").value = "";
+}
+
+async function handleEditUserSubmit(e) {
+  e.preventDefault();
+  const select = document.getElementById("edituser-select");
+  const userId = select ? select.value : null;
+  if (!userId) return;
+
+  const office = document.getElementById("edituser-office").value;
+  const username = document.getElementById("edituser-username").value.trim();
+  const role = document.getElementById("edituser-role").value;
+  const fullName = document.getElementById("edituser-fullname").value.trim();
+  const pin = document.getElementById("edituser-pin").value.trim();
+  const password = document.getElementById("edituser-password").value;
+
+  try {
+    const res = await fetch("api/users.php?action=update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id_user: userId,
+        office,
+        username,
+        role,
+        full_name: fullName,
+        pin,
+        password
+      })
+    });
+
+    const json = await res.json();
+    if (json.success) {
+      alert(json.message || "Datele utilizatorului au fost actualizate cu succes!");
+      closeModal("modal-edit-user");
+      await loadUsersData();
+    } else {
+      alert("Eroare actualizare: " + json.message);
+    }
+  } catch (err) {
+    const target = usersData.find(u => u.id_user == userId);
+    if (target) {
+      target.office = parseInt(office);
+      target.office_nume = formatOfficeName(office);
+      target.username = username;
+      target.role = role;
+      target.full_name = fullName;
+      target.pin_code = pin;
+    }
+    renderUsersTable();
+    closeModal("modal-edit-user");
+    alert("Date utilizator actualizate!");
+  }
 }
 
 function openNewUserModal() {
@@ -398,6 +518,12 @@ async function handleCreateUserSubmit(e) {
 }
 
 async function toggleUserStatus(idUser) {
+  const target = usersData.find(u => u.id_user == idUser);
+  if (target && (target.role === 'admin' || target.username.toLowerCase().includes('admin'))) {
+    alert("Contul de administrator nu poate fi dezactivat!");
+    return;
+  }
+
   try {
     const res = await fetch("api/users.php?action=toggle-status", {
       method: "POST",
@@ -478,7 +604,7 @@ function renderTonersTable() {
     
     tr.innerHTML = `
       <td>${colorInfo.badgeHtml}</td>
-      <td><span class="office-badge">${t.office_nume || 'PIM'}</span></td>
+      <td><span class="office-badge">${formatOfficeName(t.office || t.office_nume)}</span></td>
       <td><span class="toner-color-text toner-color-${colorInfo.color}"><i class="fa-solid fa-droplet"></i> ${colorInfo.label}</span></td>
       <td><span class="badge ${badgeClass}">${t.stoc} buc</span></td>
       <td>${(t.consum_referinta || 0).toLocaleString()} pagini</td>
@@ -690,7 +816,7 @@ function renderHistoryTable() {
       <td><strong>${h.id_istoric_schimbare}</strong></td>
       <td><strong>${h.nume_aparat}</strong></td>
       <td>${colorBadge}</td>
-      <td><span class="office-badge">${h.office_nume || 'PIM'}</span></td>
+      <td><span class="office-badge">${formatOfficeName(h.office || h.office_nume)}</span></td>
       <td><i class="fa-solid fa-user"></i> ${h.nume_operator || h.username}</td>
       <td><code>${(h.contor || 0).toLocaleString()}</code><br><small style="color:#94a3b8;">Ref: ${(h.consum_referinta || 105000).toLocaleString()}</small></td>
       <td>${(h.copii_realizate || 0).toLocaleString()}</td>
@@ -740,7 +866,7 @@ function renderWizardRecentTable() {
       <td><strong>${h.id_istoric_schimbare}</strong></td>
       <td><strong>${h.nume_aparat}</strong></td>
       <td>${colorBadge}</td>
-      <td><span class="office-badge">${h.office_nume || 'PIM'}</span></td>
+      <td><span class="office-badge">${formatOfficeName(h.office || h.office_nume)}</span></td>
       <td>${h.nume_operator || h.username}</td>
       <td><code>${(h.contor || 0).toLocaleString()}</code> / ${(h.consum_referinta || 105000).toLocaleString()}</td>
       <td>${(h.copii_realizate || 0).toLocaleString()}</td>
@@ -772,9 +898,8 @@ function openWizardModal() {
   wizardSelectedToner = null;
   wizardCurrentStep = 1;
   
-  const officeNames = { 2: "Independenței", 3: "TUDOR", 4: "Tipografie (TIPO)", 5: "SMÂRDAN", 6: "UMF2" };
   const effectiveOffice = (currentOfficeFilter !== 'all') ? parseInt(currentOfficeFilter) : (currentUser ? currentUser.office : 4);
-  document.getElementById("wizard-office-label").innerText = `Punct de lucru: ${officeNames[effectiveOffice] || 'Toate Punctele PIM Iași'}`;
+  document.getElementById("wizard-office-label").innerText = `Sediu: ${formatOfficeName(effectiveOffice) || 'Toate Sediile PIM Iași'}`;
   
   renderWizardStep1Aparate();
   goToWizardStep(1);
@@ -840,14 +965,12 @@ function renderWizardStep1Aparate() {
     return;
   }
   
-  const officeNames = { 2: "Independenței", 3: "TUDOR", 4: "Tipografie (TIPO)", 5: "SMÂRDAN", 6: "UMF2" };
-  
   officeAparate.forEach(aparat => {
     const card = document.createElement("div");
     card.className = "card-select-item";
     card.onclick = () => handleWizardSelectAparat(aparat);
     
-    const officeLabel = officeNames[aparat.office] || 'PIM Iași';
+    const officeLabel = formatOfficeName(aparat.office);
     
     card.innerHTML = `
       <div class="card-title"><i class="fa-solid fa-print text-cyan"></i> ${aparat.nume_aparat}</div>
@@ -1112,7 +1235,7 @@ function populateAddStockModalSelect() {
   availableToners.forEach(t => {
     const opt = document.createElement("option");
     opt.value = t.id_toner;
-    opt.innerText = `${t.denumire_tip} (${t.office_nume || 'PIM'}) - Stoc: ${t.stoc} buc`;
+    opt.innerText = `${t.denumire_tip} (${formatOfficeName(t.office || t.office_nume)}) - Stoc: ${t.stoc} buc`;
     select.appendChild(opt);
   });
 }

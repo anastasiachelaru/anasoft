@@ -8,10 +8,10 @@ $action = $input['action'] ?? $_GET['action'] ?? 'list';
 
 $officesMap = [
     2 => 'Independenței',
-    3 => 'TUDOR',
-    4 => 'TIPO',
-    5 => 'SMÂRDAN',
-    6 => 'UMF2'
+    3 => 'Tudor',
+    4 => 'Tipografie',
+    5 => 'Smârdan',
+    6 => 'UMF 2'
 ];
 
 if ($action === 'list') {
@@ -123,12 +123,85 @@ elseif ($action === 'create') {
         ]);
     }
 }
+elseif ($action === 'update') {
+    $idUser = (int)($input['id_user'] ?? 0);
+    $username = trim($input['username'] ?? '');
+    $role = trim($input['role'] ?? 'operator');
+    $office = (int)($input['office'] ?? 4);
+    $password = trim($input['password'] ?? '');
+    $fullName = trim($input['full_name'] ?? '');
+    $pin = trim($input['pin'] ?? '');
+
+    if ($idUser <= 0) {
+        sendResponse(false, 'ID utilizator invalid.', null, 400);
+    }
+    if (empty($username)) {
+        sendResponse(false, 'Numele de utilizator este obligatoriu.', null, 400);
+    }
+
+    $nameParts = explode(' ', $fullName, 2);
+    $firstName = $nameParts[0] ?? $username;
+    $lastName = $nameParts[1] ?? '';
+
+    if ($db) {
+        try {
+            $stmtCheck = $db->prepare("SELECT id_user FROM users WHERE username = :u AND id_user != :id");
+            $stmtCheck->execute([':u' => $username, ':id' => $idUser]);
+            if ($stmtCheck->fetch()) {
+                sendResponse(false, "Numele de utilizator '{$username}' este deja utilizat de alt cont.", null, 400);
+            }
+
+            if (!empty($password)) {
+                $hashedPass = md5($password);
+                $sql = "UPDATE users SET username = :username, role = :role, office = :office, first_name = :first_name, last_name = :last_name, pin_code = :pin, password = :password WHERE id_user = :id";
+                $params = [
+                    ':username' => $username,
+                    ':role' => $role,
+                    ':office' => $office,
+                    ':first_name' => $firstName,
+                    ':last_name' => $lastName,
+                    ':pin' => $pin,
+                    ':password' => $hashedPass,
+                    ':id' => $idUser
+                ];
+            } else {
+                $sql = "UPDATE users SET username = :username, role = :role, office = :office, first_name = :first_name, last_name = :last_name, pin_code = :pin WHERE id_user = :id";
+                $params = [
+                    ':username' => $username,
+                    ':role' => $role,
+                    ':office' => $office,
+                    ':first_name' => $firstName,
+                    ':last_name' => $lastName,
+                    ':pin' => $pin,
+                    ':id' => $idUser
+                ];
+            }
+
+            $stmt = $db->prepare($sql);
+            $stmt->execute($params);
+
+            sendResponse(true, "Datele utilizatorului '@{$username}' au fost actualizate cu succes.");
+        } catch (Throwable $e) {
+            sendResponse(false, 'Eroare modificare utilizator: ' . $e->getMessage(), null, 500);
+        }
+    } else {
+        sendResponse(true, "Date utilizator modificate (Demo).");
+    }
+}
 elseif ($action === 'toggle-status') {
     $idUser = (int)($input['id_user'] ?? 0);
     if ($idUser <= 0) sendResponse(false, 'ID utilizator invalid.', null, 400);
     
     if ($db) {
         try {
+            $stmtCheck = $db->prepare("SELECT role, username FROM users WHERE id_user = :id");
+            $stmtCheck->execute([':id' => $idUser]);
+            $userRow = $stmtCheck->fetch();
+
+            if ($userRow && ($userRow['role'] === 'admin' || strtolower($userRow['username']) === 'admin')) {
+                sendResponse(false, 'Conturile de administrator nu pot fi dezactivate.', null, 400);
+            }
+
             $stmt = $db->prepare("UPDATE users SET cont_active = IF(cont_active=1, 0, 1) WHERE id_user = :id");
             $stmt->execute([':id' => $idUser]);
             sendResponse(true, 'Statusul contului a fost schimbat.');
