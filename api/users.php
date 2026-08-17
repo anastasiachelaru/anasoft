@@ -256,6 +256,30 @@ elseif ($action === 'toggle-status') {
         sendResponse(true, 'Status modificat (Demo).');
     }
 }
+elseif ($action === 'delete') {
+    $idUser = (int)($input['id_user'] ?? 0);
+    if ($idUser <= 0) sendResponse(false, 'ID utilizator invalid.', null, 400);
+    
+    if ($db) {
+        try {
+            $stmtCheck = $db->prepare("SELECT role, username FROM users WHERE id_user = :id");
+            $stmtCheck->execute([':id' => $idUser]);
+            $userRow = $stmtCheck->fetch();
+
+            if ($userRow && ($userRow['role'] === 'admin' || strtolower($userRow['username']) === 'admin')) {
+                sendResponse(false, 'Conturile de administrator nu pot fi șterse.', null, 400);
+            }
+
+            $stmt = $db->prepare("DELETE FROM users WHERE id_user = :id");
+            $stmt->execute([':id' => $idUser]);
+            sendResponse(true, 'Contul de utilizator a fost șters definitiv din sistem.');
+        } catch (Throwable $e) {
+            sendResponse(false, 'Eroare ștergere utilizator: ' . $e->getMessage(), null, 500);
+        }
+    } else {
+        sendResponse(true, 'Utilizator șters (Demo).');
+    }
+}
 else {
     sendResponse(false, 'Acțiune invalidă.', null, 400);
 }

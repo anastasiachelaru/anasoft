@@ -39,8 +39,8 @@ if ($action === 'login-pin') {
             }
         }
 
-        // Căutare utilizator după PIN
-        $stmt = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active, pin_code, password FROM users WHERE cont_active = 1");
+        // Căutare utilizator după PIN (toți utilizatorii pentru a verifica și statusul contului)
+        $stmt = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active, pin_code, password FROM users");
         $stmt->execute();
         $users = $stmt->fetchAll();
         
@@ -55,6 +55,10 @@ if ($action === 'login-pin') {
         }
         
         if ($matchedUser) {
+            if ((int)$matchedUser['cont_active'] === 0 || $matchedUser['cont_active'] === '0') {
+                sendResponse(false, 'Contul tău a fost dezactivat de către un administrator. Nu te poți conecta până nu este reactivat.', null, 403);
+            }
+
             unset($matchedUser['password']);
             unset($matchedUser['pin_code']);
             sendResponse(true, 'Autentificare reușită cu PIN!', [
@@ -62,7 +66,7 @@ if ($action === 'login-pin') {
                 'token' => bin2hex(random_bytes(16))
             ]);
         } else {
-            sendResponse(false, 'Cod PIN incorect sau cont inactiv.', null, 401);
+            sendResponse(false, 'Cod PIN incorect.', null, 401);
         }
     } else {
         // Mock fallback pentru demo când DB nu este activă local
@@ -81,7 +85,7 @@ if ($action === 'login-pin') {
                 'token' => 'demo_token_' . time()
             ]);
         } else {
-            sendResponse(false, 'PIN incorect (Folosește 000000000000 pentru Admin sau PIN-ul de 6 cifre pentru Operator).', null, 401);
+            sendResponse(false, 'PIN incorect.', null, 401);
         }
     }
 } 
@@ -94,18 +98,21 @@ elseif ($action === 'login-password') {
     }
     
     if ($db) {
-        $stmt = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active, password FROM users WHERE username = :username AND cont_active = 1");
+        $stmt = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active, password FROM users WHERE username = :username");
         $stmt->execute([':username' => $username]);
         $user = $stmt->fetch();
         
         if ($user) {
             $passwordValid = false;
-            // Suport MD5 legacy din baza de date PIM + password_verify modern
             if ($user['password'] === md5($password) || password_verify($password, $user['password']) || $user['password'] === $password) {
                 $passwordValid = true;
             }
             
             if ($passwordValid) {
+                if ((int)$user['cont_active'] === 0) {
+                    sendResponse(false, 'Contul tău a fost dezactivat de către un administrator. Nu te poți conecta până nu este reactivat.', null, 403);
+                }
+
                 unset($user['password']);
                 sendResponse(true, 'Autentificare reușită!', [
                     'user' => $user,

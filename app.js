@@ -437,8 +437,13 @@ function renderUsersTable() {
     const pinPassCombined = `<div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start;">${pinDisplay}${passDisplay}</div>`;
 
     const statusActionBtn = isAdmin
-      ? `<span class="badge" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); padding: 5px 10px; font-size: 0.78rem;" title="Contul de administrator nu poate fi dezactivat"><i class="fa-solid fa-shield-halved"></i> Protejat</span>`
-      : `<button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="toggleUserStatus(${u.id_user})">${isActive ? 'Dezactivează' : 'Activează'}</button>`;
+      ? `<span class="badge" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); padding: 5px 10px; font-size: 0.78rem;" title="Conturile de administrator nu pot fi dezactivate sau șterse"><i class="fa-solid fa-shield-halved"></i> Protejat</span>`
+      : `
+        <div style="display:flex; gap:6px; align-items:center;">
+          <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="toggleUserStatus(${u.id_user})">${isActive ? 'Dezactivează' : 'Activează'}</button>
+          <button class="btn btn-outline-danger" style="padding: 4px 8px; font-size: 0.8rem;" onclick="deleteUser(${u.id_user}, '${u.username}')" title="Șterge definitiv contul"><i class="fa-solid fa-trash"></i> Șterge</button>
+        </div>
+      `;
 
     tr.innerHTML = `
       <td>
@@ -451,10 +456,12 @@ function renderUsersTable() {
       <td>${pinPassCombined}</td>
       <td>${statusBadge}</td>
       <td>
-        <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 6px;" onclick="openEditUserModal(${u.id_user})">
-          <i class="fa-solid fa-user-pen"></i> Editează
-        </button>
-        ${statusActionBtn}
+        <div style="display:flex; gap:6px; align-items:center;">
+          <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="openEditUserModal(${u.id_user})">
+            <i class="fa-solid fa-user-pen"></i> Editează
+          </button>
+          ${statusActionBtn}
+        </div>
       </td>
     `;
     tbody.appendChild(tr);
@@ -654,6 +661,35 @@ async function toggleUserStatus(idUser) {
       await loadUsersData();
     } else {
       alert("Eroare status: " + json.message);
+    }
+  } catch (err) {
+    alert("Eroare conectare server.");
+  }
+}
+
+async function deleteUser(idUser, username) {
+  const target = usersData.find(u => u.id_user == idUser);
+  if (target && (target.role === 'admin' || (target.username && target.username.toLowerCase().includes('admin')))) {
+    alert("Conturile de administrator nu pot fi șterse!");
+    return;
+  }
+
+  if (!confirm(`Ești sigur că vrei să ștergi definitiv contul de operator @${username || idUser}? Această acțiune este ireversibilă.`)) {
+    return;
+  }
+
+  try {
+    const res = await fetch("api/users.php?action=delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id_user: idUser })
+    });
+    const json = await res.json();
+    if (json.success) {
+      alert(json.message || "Contul a fost șters.");
+      await loadUsersData();
+    } else {
+      alert("Eroare ștergere: " + json.message);
     }
   } catch (err) {
     alert("Eroare conectare server.");
