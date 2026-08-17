@@ -1480,12 +1480,64 @@ section::-webkit-scrollbar-thumb:hover {
 /* ----------------------------------------------------
    STILURI MODAL GESTIUNE TIPURI TONERE & APARATE
 ---------------------------------------------------- */
+.action-buttons {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+  justify-content: flex-end !important;
+}
+
+.modal-card {
+  max-height: 90vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  background: #0f172a !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8) !important;
+}
+
+.modal-header {
+  padding: 18px 24px !important;
+  background: rgba(15, 23, 42, 0.95) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+}
+
+.manage-body {
+  padding: 24px !important;
+  overflow-y: auto !important;
+  flex: 1 !important;
+  max-height: calc(90vh - 120px) !important;
+}
+
+.manage-body::-webkit-scrollbar {
+  width: 8px;
+}
+.manage-body::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+}
+.manage-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+.manage-body::-webkit-scrollbar-thumb:hover {
+  background: var(--cyan-accent);
+}
+
 .manage-tabs-bar {
   display: flex;
   gap: 12px;
-  margin-top: 16px;
+  margin-top: 12px;
   border-bottom: 1px solid var(--border-color);
   padding-bottom: 8px;
+  flex-shrink: 0;
 }
 
 .manage-tab-btn {
@@ -1531,41 +1583,59 @@ section::-webkit-scrollbar-thumb:hover {
   padding: 20px;
 }
 
-.checkbox-pill {
+.selected-chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 42px;
+  max-height: 120px;
+  overflow-y: auto;
+  padding: 8px 12px;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 10px;
+  margin-top: 4px;
+  margin-bottom: 12px;
+}
+
+.selected-chip {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  background: rgba(30, 41, 59, 0.7);
-  border: 1px solid var(--border-color);
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  color: var(--text-light);
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.3) 0%, rgba(56, 189, 248, 0.2) 100%);
+  border: 1px solid #38bdf8;
+  color: #f0f9ff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 16px;
+}
+
+.selected-chip.magenta {
+  background: linear-gradient(135deg, rgba(219, 39, 119, 0.3) 0%, rgba(244, 114, 182, 0.2) 100%);
+  border-color: #f472b6;
+}
+
+.chip-remove-btn {
   cursor: pointer;
-  user-select: none;
-  transition: all 0.2s;
+  color: #ef4444;
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-left: 4px;
+  transition: color 0.15s;
+}
+.chip-remove-btn:hover {
+  color: #ff8080;
 }
 
-.checkbox-pill:hover {
-  border-color: var(--cyan-accent);
-  color: #fff;
-}
-
-.checkbox-pill input[type="checkbox"] {
-  accent-color: var(--cyan-accent);
-  width: 15px;
-  height: 15px;
-  cursor: pointer;
-}
-
-.compatibility-grid {
+.compatibility-picker-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
   max-height: 180px;
   overflow-y: auto;
   padding: 10px;
-  background: rgba(9, 13, 22, 0.6);
+  background: rgba(9, 13, 22, 0.7);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
 }
@@ -1593,6 +1663,7 @@ section::-webkit-scrollbar-thumb:hover {
   accent-color: #3b82f6;
   width: 16px;
   height: 16px;
+  cursor: pointer;
 }
 
 .btn-warning {
@@ -1631,4 +1702,5 @@ section::-webkit-scrollbar-thumb:hover {
   color: #ef4444;
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
+
 

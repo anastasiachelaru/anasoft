@@ -1359,12 +1359,21 @@ let manageCatalogState = {
   legaturi: []
 };
 
+let selectedAparateIdsForToner = new Set();
+let selectedTonereIdsForAparat = new Set();
+
 async function openManageTypesModal() {
   const modal = document.getElementById("modal-manage-types");
   if (!modal) return;
 
   modal.classList.remove("hidden");
   switchManageTab('tonere');
+
+  const aparatSearch = document.getElementById("picker-aparat-search");
+  if (aparatSearch) aparatSearch.value = "";
+  const tonerSearch = document.getElementById("picker-toner-search");
+  if (tonerSearch) tonerSearch.value = "";
+
   await loadManageCatalogData();
 }
 
@@ -1404,43 +1413,177 @@ async function loadManageCatalogData() {
 
   renderManageTonersView();
   renderManageAparateView();
-  populateManageCheckboxes();
+  renderAparatePicker();
+  renderSelectedAparateChips();
+  renderTonerePicker();
+  renderSelectedTonereChips();
 }
 
-function populateManageCheckboxes() {
-  // Populam checkbox-urile cu aparate pentru crearea tonerului nou
-  const aparateWrap = document.getElementById("newtoner-aparate-checkboxes");
-  if (aparateWrap) {
-    const activeAparate = (manageCatalogState.aparate || []).filter(a => parseInt(a.aparat_activ) === 1);
-    if (activeAparate.length === 0) {
-      aparateWrap.innerHTML = '<span style="color:#94a3b8; font-size:0.85rem;">Nu există aparate create.</span>';
-    } else {
-      aparateWrap.innerHTML = activeAparate.map(a => `
-        <label class="checkbox-card">
-          <input type="checkbox" name="toner_aparat" value="${a.id_aparat}">
-          <span>${a.nume_aparat} (${formatOfficeName(a.office)})</span>
-        </label>
-      `).join('');
-    }
-  }
-
-  // Populam checkbox-urile cu tonere pentru crearea aparatului nou
-  const tonereWrap = document.getElementById("newaparat-tonere-checkboxes");
-  if (tonereWrap) {
-    const uniqueTipuri = manageCatalogState.tipuri || [];
-    if (uniqueTipuri.length === 0) {
-      tonereWrap.innerHTML = '<span style="color:#94a3b8; font-size:0.85rem;">Nu există tipuri de toner create.</span>';
-    } else {
-      tonereWrap.innerHTML = uniqueTipuri.map(t => `
-        <label class="checkbox-card">
-          <input type="checkbox" name="aparat_toner" value="${t.id_tip_toner}">
-          <span>${t.denumire_tip}</span>
-        </label>
-      `).join('');
-    }
-  }
+// ----------------------------------------------------
+// SEARCHABLE PICKER PENTRU APARATE (LA CREARE TONER)
+// ----------------------------------------------------
+function onAparatPickerSearch(query) {
+  renderAparatePicker(query);
 }
 
+function renderAparatePicker(query = '') {
+  const container = document.getElementById("newtoner-aparate-checkboxes");
+  if (!container) return;
+
+  const activeAparate = (manageCatalogState.aparate || []).filter(a => parseInt(a.aparat_activ) === 1);
+  const q = query.trim().toLowerCase();
+
+  const filtered = activeAparate.filter(a => {
+    if (!q) return true;
+    const nameMatch = (a.nume_aparat || '').toLowerCase().includes(q);
+    const officeMatch = formatOfficeName(a.office).toLowerCase().includes(q);
+    return nameMatch || officeMatch;
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<span style="color:#94a3b8; font-size:0.85rem; padding:6px; grid-column: 1 / -1;">Nu s-a găsit niciun aparat cu numele "${query}".</span>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(a => {
+    const isChecked = selectedAparateIdsForToner.has(parseInt(a.id_aparat));
+    return `
+      <label class="checkbox-card" style="${isChecked ? 'border-color:#38bdf8; background:rgba(2, 132, 199, 0.25);' : ''}">
+        <input type="checkbox" value="${a.id_aparat}" ${isChecked ? 'checked' : ''} onchange="toggleAparatSelection(${a.id_aparat}, this.checked)">
+        <span>${a.nume_aparat} <small style="color:#94a3b8;">(${formatOfficeName(a.office)})</small></span>
+      </label>
+    `;
+  }).join('');
+}
+
+function toggleAparatSelection(idAparat, isChecked) {
+  const numId = parseInt(idAparat);
+  if (isChecked) {
+    selectedAparateIdsForToner.add(numId);
+  } else {
+    selectedAparateIdsForToner.delete(numId);
+  }
+
+  renderSelectedAparateChips();
+  const currentQuery = document.getElementById("picker-aparat-search")?.value || '';
+  renderAparatePicker(currentQuery);
+}
+
+function renderSelectedAparateChips() {
+  const chipsWrap = document.getElementById("selected-aparate-chips");
+  const countSpan = document.getElementById("picker-aparate-count");
+  if (countSpan) countSpan.innerText = selectedAparateIdsForToner.size;
+
+  if (!chipsWrap) return;
+
+  if (selectedAparateIdsForToner.size === 0) {
+    chipsWrap.innerHTML = '<span style="color:#64748b; font-size:0.8rem; padding:4px;">Niciun aparat selectat încă. Caută în caseta de mai sus și bifează aparatele dorite.</span>';
+    return;
+  }
+
+  const allAparate = manageCatalogState.aparate || [];
+  const selectedItems = Array.from(selectedAparateIdsForToner).map(id => {
+    return allAparate.find(a => parseInt(a.id_aparat) === id) || { id_aparat: id, nume_aparat: `Aparat #${id}`, office: 2 };
+  });
+
+  chipsWrap.innerHTML = selectedItems.map(a => `
+    <span class="selected-chip">
+      <span>${a.nume_aparat} (${formatOfficeName(a.office)})</span>
+      <span class="chip-remove-btn" onclick="toggleAparatSelection(${a.id_aparat}, false)">&times;</span>
+    </span>
+  `).join('');
+}
+
+function clearAllSelectedAparate() {
+  selectedAparateIdsForToner.clear();
+  renderSelectedAparateChips();
+  const currentQuery = document.getElementById("picker-aparat-search")?.value || '';
+  renderAparatePicker(currentQuery);
+}
+
+// ----------------------------------------------------
+// SEARCHABLE PICKER PENTRU TONERE (LA CREARE APARAT)
+// ----------------------------------------------------
+function onTonerPickerSearch(query) {
+  renderTonerePicker(query);
+}
+
+function renderTonerePicker(query = '') {
+  const container = document.getElementById("newaparat-tonere-checkboxes");
+  if (!container) return;
+
+  const tipuri = manageCatalogState.tipuri || [];
+  const q = query.trim().toLowerCase();
+
+  const filtered = tipuri.filter(t => {
+    if (!q) return true;
+    return (t.denumire_tip || '').toLowerCase().includes(q);
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<span style="color:#94a3b8; font-size:0.85rem; padding:6px; grid-column: 1 / -1;">Nu s-a găsit niciun toner cu numele "${query}".</span>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(t => {
+    const isChecked = selectedTonereIdsForAparat.has(parseInt(t.id_tip_toner));
+    return `
+      <label class="checkbox-card" style="${isChecked ? 'border-color:#f472b6; background:rgba(219, 39, 119, 0.25);' : ''}">
+        <input type="checkbox" value="${t.id_tip_toner}" ${isChecked ? 'checked' : ''} onchange="toggleTonerSelection(${t.id_tip_toner}, this.checked)">
+        <span>${t.denumire_tip}</span>
+      </label>
+    `;
+  }).join('');
+}
+
+function toggleTonerSelection(idTipToner, isChecked) {
+  const numId = parseInt(idTipToner);
+  if (isChecked) {
+    selectedTonereIdsForAparat.add(numId);
+  } else {
+    selectedTonereIdsForAparat.delete(numId);
+  }
+
+  renderSelectedTonereChips();
+  const currentQuery = document.getElementById("picker-toner-search")?.value || '';
+  renderTonerePicker(currentQuery);
+}
+
+function renderSelectedTonereChips() {
+  const chipsWrap = document.getElementById("selected-tonere-chips");
+  const countSpan = document.getElementById("picker-tonere-count");
+  if (countSpan) countSpan.innerText = selectedTonereIdsForAparat.size;
+
+  if (!chipsWrap) return;
+
+  if (selectedTonereIdsForAparat.size === 0) {
+    chipsWrap.innerHTML = '<span style="color:#64748b; font-size:0.8rem; padding:4px;">Niciun toner selectat încă. Caută în caseta de mai sus și bifează tonerele dorite.</span>';
+    return;
+  }
+
+  const allTipuri = manageCatalogState.tipuri || [];
+  const selectedItems = Array.from(selectedTonereIdsForAparat).map(id => {
+    return allTipuri.find(t => parseInt(t.id_tip_toner) === id) || { id_tip_toner: id, denumire_tip: `Toner #${id}` };
+  });
+
+  chipsWrap.innerHTML = selectedItems.map(t => `
+    <span class="selected-chip magenta">
+      <span>${t.denumire_tip}</span>
+      <span class="chip-remove-btn" onclick="toggleTonerSelection(${t.id_tip_toner}, false)">&times;</span>
+    </span>
+  `).join('');
+}
+
+function clearAllSelectedTonere() {
+  selectedTonereIdsForAparat.clear();
+  renderSelectedTonereChips();
+  const currentQuery = document.getElementById("picker-toner-search")?.value || '';
+  renderTonerePicker(currentQuery);
+}
+
+// ----------------------------------------------------
+// RENDER TABELE SI SUBMIT HANDLERS
+// ----------------------------------------------------
 function renderManageTonersView() {
   const tbody = document.getElementById("manage-toners-tbody");
   if (!tbody) return;
@@ -1527,19 +1670,19 @@ async function handleCreateTonerTypeSubmit(e) {
   e.preventDefault();
   const denumire = document.getElementById("newtoner-name")?.value.trim();
   const consum = parseInt(document.getElementById("newtoner-consum")?.value || 95000);
-  
-  const officeNodes = document.querySelectorAll('input[name="toner_office"]:checked');
-  const offices = Array.from(officeNodes).map(n => parseInt(n.value));
-  
-  const aparateNodes = document.querySelectorAll('input[name="toner_aparat"]:checked');
-  const aparate_ids = Array.from(aparateNodes).map(n => parseInt(n.value));
+  const officeSel = document.getElementById("newtoner-office-select")?.value || 'all';
+
+  let offices = [];
+  if (officeSel === 'all') {
+    offices = [2, 3, 4, 5, 6];
+  } else {
+    offices = [parseInt(officeSel)];
+  }
+
+  const aparate_ids = Array.from(selectedAparateIdsForToner);
 
   if (!denumire) {
     alert("Te rugăm să introduci denumirea tonerului.");
-    return;
-  }
-  if (offices.length === 0) {
-    alert("Selectează cel puțin un sediu unde va fi adăugat tonerul.");
     return;
   }
 
@@ -1552,12 +1695,20 @@ async function handleCreateTonerTypeSubmit(e) {
     const json = await res.json();
     alert(json.message || "Toner creat cu succes!");
 
-    // Actualizam datele in frontend
+    document.getElementById("newtoner-name").value = "";
+    selectedAparateIdsForToner.clear();
+    renderSelectedAparateChips();
+    renderAparatePicker();
+
     await loadManageCatalogData();
     await loadTonersData();
-    document.getElementById("newtoner-name").value = "";
   } catch (err) {
     alert("Toner adăugat cu succes în catalog!");
+    document.getElementById("newtoner-name").value = "";
+    selectedAparateIdsForToner.clear();
+    renderSelectedAparateChips();
+    renderAparatePicker();
+
     await loadManageCatalogData();
     await loadTonersData();
   }
@@ -1568,8 +1719,7 @@ async function handleCreateAparatSubmit(e) {
   const nume_aparat = document.getElementById("newaparat-name")?.value.trim();
   const office = parseInt(document.getElementById("newaparat-office")?.value || 2);
   
-  const tonereNodes = document.querySelectorAll('input[name="aparat_toner"]:checked');
-  const tonere_ids = Array.from(tonereNodes).map(n => parseInt(n.value));
+  const tonere_ids = Array.from(selectedTonereIdsForAparat);
 
   if (!nume_aparat) {
     alert("Te rugăm să introduci numele aparatului.");
@@ -1585,11 +1735,20 @@ async function handleCreateAparatSubmit(e) {
     const json = await res.json();
     alert(json.message || "Aparat creat cu succes!");
 
+    document.getElementById("newaparat-name").value = "";
+    selectedTonereIdsForAparat.clear();
+    renderSelectedTonereChips();
+    renderTonerePicker();
+
     await loadManageCatalogData();
     await loadAparateData();
-    document.getElementById("newaparat-name").value = "";
   } catch (err) {
     alert("Aparat adăugat cu succes în catalog!");
+    document.getElementById("newaparat-name").value = "";
+    selectedTonereIdsForAparat.clear();
+    renderSelectedTonereChips();
+    renderTonerePicker();
+
     await loadManageCatalogData();
     await loadAparateData();
   }
@@ -1604,7 +1763,6 @@ async function toggleTonerActiveStatus(idToner, targetStatus) {
     });
     const json = await res.json();
     
-    // Update local state
     const t = manageCatalogState.tonere.find(item => item.id_toner == idToner);
     if (t) t.toner_activ = targetStatus;
 
@@ -1639,4 +1797,5 @@ async function toggleAparatActiveStatus(idAparat, targetStatus) {
     await loadAparateData();
   }
 }
+
 
