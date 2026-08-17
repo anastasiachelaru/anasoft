@@ -1702,7 +1702,7 @@ function renderManageTonersView() {
         <td>${(t.consum_referinta || 105000).toLocaleString('ro-RO')} pag</td>
         <td><strong style="color: var(--cyan-accent);">${t.stoc || 0} buc</strong></td>
         <td>${stBadge}</td>
-        <td>${btnEdit}${btnAction}</td>
+        <td class="action-cell">${btnEdit}${btnAction}</td>
       </tr>
     `;
   }).join('');
@@ -1736,14 +1736,14 @@ function renderManageAparateView() {
       ? `<button class="btn btn-sm btn-outline-danger" onclick="toggleAparatActiveStatus(${a.id_aparat}, 0)"><i class="fa-solid fa-ban"></i> Dezactivează</button>`
       : `<button class="btn btn-sm btn-outline-success" onclick="toggleAparatActiveStatus(${a.id_aparat}, 1)"><i class="fa-solid fa-check-circle"></i> Activează</button>`;
 
-    const btnEdit = `<button class="btn btn-sm btn-outline-warning" style="margin-right: 6px;" onclick="openEditAparatModal(${a.id_aparat}, '${escapeQuotes(a.nume_aparat)}')"><i class="fa-solid fa-gauge-high"></i> Editează Index</button>`;
+    const btnEdit = `<button class="btn btn-sm btn-outline-warning" onclick="openEditAparatModal(${a.id_aparat}, '${escapeQuotes(a.nume_aparat)}')"><i class="fa-solid fa-gauge-high"></i> Editează Index</button>`;
 
     return `
       <tr>
         <td style="font-weight:600; color:#fff;">${a.nume_aparat}</td>
         <td>${formatOfficeName(a.office)}</td>
         <td>${stBadge}</td>
-        <td>${btnEdit}${btnAction}</td>
+        <td class="action-cell">${btnEdit}${btnAction}</td>
       </tr>
     `;
   }).join('');
