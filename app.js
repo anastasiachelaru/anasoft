@@ -1444,7 +1444,7 @@ function renderAparatePicker(query = '') {
   if (!container) return;
 
   const activeAparate = (manageCatalogState.aparate || []).filter(a => 
-    parseInt(a.aparat_activ) === 1 && parseInt(a.office) > 0
+    parseInt(a.aparat_activ) === 1 || a.aparat_activ === undefined
   );
   const selectedOffice = document.getElementById("newtoner-office-select")?.value || 'all';
   const q = query.trim().toLowerCase();
@@ -1463,7 +1463,7 @@ function renderAparatePicker(query = '') {
     const officeName = (selectedOffice !== 'all') ? formatOfficeName(selectedOffice) : '';
     const msg = officeName 
       ? `Nu există aparate active în ${officeName}${q ? ' care să se potrivească cu "' + query + '"' : ''}.`
-      : `Nu s-a găsit niciun aparat cu numele "${query}".`;
+      : `Nu s-a găsit niciun aparat activ cu numele sau căutarea "${query}".`;
     container.innerHTML = `<span style="color:#94a3b8; font-size:0.85rem; padding:6px; grid-column: 1 / -1;">${msg}</span>`;
     return;
   }
@@ -1478,6 +1478,7 @@ function renderAparatePicker(query = '') {
     `;
   }).join('');
 }
+
 
 function toggleAparatSelection(idAparat, isChecked) {
   const numId = parseInt(idAparat);
@@ -1805,15 +1806,17 @@ async function toggleTonerActiveStatus(idToner, targetStatus) {
     });
     const json = await res.json();
     
-    const t = manageCatalogState.tonere.find(item => item.id_toner == idToner);
+    const t = (manageCatalogState.tonere || []).find(item => item.id_toner == idToner);
     if (t) t.toner_activ = targetStatus;
 
     renderManageTonersView();
+    renderTonerePicker();
     await loadTonersData();
   } catch (err) {
-    const t = manageCatalogState.tonere.find(item => item.id_toner == idToner);
+    const t = (manageCatalogState.tonere || []).find(item => item.id_toner == idToner);
     if (t) t.toner_activ = targetStatus;
     renderManageTonersView();
+    renderTonerePicker();
     await loadTonersData();
   }
 }
@@ -1827,17 +1830,22 @@ async function toggleAparatActiveStatus(idAparat, targetStatus) {
     });
     const json = await res.json();
 
-    const a = manageCatalogState.aparate.find(item => item.id_aparat == idAparat);
+    const a = (manageCatalogState.aparate || []).find(item => item.id_aparat == idAparat);
     if (a) a.aparat_activ = targetStatus;
 
     renderManageAparateView();
+    renderAparatePicker();
     await loadAparateData();
+    renderWizardStep1Aparate();
   } catch (err) {
-    const a = manageCatalogState.aparate.find(item => item.id_aparat == idAparat);
+    const a = (manageCatalogState.aparate || []).find(item => item.id_aparat == idAparat);
     if (a) a.aparat_activ = targetStatus;
     renderManageAparateView();
+    renderAparatePicker();
     await loadAparateData();
+    renderWizardStep1Aparate();
   }
 }
+
 
 
