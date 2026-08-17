@@ -42,22 +42,22 @@ if ($action === 'login-pin') {
         }
     } else {
         // Mock fallback pentru demo când DB nu este activă local
-        if ($pin === '123456' || $pin === '8122' || $pin === '000000') {
-            $isAdmin = ($pin === '000000');
+        if ($pin === '123456' || $pin === '8122' || $pin === '000000000000' || $pin === '000000') {
+            $isAdmin = ($pin === '000000000000' || $pin === '000000');
             sendResponse(true, 'Autentificare Demo reușită!', [
                 'user' => [
                     'id_user' => $isAdmin ? 1 : 46,
-                    'username' => $isAdmin ? 'admin' : 'liviuc',
-                    'first_name' => $isAdmin ? 'Andrei' : 'Liviu',
-                    'last_name' => $isAdmin ? 'Petriu' : 'C.',
+                    'username' => $isAdmin ? 'admin' : 'operator',
+                    'first_name' => $isAdmin ? 'Admin' : 'Operator',
+                    'last_name' => 'PIM',
                     'role' => $isAdmin ? 'admin' : 'operator',
                     'office' => 2, // Independenței
-                    'email' => 'operator@pimcopy.ro'
+                    'email' => $isAdmin ? 'admin@pimcopy.ro' : 'operator@pimcopy.ro'
                 ],
                 'token' => 'demo_token_' . time()
             ]);
         } else {
-            sendResponse(false, 'PIN incorect (Incearcă 123456 pentru Angajat sau 000000 pentru Admin).', null, 401);
+            sendResponse(false, 'PIN incorect (Folosește 000000000000 pentru Admin sau PIN-ul de 6 cifre pentru Operator).', null, 401);
         }
     }
 } 

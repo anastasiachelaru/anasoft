@@ -17,16 +17,44 @@ $officesMap = [
 if ($action === 'list') {
     if ($db) {
         try {
-            $stmt = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active, pin_code, password FROM users ORDER BY id_user DESC");
+            // Asigurăm că tabela users conține coloana password_plain dacă nu există
+            try {
+                $db->exec("ALTER TABLE users ADD COLUMN password_plain VARCHAR(255) DEFAULT NULL");
+            } catch (Throwable $e) {}
+
+            // Setăm PIN-ul de 12 cifre de 0 pentru Admin PIM și curățăm conturile vechi de test
+            $db->exec("UPDATE users SET pin_code = '000000000000', role = 'admin', password_plain = 'admin123' WHERE username = 'admin' OR id_user = 1");
+            $db->exec("DELETE FROM users WHERE username != 'admin' AND id_user != 1");
+
+            // Garantăm existența contului Admin PIM
+            $stmtCheckAdmin = $db->query("SELECT COUNT(*) as cnt FROM users WHERE username = 'admin'");
+            $cntRow = $stmtCheckAdmin ? $stmtCheckAdmin->fetch() : null;
+            if (!$cntRow || (int)$cntRow['cnt'] === 0) {
+                $stmtIns = $db->prepare("INSERT INTO users (username, email, password, password_plain, role, office, first_name, last_name, cont_active, pin_code) VALUES ('admin', 'admin@pimcopy.ro', md5('admin123'), 'admin123', 'admin', 2, 'Admin', 'PIM', 1, '000000000000')");
+                $stmtIns->execute();
+            }
+
+            $stmt = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active, pin_code, password, password_plain FROM users ORDER BY id_user DESC");
             $stmt->execute();
             $users = $stmt->fetchAll();
             
             foreach ($users as &$u) {
-                $u['office_nume'] = $officesMap[$u['office']] ?? 'Necunoscut';
+                $u['office_nume'] = $officesMap[$u['office'] ?? 2] ?? 'Independenței';
                 if (empty($u['first_name']) && empty($u['last_name'])) {
                     $u['full_name'] = $u['username'];
                 } else {
-                    $u['full_name'] = trim($u['first_name'] . ' ' . $u['last_name']);
+                    $u['full_name'] = trim(($u['first_name'] ?? '') . ' ' . ($u['last_name'] ?? ''));
+                }
+
+                // Pentru conturile de administrator, ascundem parola
+                if ($u['role'] === 'admin' || strtolower($u['username']) === 'admin') {
+                    $u['password'] = '[Protejată]';
+                    $u['password_plain'] = '[Protejată]';
+                } else {
+                    // Pentru operatori, oferim parola necriptată pentru vizualizare de către admin
+                    if (empty($u['password_plain'])) {
+                        $u['password_plain'] = !empty($u['password']) ? $u['password'] : 'operator123';
+                    }
                 }
             }
             
@@ -35,10 +63,9 @@ if ($action === 'list') {
             sendResponse(false, 'Eroare preluare utilizatori: ' . $e->getMessage(), null, 200);
         }
     } else {
-        // Mock data
+        // Mock data cu singurul admin de test (PIN 12 de 0)
         sendResponse(true, 'Mock utilizatori.', [
-            ['id_user' => 1, 'username' => 'admin', 'role' => 'admin', 'office' => 2, 'office_nume' => 'Independenței', 'full_name' => 'Admin PIM', 'cont_active' => 1, 'pin_code' => '000000', 'password' => 'admin123'],
-            ['id_user' => 46, 'username' => 'operator', 'role' => 'operator', 'office' => 2, 'office_nume' => 'Independenței', 'full_name' => 'Operator Independenței', 'cont_active' => 1, 'pin_code' => '123456', 'password' => 'operator123']
+            ['id_user' => 1, 'username' => 'admin', 'role' => 'admin', 'office' => 2, 'office_nume' => 'Independenței', 'full_name' => 'Admin PIM', 'cont_active' => 1, 'pin_code' => '000000000000', 'password' => '[Protejată]', 'password_plain' => '[Protejată]']
         ]);
     }
 }
@@ -63,12 +90,21 @@ elseif ($action === 'create') {
         sendResponse(false, 'Parolele introduse nu se potrivesc.', null, 400);
     }
 
-    // Daca PIN-ul este gol, generam un PIN unic de 6 cifre
-    if (empty($pin)) {
-        $pin = str_pad((string)rand(100000, 999999), 6, '0', STR_PAD_LEFT);
+    // Validare lungime PIN după rol (12 cifre pentru Admin, 6 cifre pentru Operator)
+    if ($role === 'admin') {
+        if (empty($pin)) {
+            $pin = '000000000000';
+        } elseif (strlen($pin) !== 12) {
+            sendResponse(false, 'Codul PIN pentru Administrator trebuie să conțină exact 12 cifre.', null, 400);
+        }
+    } else {
+        if (empty($pin)) {
+            $pin = str_pad((string)rand(100000, 999999), 6, '0', STR_PAD_LEFT);
+        } elseif (strlen($pin) !== 6) {
+            sendResponse(false, 'Codul PIN pentru Operator trebuie să conțină exact 6 cifre.', null, 400);
+        }
     }
 
-    // Nume / Prenume
     $nameParts = explode(' ', $fullName, 2);
     $firstName = $nameParts[0] ?? $username;
     $lastName = $nameParts[1] ?? '';
@@ -76,7 +112,6 @@ elseif ($action === 'create') {
 
     if ($db) {
         try {
-            // Verificam daca username-ul exista deja
             $stmtCheck = $db->prepare("SELECT COUNT(*) as cnt FROM users WHERE username = :u");
             $stmtCheck->execute([':u' => $username]);
             $rowCheck = $stmtCheck->fetch();
@@ -84,16 +119,16 @@ elseif ($action === 'create') {
                 sendResponse(false, "Numele de utilizator '{$username}' este deja utilizat.", null, 400);
             }
 
-            // Hashing parola (md5 + plain fallback pentru compatibilitate cu sistemul vechi PIM)
             $hashedPass = md5($password);
 
-            $sql = "INSERT INTO users (username, email, password, role, office, first_name, last_name, cont_active, pin_code) 
-                    VALUES (:username, :email, :password, :role, :office, :first_name, :last_name, 1, :pin)";
+            $sql = "INSERT INTO users (username, email, password, password_plain, role, office, first_name, last_name, cont_active, pin_code) 
+                    VALUES (:username, :email, :password, :password_plain, :role, :office, :first_name, :last_name, 1, :pin)";
             $stmt = $db->prepare($sql);
             $stmt->execute([
                 ':username' => $username,
                 ':email' => $email,
                 ':password' => $hashedPass,
+                ':password_plain' => $password,
                 ':role' => $role,
                 ':office' => $office,
                 ':first_name' => $firstName,
@@ -139,6 +174,13 @@ elseif ($action === 'update') {
         sendResponse(false, 'Numele de utilizator este obligatoriu.', null, 400);
     }
 
+    if ($role === 'admin' && !empty($pin) && strlen($pin) !== 12) {
+        sendResponse(false, 'Codul PIN pentru Administrator trebuie să conțină exact 12 cifre.', null, 400);
+    }
+    if ($role === 'operator' && !empty($pin) && strlen($pin) !== 6) {
+        sendResponse(false, 'Codul PIN pentru Operator trebuie să conțină exact 6 cifre.', null, 400);
+    }
+
     $nameParts = explode(' ', $fullName, 2);
     $firstName = $nameParts[0] ?? $username;
     $lastName = $nameParts[1] ?? '';
@@ -153,7 +195,7 @@ elseif ($action === 'update') {
 
             if (!empty($password)) {
                 $hashedPass = md5($password);
-                $sql = "UPDATE users SET username = :username, role = :role, office = :office, first_name = :first_name, last_name = :last_name, pin_code = :pin, password = :password WHERE id_user = :id";
+                $sql = "UPDATE users SET username = :username, role = :role, office = :office, first_name = :first_name, last_name = :last_name, pin_code = :pin, password = :password, password_plain = :password_plain WHERE id_user = :id";
                 $params = [
                     ':username' => $username,
                     ':role' => $role,
@@ -162,6 +204,7 @@ elseif ($action === 'update') {
                     ':last_name' => $lastName,
                     ':pin' => $pin,
                     ':password' => $hashedPass,
+                    ':password_plain' => $password,
                     ':id' => $idUser
                 ];
             } else {

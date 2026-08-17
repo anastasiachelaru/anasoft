@@ -37,9 +37,19 @@
           </div>
         </div>
 
+        <!-- SELECTOR ROL VIZITATOR (OPERATOR VS ADMINISTRATOR) -->
+        <div class="role-selector-tabs" style="display: flex; gap: 10px; margin-bottom: 18px;">
+          <button id="role-operator-btn" class="role-tab-btn active" onclick="switchLoginRole('operator')" style="flex: 1; padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(56, 189, 248, 0.4); background: rgba(2, 132, 199, 0.25); color: #fff; font-weight: 700; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
+            <i class="fa-solid fa-user text-cyan"></i> Operator (6 Cifre)
+          </button>
+          <button id="role-admin-btn" class="role-tab-btn" onclick="switchLoginRole('admin')" style="flex: 1; padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(15, 23, 42, 0.6); color: var(--text-muted); font-weight: 600; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
+            <i class="fa-solid fa-crown text-yellow"></i> Administrator (12 Cifre)
+          </button>
+        </div>
+
         <div class="auth-tabs">
           <button id="tab-pin-btn" class="auth-tab-btn active" onclick="switchAuthTab('pin')">
-            <i class="fa-solid fa-calculator"></i> PIN (6 Cifre)
+            <i class="fa-solid fa-calculator"></i> PIN Acces
           </button>
           <button id="tab-pass-btn" class="auth-tab-btn" onclick="switchAuthTab('pass')">
             <i class="fa-solid fa-user-lock"></i> User & Parolă
@@ -48,9 +58,9 @@
 
         <!-- FORMULAR 1: AUTENTIFICARE PRIN PIN (KEYPAD) -->
         <div id="auth-pin-view" class="auth-subview active">
-          <p class="auth-instruction">Introdu codul PIN din 6 cifre atribuit contului tău:</p>
+          <p class="auth-instruction" id="pin-instruction-text">Introdu codul PIN din 6 cifre atribuit contului tău de Operator:</p>
           
-          <div class="pin-display">
+          <div class="pin-display" id="pin-dots-container">
             <span class="pin-dot" id="dot-0"></span>
             <span class="pin-dot" id="dot-1"></span>
             <span class="pin-dot" id="dot-2"></span>
@@ -74,8 +84,8 @@
             <button class="key-btn action-key" onclick="backspacePinKey()"><i class="fa-solid fa-delete-left"></i></button>
           </div>
 
-          <div class="demo-hint">
-            <i class="fa-solid fa-lightbulb"></i> PIN Demo Angajat: <code>123456</code> | Admin: <code>000000</code>
+          <div class="demo-hint" id="demo-hint-box">
+            <i class="fa-solid fa-lightbulb text-cyan"></i> PIN Operator Demo: <code>123456</code> (6 cifre)
           </div>
         </div>
 
@@ -83,13 +93,13 @@
         <div id="auth-pass-view" class="auth-subview">
           <form id="login-pass-form" onsubmit="handlePassLogin(event)">
             <div class="form-group">
-              <label for="input-username"><i class="fa-solid fa-user"></i> Utilizator (Username)</label>
-              <input type="text" id="input-username" placeholder="ex: poturuandreea sau admin" required>
+              <label for="input-username"><i class="fa-solid fa-user"></i> Nume Utilizator (Username)</label>
+              <input type="text" id="input-username" placeholder="ex: operator1 sau admin" required>
             </div>
             
             <div class="form-group">
-              <label for="input-password"><i class="fa-solid fa-key"></i> Parolă</label>
-              <input type="password" id="input-password" placeholder="Parolă" required>
+              <label for="input-password"><i class="fa-solid fa-key"></i> Parolă Acces</label>
+              <input type="password" id="input-password" placeholder="Parolă..." required>
             </div>
 
             <button type="submit" class="btn btn-primary btn-block">
@@ -98,7 +108,7 @@
           </form>
 
           <div class="demo-hint">
-            <i class="fa-solid fa-lightbulb"></i> Demo: User <code>operator</code> (sau <code>admin</code>) | Orice parolă
+            <i class="fa-solid fa-lightbulb"></i> Conectare cu User & Parolă disponibilă pentru Admin și Operatori
           </div>
         </div>
 
@@ -313,8 +323,8 @@
         <div id="section-utilizatori" class="app-section">
           <div class="section-header">
             <div>
-              <h3><i class="fa-solid fa-users-gear text-cyan"></i> Administrare Utilizatori & Setare PIN 6 Cifre</h3>
-              <p class="section-subtitle">Gestiunea conturilor angajaților PIM, rolurilor și codurilor PIN</p>
+              <h3><i class="fa-solid fa-users-gear text-cyan"></i> Administrare Utilizatori & Setare PIN (12 Cifre Admin / 6 Cifre Operator)</h3>
+              <p class="section-subtitle">Gestiunea conturilor angajaților PIM, rolurilor, parolelor și codurilor PIN</p>
             </div>
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
               <button class="btn btn-secondary btn-lg" onclick="openEditUserModal()">
@@ -582,8 +592,8 @@
 
           <div class="form-group">
             <label for="newuser-role">Rol *</label>
-            <select id="newuser-role" required>
-              <option value="operator">Operator (Angajat)</option>
+            <select id="newuser-role" onchange="onUserModalRoleChange('newuser')" required>
+              <option value="operator" selected>Operator (Angajat)</option>
               <option value="admin">Administrator</option>
             </select>
           </div>
@@ -611,7 +621,7 @@
           </div>
 
           <div class="form-group" style="grid-column: 1 / -1;">
-            <label for="newuser-pin">Cod PIN Acces (6 Cifre) - <small style="color:#94a3b8;">Opțional (Se generează automat dacă e gol)</small></label>
+            <label for="newuser-pin" id="newuser-pin-label">Cod PIN Operator (6 Cifre) * - <small style="color:#94a3b8;">(Se generează automat dacă e gol)</small></label>
             <input type="text" id="newuser-pin" maxlength="6" placeholder="ex: 123456">
           </div>
         </div>
@@ -666,7 +676,7 @@
 
           <div class="form-group">
             <label for="edituser-role">Rol Acces *</label>
-            <select id="edituser-role" required>
+            <select id="edituser-role" onchange="onUserModalRoleChange('edituser')" required>
               <option value="operator">Operator (Angajat)</option>
               <option value="admin">Administrator</option>
             </select>
@@ -684,8 +694,8 @@
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
           <div class="form-group">
-            <label for="edituser-pin">Cod PIN (6 cifre) *</label>
-            <input type="text" id="edituser-pin" maxlength="6" pattern="[0-9]{6}" placeholder="ex: 123456" required>
+            <label for="edituser-pin" id="edituser-pin-label">Cod PIN Operator (6 cifre) *</label>
+            <input type="text" id="edituser-pin" maxlength="12" placeholder="ex: 123456" required>
           </div>
 
           <div class="form-group">

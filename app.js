@@ -1,7 +1,8 @@
 // PIM Iași - Toner Management System & Wizard Logic
 
+let currentLoginRole = "operator"; // "operator" sau "admin"
 let currentPin = "";
-const MAX_PIN_LENGTH = 6;
+let maxPinLength = 6;
 let currentUser = null;
 let currentOfficeFilter = "all";
 
@@ -36,7 +37,6 @@ function formatOfficeName(officeIdOrName) {
   return 'Inexistent';
 }
 
-
 // Cache de date în memorie
 let tonersData = [];
 let aparateData = [];
@@ -58,12 +58,68 @@ let wizardMaxAllowed = 0;
 
 document.addEventListener("DOMContentLoaded", () => {
   initKeyboardListeners();
+  renderPinDots();
   checkExistingSession();
 });
 
 // ----------------------------------------------------
 // AUTENTIFICARE (PIN & USER/PASS)
 // ----------------------------------------------------
+
+function switchLoginRole(role) {
+  currentLoginRole = role;
+  currentPin = "";
+  maxPinLength = (role === "admin") ? 12 : 6;
+
+  const opBtn = document.getElementById("role-operator-btn");
+  const adminBtn = document.getElementById("role-admin-btn");
+  const instText = document.getElementById("pin-instruction-text");
+  const demoHint = document.getElementById("demo-hint-box");
+
+  if (role === "admin") {
+    if (adminBtn) {
+      adminBtn.style.background = "rgba(245, 158, 11, 0.25)";
+      adminBtn.style.borderColor = "#f59e0b";
+      adminBtn.style.color = "#ffffff";
+    }
+    if (opBtn) {
+      opBtn.style.background = "rgba(15, 23, 42, 0.6)";
+      opBtn.style.borderColor = "rgba(255, 255, 255, 0.1)";
+      opBtn.style.color = "var(--text-muted)";
+    }
+    if (instText) instText.innerText = "Introdu codul PIN de Securitate Administrator (12 cifre):";
+    if (demoHint) demoHint.innerHTML = '<i class="fa-solid fa-lightbulb text-yellow"></i> PIN Administrator Test: <code>000000000000</code> (12 cifre de zero)';
+  } else {
+    if (opBtn) {
+      opBtn.style.background = "rgba(2, 132, 199, 0.25)";
+      opBtn.style.borderColor = "#38bdf8";
+      opBtn.style.color = "#ffffff";
+    }
+    if (adminBtn) {
+      adminBtn.style.background = "rgba(15, 23, 42, 0.6)";
+      adminBtn.style.borderColor = "rgba(255, 255, 255, 0.1)";
+      adminBtn.style.color = "var(--text-muted)";
+    }
+    if (instText) instText.innerText = "Introdu codul PIN din 6 cifre atribuit contului tău de Operator:";
+    if (demoHint) demoHint.innerHTML = '<i class="fa-solid fa-lightbulb text-cyan"></i> PIN Operator Demo: <code>123456</code> (6 cifre)';
+  }
+
+  renderPinDots();
+  updatePinDots();
+  hideAuthError();
+}
+
+function renderPinDots() {
+  const container = document.getElementById("pin-dots-container");
+  if (!container) return;
+  container.innerHTML = "";
+  for (let i = 0; i < maxPinLength; i++) {
+    const span = document.createElement("span");
+    span.className = "pin-dot";
+    span.id = `dot-${i}`;
+    container.appendChild(span);
+  }
+}
 
 function switchAuthTab(tab) {
   const pinBtn = document.getElementById("tab-pin-btn");
@@ -86,10 +142,10 @@ function switchAuthTab(tab) {
 }
 
 function pressPinKey(digit) {
-  if (currentPin.length < MAX_PIN_LENGTH) {
+  if (currentPin.length < maxPinLength) {
     currentPin += digit;
     updatePinDots();
-    if (currentPin.length === MAX_PIN_LENGTH) {
+    if (currentPin.length === maxPinLength) {
       setTimeout(() => submitPinLogin(), 150);
     }
   }
@@ -108,7 +164,7 @@ function backspacePinKey() {
 }
 
 function updatePinDots() {
-  for (let i = 0; i < MAX_PIN_LENGTH; i++) {
+  for (let i = 0; i < maxPinLength; i++) {
     const dot = document.getElementById(`dot-${i}`);
     if (dot) {
       if (i < currentPin.length) {
@@ -125,7 +181,7 @@ function initKeyboardListeners() {
     const authScreen = document.getElementById("auth-screen");
     const pinView = document.getElementById("auth-pin-view");
     
-    if (authScreen.classList.contains("active") && pinView.classList.contains("active")) {
+    if (authScreen && authScreen.classList.contains("active") && pinView && pinView.classList.contains("active")) {
       if (e.key >= "0" && e.key <= "9") {
         pressPinKey(e.key);
       } else if (e.key === "Backspace") {
@@ -143,7 +199,7 @@ async function submitPinLogin() {
     const response = await fetch("api/auth.php?action=login-pin", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pin: currentPin })
+      body: JSON.stringify({ pin: currentPin, role: currentLoginRole })
     });
     
     const result = await response.json();
@@ -155,16 +211,7 @@ async function submitPinLogin() {
     }
   } catch (err) {
     // Fallback demo
-    if (currentPin === "123456" || currentPin === "8122") {
-      handleLoginSuccess({
-        id_user: 46,
-        username: "poturuandreea",
-        first_name: "Andreea",
-        last_name: "Poturu",
-        role: "operator",
-        office: 4 // Tipografie (TIPO)
-      });
-    } else if (currentPin === "000000") {
+    if (currentPin === "000000000000" || currentPin === "000000") {
       handleLoginSuccess({
         id_user: 1,
         username: "admin",
@@ -173,8 +220,17 @@ async function submitPinLogin() {
         role: "admin",
         office: 2
       });
+    } else if (currentPin === "123456" || currentPin === "8122") {
+      handleLoginSuccess({
+        id_user: 46,
+        username: "operator",
+        first_name: "Operator",
+        last_name: "PIM",
+        role: "operator",
+        office: 2
+      });
     } else {
-      showAuthError("PIN incorect. Încearcă 123456 pentru Operator sau 000000 pentru Admin.");
+      showAuthError(currentLoginRole === "admin" ? "PIN Administrator incorect. Folosește 000000000000." : "PIN Operator incorect. Încearcă 123456.");
       clearPinKey();
     }
   }
@@ -353,7 +409,15 @@ function renderUsersTable() {
       ? '<span class="badge badge-stock-ok">Activ</span>' 
       : '<span class="badge badge-stock-low">Inactiv</span>';
     
-    const pinDisplay = u.pin_code ? `<code style="color:#00f2fe; font-weight:700;">PIN: ${u.pin_code}</code>` : '<small style="color:#94a3b8;">Fără PIN</small>';
+    const pinDisplay = u.pin_code 
+      ? `<code style="color:${isAdmin ? '#fbbf24' : '#00f2fe'}; font-weight:700;">PIN: ${u.pin_code}</code>` 
+      : '<small style="color:#94a3b8;">Fără PIN</small>';
+
+    const passDisplay = isAdmin
+      ? `<span class="badge" style="background:rgba(239, 68, 68, 0.15); color:#fca5a5; border:1px solid rgba(239, 68, 68, 0.3); font-size:0.75rem;"><i class="fa-solid fa-lock"></i> Parolă Protejată</span>`
+      : `<code style="color:#a7f3d0; font-weight:600;"><i class="fa-solid fa-key"></i> Parolă: ${u.password_plain || u.password || 'operator123'}</code>`;
+
+    const pinPassCombined = `<div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start;">${pinDisplay}${passDisplay}</div>`;
 
     const statusActionBtn = isAdmin
       ? `<span class="badge" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); padding: 5px 10px; font-size: 0.78rem;" title="Contul de administrator nu poate fi dezactivat"><i class="fa-solid fa-shield-halved"></i> Protejat</span>`
@@ -366,7 +430,7 @@ function renderUsersTable() {
       </td>
       <td><span class="badge ${roleBadgeClass}">${roleLabel}</span></td>
       <td><span class="office-badge">${formatOfficeName(u.office || u.office_nume)}</span></td>
-      <td>${pinDisplay}</td>
+      <td>${pinPassCombined}</td>
       <td>${statusBadge}</td>
       <td>
         <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 6px;" onclick="openEditUserModal(${u.id_user})">
@@ -404,6 +468,32 @@ function openEditUserModal(userId) {
   document.getElementById("modal-edit-user").classList.remove("hidden");
 }
 
+function onUserModalRoleChange(formType) {
+  const roleSelect = document.getElementById(`${formType}-role`);
+  const pinInput = document.getElementById(`${formType}-pin`);
+  const pinLabel = document.getElementById(`${formType}-pin-label`);
+
+  const role = roleSelect ? roleSelect.value : 'operator';
+
+  if (role === 'admin') {
+    if (pinInput) {
+      pinInput.setAttribute('maxlength', '12');
+      pinInput.setAttribute('placeholder', 'ex: 000000000000');
+    }
+    if (pinLabel) {
+      pinLabel.innerHTML = 'Cod PIN Administrator (12 Cifre) *';
+    }
+  } else {
+    if (pinInput) {
+      pinInput.setAttribute('maxlength', '6');
+      pinInput.setAttribute('placeholder', 'ex: 123456');
+    }
+    if (pinLabel) {
+      pinLabel.innerHTML = 'Cod PIN Operator (6 Cifre) *';
+    }
+  }
+}
+
 function onEditUserSelectChange() {
   const select = document.getElementById("edituser-select");
   if (!select || !select.value) return;
@@ -417,6 +507,8 @@ function onEditUserSelectChange() {
   document.getElementById("edituser-fullname").value = user.full_name || "";
   document.getElementById("edituser-pin").value = user.pin_code || "";
   document.getElementById("edituser-password").value = "";
+
+  onUserModalRoleChange('edituser');
 }
 
 async function handleEditUserSubmit(e) {
@@ -477,6 +569,8 @@ function openNewUserModal() {
   document.getElementById("newuser-password").value = "";
   document.getElementById("newuser-confirm-password").value = "";
   document.getElementById("newuser-pin").value = "";
+  document.getElementById("newuser-role").value = "operator";
+  onUserModalRoleChange('newuser');
   document.getElementById("modal-new-user").classList.remove("hidden");
 }
 
