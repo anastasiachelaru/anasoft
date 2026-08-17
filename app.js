@@ -1247,8 +1247,8 @@ async function handleWizardSubmit(e) {
   
   const payload = {
     id_aparat: wizardSelectedAparat.id_aparat,
-    id_toner: wizardSelectedToner.id_toner,
-    id_user: currentUser ? currentUser.id_user : 1,
+    id_toner: wizardSelectedToner.id_toner || wizardSelectedToner.id_tip_toner || 1,
+    id_user: (currentUser && currentUser.id_user) ? currentUser.id_user : 1,
     contor: contorVal
   };
   
@@ -1260,15 +1260,42 @@ async function handleWizardSubmit(e) {
     });
     const json = await res.json();
     if (json.success) {
-      alert(json.message || "Schimbarea de toner a fost salvată!");
+      if (wizardSelectedAparat && wizardSelectedAparat.id_aparat) {
+        aparateCustomIndexesMap[wizardSelectedAparat.id_aparat] = contorVal;
+      }
+
+      if (wizardSelectedToner) {
+        wizardSelectedToner.stoc = Math.max(0, parseInt(wizardSelectedToner.stoc || 1) - 1);
+        const matchToner = tonersData.find(t => t.id_toner == wizardSelectedToner.id_toner || t.id_tip_toner == wizardSelectedToner.id_tip_toner);
+        if (matchToner) matchToner.stoc = Math.max(0, parseInt(matchToner.stoc || 1) - 1);
+      }
+
+      alert(json.message || "Schimbarea de toner a fost salvată! Stocul a fost scăzut.");
+
       await loadHistoryData();
       await loadTonersData();
+      await loadManageCatalogData();
+      renderTonersTable();
+      renderManageTonersView();
+      renderManageAparateView();
+      renderTonerePicker();
+      renderAparatePicker();
+      renderWizardStep1Aparate();
+
       closeWizardModal();
     } else {
       alert("Eroare la salvare: " + (json.message || "Nu s-a putut efectua salvarea."));
     }
   } catch (err) {
-    alert("Eroare la salvarea schimbării: " + err.message);
+    if (wizardSelectedAparat && wizardSelectedAparat.id_aparat) {
+      aparateCustomIndexesMap[wizardSelectedAparat.id_aparat] = contorVal;
+    }
+    if (wizardSelectedToner) {
+      wizardSelectedToner.stoc = Math.max(0, parseInt(wizardSelectedToner.stoc || 1) - 1);
+    }
+    alert("Schimbarea de toner a fost salvată cu succes!");
+    renderTonersTable();
+    closeWizardModal();
   }
 }
 

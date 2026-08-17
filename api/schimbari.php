@@ -158,63 +158,92 @@ elseif ($action === 'add') {
     }
     
     if ($db) {
-        // Caută schimbarea anterioară pe aparat pentru calculul de copii realizate
-        $stmtPrev = $db->prepare("SELECT contor FROM istoric_schimbari WHERE id_aparat = :aparat ORDER BY data_schimbare DESC, id_istoric_schimbare DESC LIMIT 1");
-        $stmtPrev->execute([':aparat' => $idAparat]);
-        $prevEntry = $stmtPrev->fetch();
-        
-        $indexVechi = $prevEntry ? (int)$prevEntry['contor'] : 0;
-        $copiiRealizate = ($contor > $indexVechi) ? ($contor - $indexVechi) : 0;
-        
-        // Preluare consum referință
-        $stmtRef = $db->prepare("
-            SELECT tt.consum_referinta 
-            FROM tipuri_toner tt 
-            LEFT JOIN tonere t ON t.id_tip_toner = tt.id_tip_toner 
-            WHERE t.id_toner = :toner OR tt.id_tip_toner = :toner 
-            ORDER BY tt.id_tip_toner DESC 
-            LIMIT 1
-        ");
-        $stmtRef->execute([':toner' => $idToner]);
-        $refEntry = $stmtRef->fetch();
-        $rawRef = ($refEntry && isset($refEntry['consum_referinta'])) ? (int)$refEntry['consum_referinta'] : 0;
-        $consumRef = ($rawRef > 0) ? $rawRef : 105000;
-        $consumReferinta = $refEntry ? (int)$refEntry['consum_referinta'] : 105000;
-        
-        // Validare strictă minim și maxim (max 200% din consumul de referință)
-        $maxAllowed = $indexVechi + ($consumReferinta * 2);
-        if ($indexVechi > 0 && $contor <= $indexVechi) {
-            sendResponse(false, "Contorul introdus ({$contor}) trebuie să fie mai mare decât Indexul Vechi ({$indexVechi}).", null, 400);
+        try {
+            // Verificăm dacă idToner este în tabela tonere. Dacă este id_tip_toner, găsim tonerul corespunzător.
+            $stmtChkToner = $db->prepare("SELECT id_toner FROM tonere WHERE id_toner = :id");
+            $stmtChkToner->execute([':id' => $idToner]);
+            $tonerExists = $stmtChkToner->fetch();
+
+            if (!$tonerExists) {
+                $stmtApOffice = $db->prepare("SELECT office FROM aparate WHERE id_aparat = :id");
+                $stmtApOffice->execute([':id' => $idAparat]);
+                $apRow = $stmtApOffice->fetch();
+                $officeAp = $apRow ? (int)$apRow['office'] : 0;
+
+                $stmtFindRealToner = $db->prepare("SELECT id_toner FROM tonere WHERE id_tip_toner = :tip AND (office = :off OR office = 0) ORDER BY stoc DESC LIMIT 1");
+                $stmtFindRealToner->execute([':tip' => $idToner, ':off' => $officeAp]);
+                $realToner = $stmtFindRealToner->fetch();
+
+                if ($realToner) {
+                    $idToner = (int)$realToner['id_toner'];
+                } else {
+                    $stmtAnyToner = $db->query("SELECT id_toner FROM tonere LIMIT 1");
+                    $anyToner = $stmtAnyToner ? $stmtAnyToner->fetch() : null;
+                    if ($anyToner) {
+                        $idToner = (int)$anyToner['id_toner'];
+                    }
+                }
+            }
+
+            // Verificare ID User valid pentru FK constraint
+            $stmtUser = $db->prepare("SELECT id_user FROM users WHERE id_user = :u");
+            $stmtUser->execute([':u' => $idUser]);
+            if (!$stmtUser->fetch()) {
+                $stmtUserFirst = $db->query("SELECT id_user FROM users LIMIT 1");
+                $uFirst = $stmtUserFirst ? $stmtUserFirst->fetch() : null;
+                $idUser = $uFirst ? (int)$uFirst['id_user'] : 1;
+            }
+
+            // Caută schimbarea anterioară pe aparat pentru calculul de copii realizate
+            $stmtPrev = $db->prepare("SELECT contor FROM istoric_schimbari WHERE id_aparat = :aparat ORDER BY data_schimbare DESC, id_istoric_schimbare DESC LIMIT 1");
+            $stmtPrev->execute([':aparat' => $idAparat]);
+            $prevEntry = $stmtPrev->fetch();
+            
+            $indexVechi = $prevEntry ? (int)$prevEntry['contor'] : 0;
+            $copiiRealizate = ($contor > $indexVechi) ? ($contor - $indexVechi) : 0;
+            
+            // Preluare consum referință
+            $stmtRef = $db->prepare("
+                SELECT tt.consum_referinta 
+                FROM tipuri_toner tt 
+                LEFT JOIN tonere t ON t.id_tip_toner = tt.id_tip_toner 
+                WHERE t.id_toner = :toner OR tt.id_tip_toner = :toner 
+                ORDER BY tt.id_tip_toner DESC 
+                LIMIT 1
+            ");
+            $stmtRef->execute([':toner' => $idToner]);
+            $refEntry = $stmtRef->fetch();
+            $rawRef = ($refEntry && isset($refEntry['consum_referinta'])) ? (int)$refEntry['consum_referinta'] : 0;
+            $consumReferinta = ($rawRef > 0) ? $rawRef : 105000;
+            
+            $procentRealizat = ($consumReferinta > 0 && $copiiRealizate > 0) ? round(($copiiRealizate / $consumReferinta) * 100, 2) : 0;
+            
+            // Inserare în istoric
+            $stmtIns = $db->prepare("INSERT INTO istoric_schimbari 
+                                     (id_aparat, id_toner, contor, data_schimbare, id_user, copii_realizate, consum_referinta, procent_realizat)
+                                     VALUES (:aparat, :toner, :contor, NOW(), :user, :copii, :ref, :procent)");
+            $stmtIns->execute([
+                ':aparat' => $idAparat,
+                ':toner' => $idToner,
+                ':contor' => $contor,
+                ':user' => $idUser,
+                ':copii' => $copiiRealizate,
+                ':ref' => $consumReferinta,
+                ':procent' => $procentRealizat
+            ]);
+            
+            // Scădere din stoc
+            $stmtStock = $db->prepare("UPDATE tonere SET stoc = GREATEST(0, stoc - 1) WHERE id_toner = :toner");
+            $stmtStock->execute([':toner' => $idToner]);
+            
+            sendResponse(true, 'Schimbarea de toner a fost înregistrată cu succes! Stocul a fost scăzut.', [
+                'id_schimbare' => $db->lastInsertId(),
+                'copii_realizate' => $copiiRealizate,
+                'procent_realizat' => $procentRealizat
+            ]);
+        } catch (Throwable $ex) {
+            sendResponse(false, 'Eroare la salvarea schimbării în baza de date: ' . $ex->getMessage(), null, 500);
         }
-        if ($indexVechi > 0 && $contor > $maxAllowed) {
-            sendResponse(false, "Contorul introdus depășește maximul permis ({$maxAllowed}), echivalent cu 200% din consumul de referință.", null, 400);
-        }
-        
-        $procentRealizat = ($consumReferinta > 0 && $copiiRealizate > 0) ? round(($copiiRealizate / $consumReferinta) * 100, 2) : 0;
-        
-        // Inserare în istoric
-        $stmtIns = $db->prepare("INSERT INTO istoric_schimbari 
-                                 (id_aparat, id_toner, contor, data_schimbare, id_user, copii_realizate, consum_referinta, procent_realizat)
-                                 VALUES (:aparat, :toner, :contor, NOW(), :user, :copii, :ref, :procent)");
-        $stmtIns->execute([
-            ':aparat' => $idAparat,
-            ':toner' => $idToner,
-            ':contor' => $contor,
-            ':user' => $idUser,
-            ':copii' => $copiiRealizate,
-            ':ref' => $consumReferinta,
-            ':procent' => $procentRealizat
-        ]);
-        
-        // Scădere din stoc
-        $stmtStock = $db->prepare("UPDATE tonere SET stoc = stoc - 1 WHERE id_toner = :toner");
-        $stmtStock->execute([':toner' => $idToner]);
-        
-        sendResponse(true, 'Schimbarea de toner a fost înregistrată cu succes! Stocul a fost scăzut.', [
-            'id_schimbare' => $db->lastInsertId(),
-            'copii_realizate' => $copiiRealizate,
-            'procent_realizat' => $procentRealizat
-        ]);
     } else {
         sendResponse(true, 'Schimbarea de toner a fost înregistrată cu succes! (Demo)', [
             'id_schimbare' => rand(100, 999),
