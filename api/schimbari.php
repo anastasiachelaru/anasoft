@@ -110,14 +110,18 @@ elseif ($action === 'get-last-index') {
         $row = $stmt->fetch();
         $indexVechi = $row ? (int)$row['contor'] : 0;
         
-        // Preluare consum referință pentru calcul min/max
-        $stmtRef = $db->prepare("SELECT tt.consum_referinta 
-                                 FROM tonere t 
-                                 JOIN tipuri_toner tt ON t.id_tip_toner = tt.id_tip_toner 
-                                 WHERE t.id_toner = :toner");
+        // Preluare consum referință specific DEDICAT tonerului selectat (căutare după id_toner sau id_tip_toner)
+        $stmtRef = $db->prepare("
+            SELECT tt.consum_referinta 
+            FROM tipuri_toner tt 
+            LEFT JOIN tonere t ON t.id_tip_toner = tt.id_tip_toner 
+            WHERE t.id_toner = :toner OR tt.id_tip_toner = :toner 
+            ORDER BY tt.id_tip_toner DESC 
+            LIMIT 1
+        ");
         $stmtRef->execute([':toner' => $idToner]);
         $refRow = $stmtRef->fetch();
-        $rawRef = $refRow ? (int)$refRow['consum_referinta'] : 0;
+        $rawRef = ($refRow && isset($refRow['consum_referinta'])) ? (int)$refRow['consum_referinta'] : 0;
         $consumReferinta = ($rawRef > 0) ? $rawRef : 105000;
         
         $minContor = $indexVechi + 1;

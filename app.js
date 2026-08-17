@@ -1153,18 +1153,27 @@ async function initWizardStep3Data() {
     lastIndexData = null;
   }
   
+  const tonerSpecificRef = (wizardSelectedToner && parseInt(wizardSelectedToner.consum_referinta) > 0)
+    ? parseInt(wizardSelectedToner.consum_referinta)
+    : 105000;
+
   let rawRef = (lastIndexData && parseInt(lastIndexData.consum_referinta) > 0)
     ? parseInt(lastIndexData.consum_referinta)
-    : ((wizardSelectedToner && parseInt(wizardSelectedToner.consum_referinta) > 0) ? parseInt(wizardSelectedToner.consum_referinta) : 105000);
+    : tonerSpecificRef;
   
-  wizardConsumRef = rawRef;
+  wizardConsumRef = (rawRef > 0) ? rawRef : tonerSpecificRef;
   wizardIndexVechi = (lastIndexData && lastIndexData.index_vechi !== undefined && lastIndexData.index_vechi !== null) 
     ? parseInt(lastIndexData.index_vechi) 
     : 0;
 
-  // Garantare calcul corect al minimului și maximului (200% din consumul de referință)
+  // Garantare calcul corect al minimului și maximului (200% din consumul de referință specific al tonerului)
   wizardMinAllowed = wizardIndexVechi + 1;
   wizardMaxAllowed = wizardIndexVechi + (wizardConsumRef * 2);
+
+  // Invariantă matematică de siguranță: MAXIM este ÎNTOTDEAUNA strict mai mare decât MINIM
+  if (wizardMaxAllowed <= wizardMinAllowed) {
+    wizardMaxAllowed = wizardMinAllowed + (wizardConsumRef * 2);
+  }
   
   document.getElementById("display-index-vechi").innerText = wizardIndexVechi.toLocaleString('ro-RO');
   document.getElementById("display-min-allowed").innerText = wizardMinAllowed.toLocaleString('ro-RO');
