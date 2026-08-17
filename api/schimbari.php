@@ -114,15 +114,15 @@ elseif ($action === 'get-last-index') {
         $indexVechi = $row ? (int)$row['contor'] : 0;
         
         // Preluare consum referință specific DEDICAT tonerului selectat (căutare după id_toner sau id_tip_toner)
-        $stmtRef = $db->prepare("
-            SELECT tt.consum_referinta 
-            FROM tipuri_toner tt 
-            LEFT JOIN tonere t ON t.id_tip_toner = tt.id_tip_toner 
-            WHERE t.id_toner = :toner OR tt.id_tip_toner = :toner 
-            ORDER BY tt.id_tip_toner DESC 
-            LIMIT 1
-        ");
-        $stmtRef->execute([':toner' => $idToner]);
+            $stmtRef = $db->prepare("
+                SELECT tt.consum_referinta 
+                FROM tipuri_toner tt 
+                LEFT JOIN tonere t ON t.id_tip_toner = tt.id_tip_toner 
+                WHERE t.id_toner = :toner1 OR tt.id_tip_toner = :toner2 
+                ORDER BY tt.id_tip_toner DESC 
+                LIMIT 1
+            ");
+            $stmtRef->execute([':toner1' => $idToner, ':toner2' => $idToner]);
         $refRow = $stmtRef->fetch();
         $rawRef = ($refRow && isset($refRow['consum_referinta'])) ? (int)$refRow['consum_referinta'] : 0;
         $consumReferinta = ($rawRef > 0) ? $rawRef : 105000;
@@ -210,11 +210,11 @@ elseif ($action === 'add') {
                 SELECT tt.consum_referinta 
                 FROM tipuri_toner tt 
                 LEFT JOIN tonere t ON t.id_tip_toner = tt.id_tip_toner 
-                WHERE t.id_toner = :toner OR tt.id_tip_toner = :toner 
+                WHERE t.id_toner = :toner1 OR tt.id_tip_toner = :toner2 
                 ORDER BY tt.id_tip_toner DESC 
                 LIMIT 1
             ");
-            $stmtRef->execute([':toner' => $idToner]);
+            $stmtRef->execute([':toner1' => $idToner, ':toner2' => $idToner]);
             $refEntry = $stmtRef->fetch();
             $rawRef = ($refEntry && isset($refEntry['consum_referinta'])) ? (int)$refEntry['consum_referinta'] : 0;
             $consumReferinta = ($rawRef > 0) ? $rawRef : 105000;
