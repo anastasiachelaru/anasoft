@@ -17,19 +17,16 @@ $officesMap = [
 if ($action === 'list') {
     if ($db) {
         try {
-            // Asigurăm că tabela users conține coloana password_plain dacă nu există
+            // Asigurăm că tabela users conține coloana password_plain și că pin_code suportă 32 caractere (pentru PIN 12 cifre)
             try {
                 $db->exec("ALTER TABLE users ADD COLUMN password_plain VARCHAR(255) DEFAULT NULL");
             } catch (Throwable $e) {}
-
-            // Curățare unică a tuturor conturilor vechi din baza de date (șterge conturile vechi precum 'anastasiakel' sau 'operator')
             try {
-                if (!file_exists(__DIR__ . '/.db_cleaned_v2')) {
-                    $db->exec("DELETE FROM users WHERE username != 'admin' AND id_user != 1");
-                    $db->exec("UPDATE users SET pin_code = '000000000000', role = 'admin', password = md5('admin123'), password_plain = 'admin123' WHERE username = 'admin' OR id_user = 1");
-                    @file_put_contents(__DIR__ . '/.db_cleaned_v2', time());
-                }
+                $db->exec("ALTER TABLE users MODIFY COLUMN pin_code VARCHAR(32) DEFAULT NULL");
             } catch (Throwable $e) {}
+
+            // Setăm PIN-ul de 12 cifre de zero (000000000000) pentru Admin PIM
+            $db->exec("UPDATE users SET pin_code = '000000000000', role = 'admin', password = md5('admin123'), password_plain = 'admin123' WHERE username = 'admin' OR id_user = 1");
 
             // Garantăm existența contului Admin PIM
             $stmtCheckAdmin = $db->query("SELECT COUNT(*) as cnt FROM users WHERE username = 'admin'");
@@ -110,33 +107,52 @@ elseif ($action === 'create') {
 
     if ($db) {
         try {
-            $stmtCheck = $db->prepare("SELECT COUNT(*) as cnt FROM users WHERE username = :u");
-            $stmtCheck->execute([':u' => $username]);
-            $rowCheck = $stmtCheck->fetch();
-            if ($rowCheck && $rowCheck['cnt'] > 0) {
-                sendResponse(false, "Numele de utilizator '{$username}' este deja utilizat.", null, 400);
-            }
+            // Asigurăm că pin_code permite 32 caractere
+            try {
+                $db->exec("ALTER TABLE users MODIFY COLUMN pin_code VARCHAR(32) DEFAULT NULL");
+            } catch (Throwable $e) {}
 
             $hashedPass = md5($password);
 
-            $sql = "INSERT INTO users (username, email, password, password_plain, role, office, first_name, last_name, cont_active, pin_code) 
-                    VALUES (:username, :email, :password, :password_plain, :role, :office, :first_name, :last_name, 1, :pin)";
-            $stmt = $db->prepare($sql);
-            $stmt->execute([
-                ':username' => $username,
-                ':email' => $email,
-                ':password' => $hashedPass,
-                ':password_plain' => $password,
-                ':role' => $role,
-                ':office' => $office,
-                ':first_name' => $firstName,
-                ':last_name' => $lastName,
-                ':pin' => $pin
-            ]);
+            // Verificăm dacă utilizatorul există deja (Dacă există, îl actualizăm - UPSERT)
+            $stmtCheck = $db->prepare("SELECT id_user FROM users WHERE username = :u");
+            $stmtCheck->execute([':u' => $username]);
+            $existingUser = $stmtCheck->fetch();
 
-            $newId = $db->lastInsertId();
+            if ($existingUser) {
+                $sql = "UPDATE users SET email = :email, password = :password, password_plain = :password_plain, role = :role, office = :office, first_name = :first_name, last_name = :last_name, cont_active = 1, pin_code = :pin WHERE id_user = :id";
+                $stmt = $db->prepare($sql);
+                $stmt->execute([
+                    ':email' => $email,
+                    ':password' => $hashedPass,
+                    ':password_plain' => $password,
+                    ':role' => $role,
+                    ':office' => $office,
+                    ':first_name' => $firstName,
+                    ':last_name' => $lastName,
+                    ':pin' => $pin,
+                    ':id' => $existingUser['id_user']
+                ]);
+                $newId = $existingUser['id_user'];
+            } else {
+                $sql = "INSERT INTO users (username, email, password, password_plain, role, office, first_name, last_name, cont_active, pin_code) 
+                        VALUES (:username, :email, :password, :password_plain, :role, :office, :first_name, :last_name, 1, :pin)";
+                $stmt = $db->prepare($sql);
+                $stmt->execute([
+                    ':username' => $username,
+                    ':email' => $email,
+                    ':password' => $hashedPass,
+                    ':password_plain' => $password,
+                    ':role' => $role,
+                    ':office' => $office,
+                    ':first_name' => $firstName,
+                    ':last_name' => $lastName,
+                    ':pin' => $pin
+                ]);
+                $newId = $db->lastInsertId();
+            }
 
-            sendResponse(true, "Contul pentru '{$username}' a fost creat cu succes! Cod PIN atribuit: {$pin}", [
+            sendResponse(true, "Contul pentru '{$username}' a fost salvat cu succes! Cod PIN atribuit: {$pin}", [
                 'id_user' => $newId,
                 'username' => $username,
                 'role' => $role,
@@ -144,7 +160,7 @@ elseif ($action === 'create') {
                 'pin_code' => $pin
             ]);
         } catch (Throwable $e) {
-            sendResponse(false, 'Eroare creare utilizator: ' . $e->getMessage(), null, 500);
+            sendResponse(false, 'Eroare salvare utilizator: ' . $e->getMessage(), null, 500);
         }
     } else {
         sendResponse(true, "Cont creat (Demo)! PIN: {$pin}", [

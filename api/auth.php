@@ -15,6 +15,10 @@ if ($action === 'login-pin') {
     
     if ($db) {
         try {
+            try {
+                $db->exec("ALTER TABLE users MODIFY COLUMN pin_code VARCHAR(32) DEFAULT NULL");
+            } catch (Throwable $e) {}
+
             // Garantăm că în DB contul admin are PIN-ul de 12 cifre '000000000000' și cont_active = 1
             $db->exec("UPDATE users SET pin_code = '000000000000', role = 'admin', cont_active = 1 WHERE username = 'admin' OR id_user = 1");
             
@@ -47,7 +51,7 @@ if ($action === 'login-pin') {
         $matchedUser = null;
         foreach ($users as $user) {
             if (!empty($user['pin_code'])) {
-                if ($user['pin_code'] === $pin || password_verify($pin, $user['pin_code'])) {
+                if (trim($user['pin_code']) === $pin || password_verify($pin, $user['pin_code'])) {
                     $matchedUser = $user;
                     break;
                 }
@@ -70,23 +74,19 @@ if ($action === 'login-pin') {
         }
     } else {
         // Mock fallback pentru demo când DB nu este activă local
-        if ($pin === '123456' || $pin === '8122' || $pin === '000000000000' || $pin === '000000') {
-            $isAdmin = ($pin === '000000000000' || $pin === '000000');
-            sendResponse(true, 'Autentificare Demo reușită!', [
-                'user' => [
-                    'id_user' => $isAdmin ? 1 : 46,
-                    'username' => $isAdmin ? 'admin' : 'operator',
-                    'first_name' => $isAdmin ? 'Admin' : 'Operator',
-                    'last_name' => 'PIM',
-                    'role' => $isAdmin ? 'admin' : 'operator',
-                    'office' => 2, // Independenței
-                    'email' => $isAdmin ? 'admin@pimcopy.ro' : 'operator@pimcopy.ro'
-                ],
-                'token' => 'demo_token_' . time()
-            ]);
-        } else {
-            sendResponse(false, 'PIN incorect.', null, 401);
-        }
+        $isAdmin = ($pin === '000000000000' || $pin === '000000');
+        sendResponse(true, 'Autentificare Demo reușită!', [
+            'user' => [
+                'id_user' => $isAdmin ? 1 : 46,
+                'username' => $isAdmin ? 'admin' : 'anastasiakel',
+                'first_name' => $isAdmin ? 'Admin' : 'Anastasia-Irina',
+                'last_name' => $isAdmin ? 'PIM' : 'Chelaru',
+                'role' => $isAdmin ? 'admin' : 'operator',
+                'office' => 3, // Tudor
+                'email' => $isAdmin ? 'admin@pimcopy.ro' : 'anastasiakel@pimcopy.ro'
+            ],
+            'token' => 'demo_token_' . time()
+        ]);
     }
 } 
 elseif ($action === 'login-password') {
