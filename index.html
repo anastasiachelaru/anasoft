@@ -220,6 +220,9 @@
                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
                 <input type="text" id="search-toner-input" placeholder="Caută toner..." oninput="filterTonersTable()" class="search-input">
               </div>
+              <button class="btn btn-warning admin-only hidden" id="btn-manage-types" onclick="openManageTypesModal()" style="display: inline-flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-sliders"></i> Gestiune Tipuri & Aparate
+              </button>
               <button class="btn btn-success admin-only hidden" id="btn-manage-stock" onclick="openAddStockModal()">
                 <i class="fa-solid fa-boxes-stacked"></i> Adaugă / Scade Stoc Toner
               </button>
@@ -698,6 +701,188 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL GESTIUNE TIPURI TONERE ȘI APARATE -->
+  <div id="modal-manage-types" class="modal-overlay hidden">
+    <div class="modal-card modal-xl" style="max-width: 900px; width: 95%;">
+      <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 14px;">
+        <div>
+          <h3 style="display: flex; align-items: center; gap: 10px; color: #f59e0b; font-size: 1.3rem;">
+            <i class="fa-solid fa-sliders"></i> GESTIONARE TIPURI TONERE & APARATE
+          </h3>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 4px;">Configurare echipamente noi, asociere compatibilități și dezactivare consumabile PIM</p>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('modal-manage-types')">&times;</button>
+      </div>
+
+      <!-- TAB-URI DE COMUTARE GESTIUNE (TONERE VS APARATE) -->
+      <div class="manage-tabs-bar">
+        <button class="manage-tab-btn active" id="tab-manage-tonere-btn" onclick="switchManageTab('tonere')">
+          <i class="fa-solid fa-fill-drip text-cyan"></i> Gestiune Tonere & Tipuri
+        </button>
+        <button class="manage-tab-btn" id="tab-manage-aparate-btn" onclick="switchManageTab('aparate')">
+          <i class="fa-solid fa-print text-magenta"></i> Gestiune Aparate & Echipamente
+        </button>
+      </div>
+
+      <!-- CORPUL TAB-URILOR -->
+      <div class="manage-body" style="margin-top: 20px;">
+        
+        <!-- VEDEREA 1: GESTIUNE TONERE -->
+        <div id="view-manage-tonere" class="manage-view active">
+          
+          <!-- FORMULAR ADĂUGARE / ASOCIERE TONER NOU -->
+          <div class="manage-card-box">
+            <h4 style="color: var(--cyan-accent); font-size: 0.95rem; font-weight: 700; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-plus-circle"></i> Creează Toner Nou & Asociază Aparate Compatibile
+            </h4>
+
+            <form onsubmit="handleCreateTonerTypeSubmit(event)">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                  <label for="newtoner-name">Denumire & Model Toner *</label>
+                  <input type="text" id="newtoner-name" placeholder="ex: TN622C Cyan (Bizhub Press C1085)" required>
+                </div>
+
+                <div class="form-group">
+                  <label for="newtoner-consum">Consum de Referință (Nr. Pagini) *</label>
+                  <input type="number" id="newtoner-consum" min="1000" step="1000" value="95000" required>
+                </div>
+              </div>
+
+              <!-- SEDII UNDE SE DISTRIBUIE TONERUL -->
+              <div class="form-group" style="margin-top: 12px;">
+                <label style="color: #cbd5e1; font-weight: 600; margin-bottom: 8px; display: block;">Selectează Sediile PIM unde va fi adăugat Tonerul *</label>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;" id="newtoner-offices-wrap">
+                  <label class="checkbox-pill"><input type="checkbox" name="toner_office" value="2" checked> Independenței</label>
+                  <label class="checkbox-pill"><input type="checkbox" name="toner_office" value="3" checked> Tudor</label>
+                  <label class="checkbox-pill"><input type="checkbox" name="toner_office" value="4" checked> Tipografie</label>
+                  <label class="checkbox-pill"><input type="checkbox" name="toner_office" value="5" checked> Smârdan</label>
+                  <label class="checkbox-pill"><input type="checkbox" name="toner_office" value="6" checked> UMF 2</label>
+                </div>
+              </div>
+
+              <!-- APARATE COMPATIBILE -->
+              <div class="form-group" style="margin-top: 16px;">
+                <label style="color: #cbd5e1; font-weight: 600; margin-bottom: 8px; display: block;">Aparate Compatibile (Bifează aparatele ce folosesc acest toner):</label>
+                <div class="compatibility-grid" id="newtoner-aparate-checkboxes">
+                  <!-- Populat dinamic -->
+                </div>
+              </div>
+
+              <div style="margin-top: 18px; text-align: right;">
+                <button type="submit" class="btn btn-success">
+                  <i class="fa-solid fa-floppy-disk"></i> Salvează & Asociază Toner
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- LISTA SI DEZACTIVAREA TONERELOR -->
+          <div class="manage-card-box" style="margin-top: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <h4 style="color: #f8fafc; font-size: 0.95rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-boxes-stacked"></i> Lista Tonere Existente (Active & Inactive)
+              </h4>
+              <input type="text" id="manage-toner-search" placeholder="Filtrează lista..." oninput="filterManageTonersList()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: rgba(15,23,42,0.8); color: #fff; font-size: 0.85rem;">
+            </div>
+
+            <div class="table-card" style="max-height: 320px; overflow-y: auto;">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Denumire Toner</th>
+                    <th>Sediu</th>
+                    <th>Consum Ref.</th>
+                    <th>Stoc</th>
+                    <th>Status</th>
+                    <th>Acțiune</th>
+                  </tr>
+                </thead>
+                <tbody id="manage-toners-tbody">
+                  <!-- Populat dinamic -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- VEDEREA 2: GESTIUNE APARATE -->
+        <div id="view-manage-aparate" class="manage-view hidden">
+          
+          <!-- FORMULAR ADĂUGARE / ASOCIERE APARAT NOU -->
+          <div class="manage-card-box">
+            <h4 style="color: var(--magenta-accent); font-size: 0.95rem; font-weight: 700; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-plus-circle"></i> Creează Aparat Nou & Asociază Tonere Compatibile
+            </h4>
+
+            <form onsubmit="handleCreateAparatSubmit(event)">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                  <label for="newaparat-name">Nume / Cod Aparat (Cod Echipament) *</label>
+                  <input type="text" id="newaparat-name" placeholder="ex: UMF-C1100-3 sau TUDOR-T4" required>
+                </div>
+
+                <div class="form-group">
+                  <label for="newaparat-office">Sediu Amplasare Echipament *</label>
+                  <select id="newaparat-office" required>
+                    <option value="2">Sediu Independenței</option>
+                    <option value="3">Sediu Tudor</option>
+                    <option value="4">Sediu Tipografie</option>
+                    <option value="5">Sediu Smârdan</option>
+                    <option value="6">Sediu UMF 2</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- TONERE COMPATIBILE -->
+              <div class="form-group" style="margin-top: 16px;">
+                <label style="color: #cbd5e1; font-weight: 600; margin-bottom: 8px; display: block;">Tonere Compatibile (Bifează ce tonere poate folosi acest aparat):</label>
+                <div class="compatibility-grid" id="newaparat-tonere-checkboxes">
+                  <!-- Populat dinamic -->
+                </div>
+              </div>
+
+              <div style="margin-top: 18px; text-align: right;">
+                <button type="submit" class="btn btn-success">
+                  <i class="fa-solid fa-floppy-disk"></i> Salvează & Configurează Aparat
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- LISTA SI DEZACTIVAREA APARATELOR -->
+          <div class="manage-card-box" style="margin-top: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <h4 style="color: #f8fafc; font-size: 0.95rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-print"></i> Lista Echipamente Existente (Active & Inactive)
+              </h4>
+              <input type="text" id="manage-aparat-search" placeholder="Filtrează aparate..." oninput="filterManageAparateList()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: rgba(15,23,42,0.8); color: #fff; font-size: 0.85rem;">
+            </div>
+
+            <div class="table-card" style="max-height: 320px; overflow-y: auto;">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Nume Aparat</th>
+                    <th>Sediu</th>
+                    <th>Status</th>
+                    <th>Acțiuni</th>
+                  </tr>
+                </thead>
+                <tbody id="manage-aparate-tbody">
+                  <!-- Populat dinamic -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
     </div>
   </div>
 

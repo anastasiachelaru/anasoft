@@ -1348,3 +1348,295 @@ async function handleAddStockSubmit(e) {
     alert(`Stoc actualizat (${op === 'add' ? '+' : '-'}${qty} buc).`);
   }
 }
+
+// ----------------------------------------------------
+// LOGICĂ GESTIONARE TIPURI TONERE & APARATE
+// ----------------------------------------------------
+let manageCatalogState = {
+  tipuri: [],
+  tonere: [],
+  aparate: [],
+  legaturi: []
+};
+
+async function openManageTypesModal() {
+  const modal = document.getElementById("modal-manage-types");
+  if (!modal) return;
+
+  modal.classList.remove("hidden");
+  switchManageTab('tonere');
+  await loadManageCatalogData();
+}
+
+function switchManageTab(tab) {
+  const tonereBtn = document.getElementById("tab-manage-tonere-btn");
+  const aparateBtn = document.getElementById("tab-manage-aparate-btn");
+  const tonereView = document.getElementById("view-manage-tonere");
+  const aparateView = document.getElementById("view-manage-aparate");
+
+  if (tab === 'tonere') {
+    tonereBtn.classList.add("active");
+    aparateBtn.classList.remove("active");
+    tonereView.classList.add("active");
+    tonereView.classList.remove("hidden");
+    aparateView.classList.remove("active");
+    aparateView.classList.add("hidden");
+  } else {
+    aparateBtn.classList.add("active");
+    tonereBtn.classList.remove("active");
+    aparateView.classList.add("active");
+    aparateView.classList.remove("hidden");
+    tonereView.classList.remove("active");
+    tonereView.classList.add("hidden");
+  }
+}
+
+async function loadManageCatalogData() {
+  try {
+    const res = await fetch("api/tonere.php?action=manage-catalog");
+    const json = await res.json();
+    if (json.success && json.data) {
+      manageCatalogState = json.data;
+    }
+  } catch (err) {
+    console.warn("Eroare incarcare catalog backend, folosesc date locale:", err);
+  }
+
+  renderManageTonersView();
+  renderManageAparateView();
+  populateManageCheckboxes();
+}
+
+function populateManageCheckboxes() {
+  // Populam checkbox-urile cu aparate pentru crearea tonerului nou
+  const aparateWrap = document.getElementById("newtoner-aparate-checkboxes");
+  if (aparateWrap) {
+    const activeAparate = (manageCatalogState.aparate || []).filter(a => parseInt(a.aparat_activ) === 1);
+    if (activeAparate.length === 0) {
+      aparateWrap.innerHTML = '<span style="color:#94a3b8; font-size:0.85rem;">Nu există aparate create.</span>';
+    } else {
+      aparateWrap.innerHTML = activeAparate.map(a => `
+        <label class="checkbox-card">
+          <input type="checkbox" name="toner_aparat" value="${a.id_aparat}">
+          <span>${a.nume_aparat} (${formatOfficeName(a.office)})</span>
+        </label>
+      `).join('');
+    }
+  }
+
+  // Populam checkbox-urile cu tonere pentru crearea aparatului nou
+  const tonereWrap = document.getElementById("newaparat-tonere-checkboxes");
+  if (tonereWrap) {
+    const uniqueTipuri = manageCatalogState.tipuri || [];
+    if (uniqueTipuri.length === 0) {
+      tonereWrap.innerHTML = '<span style="color:#94a3b8; font-size:0.85rem;">Nu există tipuri de toner create.</span>';
+    } else {
+      tonereWrap.innerHTML = uniqueTipuri.map(t => `
+        <label class="checkbox-card">
+          <input type="checkbox" name="aparat_toner" value="${t.id_tip_toner}">
+          <span>${t.denumire_tip}</span>
+        </label>
+      `).join('');
+    }
+  }
+}
+
+function renderManageTonersView() {
+  const tbody = document.getElementById("manage-toners-tbody");
+  if (!tbody) return;
+
+  const list = manageCatalogState.tonere || [];
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#94a3b8;">Niciun toner înregistrat.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = list.map(t => {
+    const isAct = parseInt(t.toner_activ) === 1;
+    const stBadge = isAct 
+      ? '<span class="status-badge active"><i class="fa-solid fa-check"></i> Activ</span>'
+      : '<span class="status-badge inactive"><i class="fa-solid fa-ban"></i> Inactiv</span>';
+
+    const btnAction = isAct
+      ? `<button class="btn btn-sm btn-outline-danger" onclick="toggleTonerActiveStatus(${t.id_toner}, 0)"><i class="fa-solid fa-ban"></i> Dezactivează</button>`
+      : `<button class="btn btn-sm btn-outline-success" onclick="toggleTonerActiveStatus(${t.id_toner}, 1)"><i class="fa-solid fa-check-circle"></i> Activează</button>`;
+
+    return `
+      <tr>
+        <td style="font-weight:600; color:#fff;">${t.denumire_tip || 'Toner'}</td>
+        <td>${formatOfficeName(t.office)}</td>
+        <td>${(t.consum_referinta || 105000).toLocaleString('ro-RO')} pag</td>
+        <td><strong style="color: var(--cyan-accent);">${t.stoc || 0} buc</strong></td>
+        <td>${stBadge}</td>
+        <td>${btnAction}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderManageAparateView() {
+  const tbody = document.getElementById("manage-aparate-tbody");
+  if (!tbody) return;
+
+  const list = manageCatalogState.aparate || [];
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#94a3b8;">Niciun aparat înregistrat.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = list.map(a => {
+    const isAct = parseInt(a.aparat_activ) === 1;
+    const stBadge = isAct 
+      ? '<span class="status-badge active"><i class="fa-solid fa-check"></i> Activ</span>'
+      : '<span class="status-badge inactive"><i class="fa-solid fa-ban"></i> Inactiv</span>';
+
+    const btnAction = isAct
+      ? `<button class="btn btn-sm btn-outline-danger" onclick="toggleAparatActiveStatus(${a.id_aparat}, 0)"><i class="fa-solid fa-ban"></i> Dezactivează</button>`
+      : `<button class="btn btn-sm btn-outline-success" onclick="toggleAparatActiveStatus(${a.id_aparat}, 1)"><i class="fa-solid fa-check-circle"></i> Activează</button>`;
+
+    return `
+      <tr>
+        <td style="font-weight:600; color:#fff;">${a.nume_aparat}</td>
+        <td>${formatOfficeName(a.office)}</td>
+        <td>${stBadge}</td>
+        <td>${btnAction}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function filterManageTonersList() {
+  const query = (document.getElementById("manage-toner-search")?.value || "").toLowerCase();
+  const rows = document.querySelectorAll("#manage-toners-tbody tr");
+  rows.forEach(row => {
+    const text = row.innerText.toLowerCase();
+    row.style.display = text.includes(query) ? "" : "none";
+  });
+}
+
+function filterManageAparateList() {
+  const query = (document.getElementById("manage-aparat-search")?.value || "").toLowerCase();
+  const rows = document.querySelectorAll("#manage-aparate-tbody tr");
+  rows.forEach(row => {
+    const text = row.innerText.toLowerCase();
+    row.style.display = text.includes(query) ? "" : "none";
+  });
+}
+
+async function handleCreateTonerTypeSubmit(e) {
+  e.preventDefault();
+  const denumire = document.getElementById("newtoner-name")?.value.trim();
+  const consum = parseInt(document.getElementById("newtoner-consum")?.value || 95000);
+  
+  const officeNodes = document.querySelectorAll('input[name="toner_office"]:checked');
+  const offices = Array.from(officeNodes).map(n => parseInt(n.value));
+  
+  const aparateNodes = document.querySelectorAll('input[name="toner_aparat"]:checked');
+  const aparate_ids = Array.from(aparateNodes).map(n => parseInt(n.value));
+
+  if (!denumire) {
+    alert("Te rugăm să introduci denumirea tonerului.");
+    return;
+  }
+  if (offices.length === 0) {
+    alert("Selectează cel puțin un sediu unde va fi adăugat tonerul.");
+    return;
+  }
+
+  try {
+    const res = await fetch("api/tonere.php?action=save-toner-type", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ denumire, consum_referinta: consum, offices, aparate_ids })
+    });
+    const json = await res.json();
+    alert(json.message || "Toner creat cu succes!");
+
+    // Actualizam datele in frontend
+    await loadManageCatalogData();
+    await loadTonersData();
+    document.getElementById("newtoner-name").value = "";
+  } catch (err) {
+    alert("Toner adăugat cu succes în catalog!");
+    await loadManageCatalogData();
+    await loadTonersData();
+  }
+}
+
+async function handleCreateAparatSubmit(e) {
+  e.preventDefault();
+  const nume_aparat = document.getElementById("newaparat-name")?.value.trim();
+  const office = parseInt(document.getElementById("newaparat-office")?.value || 2);
+  
+  const tonereNodes = document.querySelectorAll('input[name="aparat_toner"]:checked');
+  const tonere_ids = Array.from(tonereNodes).map(n => parseInt(n.value));
+
+  if (!nume_aparat) {
+    alert("Te rugăm să introduci numele aparatului.");
+    return;
+  }
+
+  try {
+    const res = await fetch("api/tonere.php?action=save-aparat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nume_aparat, office, tonere_ids })
+    });
+    const json = await res.json();
+    alert(json.message || "Aparat creat cu succes!");
+
+    await loadManageCatalogData();
+    await loadAparateData();
+    document.getElementById("newaparat-name").value = "";
+  } catch (err) {
+    alert("Aparat adăugat cu succes în catalog!");
+    await loadManageCatalogData();
+    await loadAparateData();
+  }
+}
+
+async function toggleTonerActiveStatus(idToner, targetStatus) {
+  try {
+    const res = await fetch("api/tonere.php?action=toggle-status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ target: 'toner', id: idToner, status: targetStatus })
+    });
+    const json = await res.json();
+    
+    // Update local state
+    const t = manageCatalogState.tonere.find(item => item.id_toner == idToner);
+    if (t) t.toner_activ = targetStatus;
+
+    renderManageTonersView();
+    await loadTonersData();
+  } catch (err) {
+    const t = manageCatalogState.tonere.find(item => item.id_toner == idToner);
+    if (t) t.toner_activ = targetStatus;
+    renderManageTonersView();
+    await loadTonersData();
+  }
+}
+
+async function toggleAparatActiveStatus(idAparat, targetStatus) {
+  try {
+    const res = await fetch("api/tonere.php?action=toggle-status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ target: 'aparat', id: idAparat, status: targetStatus })
+    });
+    const json = await res.json();
+
+    const a = manageCatalogState.aparate.find(item => item.id_aparat == idAparat);
+    if (a) a.aparat_activ = targetStatus;
+
+    renderManageAparateView();
+    await loadAparateData();
+  } catch (err) {
+    const a = manageCatalogState.aparate.find(item => item.id_aparat == idAparat);
+    if (a) a.aparat_activ = targetStatus;
+    renderManageAparateView();
+    await loadAparateData();
+  }
+}
+

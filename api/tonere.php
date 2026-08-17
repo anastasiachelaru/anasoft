@@ -202,3 +202,232 @@ elseif ($action === 'add-stock' || $action === 'update-stock') {
         sendResponse(true, "Stocul a fost actualizat cu {$sign}{$cantitate} bucăți (Demo).");
     }
 }
+elseif ($action === 'manage-catalog') {
+    if ($db) {
+        try {
+            // Preluăm toate tipurile de toner
+            $stmtTipuri = $db->query("SELECT id_tip_toner, denumire_tip, consum_referinta FROM tipuri_toner ORDER BY denumire_tip ASC");
+            $tipuri = $stmtTipuri ? $stmtTipuri->fetchAll() : [];
+
+            // Preluăm toate tonerele (inclusiv inactive)
+            $stmtTonere = $db->query("SELECT t.id_toner, t.id_tip_toner, t.office, t.stoc, t.toner_activ, tt.denumire_tip, tt.consum_referinta FROM tonere t JOIN tipuri_toner tt ON t.id_tip_toner = tt.id_tip_toner ORDER BY t.id_toner DESC");
+            $tonere = $stmtTonere ? $stmtTonere->fetchAll() : [];
+
+            // Preluăm toate aparatele (inclusiv inactive)
+            $stmtAparate = $db->query("SELECT id_aparat, nume_aparat, office, aparat_activ FROM aparate ORDER BY nume_aparat ASC");
+            $aparate = $stmtAparate ? $stmtAparate->fetchAll() : [];
+
+            // Legăturile tonere-aparate
+            $stmtLegaturi = $db->query("SELECT id_toner, id_aparat FROM tonere_aparate");
+            $legaturi = $stmtLegaturi ? $stmtLegaturi->fetchAll() : [];
+
+            sendResponse(true, 'Catalog complet încărcat.', [
+                'tipuri' => $tipuri,
+                'tonere' => $tonere,
+                'aparate' => $aparate,
+                'legaturi' => $legaturi
+            ]);
+        } catch (Throwable $e) {
+            sendResponse(false, 'Eroare la încărcare catalog: ' . $e->getMessage());
+        }
+    } else {
+        // Fallback Mock Demo Data
+        $mockTipuri = [
+            ['id_tip_toner' => 19, 'denumire_tip' => 'TN14 (Konica Minolta 1050/1200)', 'consum_referinta' => 105000],
+            ['id_tip_toner' => 6, 'denumire_tip' => 'TN622C Cyan (Bizhub Press C1085/C1100)', 'consum_referinta' => 95000],
+            ['id_tip_toner' => 7, 'denumire_tip' => 'TN622M Magenta (Bizhub Press C1085/C1100)', 'consum_referinta' => 92000],
+            ['id_tip_toner' => 8, 'denumire_tip' => 'TN622Y Yellow (Bizhub Press C1085/C1100)', 'consum_referinta' => 104000],
+            ['id_tip_toner' => 9, 'denumire_tip' => 'TN622K Black (Bizhub Press C1085/C1100)', 'consum_referinta' => 88000],
+            ['id_tip_toner' => 14, 'denumire_tip' => 'TN321C Cyan (Bizhub C224e/C364e)', 'consum_referinta' => 25000],
+        ];
+        $mockTonere = [
+            ['id_toner' => 34, 'id_tip_toner' => 19, 'denumire_tip' => 'TN14 Black (Independenței)', 'office' => 2, 'stoc' => 22, 'toner_activ' => 1, 'consum_referinta' => 105000],
+            ['id_toner' => 35, 'id_tip_toner' => 6, 'denumire_tip' => 'TN622C Cyan (Independenței)', 'office' => 2, 'stoc' => 6, 'toner_activ' => 1, 'consum_referinta' => 95000],
+            ['id_toner' => 36, 'id_tip_toner' => 7, 'denumire_tip' => 'TN622M Magenta (Independenței)', 'office' => 2, 'stoc' => 5, 'toner_activ' => 1, 'consum_referinta' => 92000],
+            ['id_toner' => 37, 'id_tip_toner' => 8, 'denumire_tip' => 'TN622Y Yellow (Independenței)', 'office' => 2, 'stoc' => 6, 'toner_activ' => 1, 'consum_referinta' => 104000],
+            ['id_toner' => 38, 'id_tip_toner' => 9, 'denumire_tip' => 'TN622K Black (Independenței)', 'office' => 2, 'stoc' => 6, 'toner_activ' => 0, 'consum_referinta' => 88000],
+        ];
+        $mockAparate = [
+            ['id_aparat' => 8, 'nume_aparat' => 'UMF-AN3', 'office' => 2, 'aparat_activ' => 1],
+            ['id_aparat' => 9, 'nume_aparat' => 'UMF-AN2', 'office' => 2, 'aparat_activ' => 1],
+            ['id_aparat' => 14, 'nume_aparat' => 'UMF-C1100-1', 'office' => 2, 'aparat_activ' => 1],
+            ['id_aparat' => 16, 'nume_aparat' => 'UMF-C364e', 'office' => 2, 'aparat_activ' => 0],
+            ['id_aparat' => 20, 'nume_aparat' => 'TUDOR-T1', 'office' => 3, 'aparat_activ' => 1],
+            ['id_aparat' => 27, 'nume_aparat' => 'SMARDAN-1250-1', 'office' => 5, 'aparat_activ' => 1],
+            ['id_aparat' => 48, 'nume_aparat' => 'TIPO-1250-3', 'office' => 4, 'aparat_activ' => 1],
+        ];
+        $mockLegaturi = [
+            ['id_toner' => 34, 'id_aparat' => 8],
+            ['id_toner' => 34, 'id_aparat' => 9],
+            ['id_toner' => 35, 'id_aparat' => 14],
+            ['id_toner' => 36, 'id_aparat' => 14],
+            ['id_toner' => 37, 'id_aparat' => 14],
+            ['id_toner' => 38, 'id_aparat' => 14],
+        ];
+        sendResponse(true, 'Catalog complet încărcat (Mock).', [
+            'tipuri' => $mockTipuri,
+            'tonere' => $mockTonere,
+            'aparate' => $mockAparate,
+            'legaturi' => $mockLegaturi
+        ]);
+    }
+}
+elseif ($action === 'save-toner-type') {
+    $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $denumire = trim($input['denumire'] ?? '');
+    $consumRef = (int)($input['consum_referinta'] ?? 100000);
+    $offices = $input['offices'] ?? [];
+    $aparateCompatibile = $input['aparate_ids'] ?? [];
+
+    if (empty($denumire)) {
+        sendResponse(false, 'Numele tipului de toner este obligatoriu.', null, 400);
+    }
+    if (empty($offices)) {
+        sendResponse(false, 'Selectează cel puțin un sediu pentru adăugarea tonerului.', null, 400);
+    }
+
+    if ($db) {
+        try {
+            $db->beginTransaction();
+
+            // Verificăm dacă tipul de toner există deja
+            $stmtCheck = $db->prepare("SELECT id_tip_toner FROM tipuri_toner WHERE denumire_tip = :d LIMIT 1");
+            $stmtCheck->execute([':d' => $denumire]);
+            $existingTip = $stmtCheck->fetch();
+
+            if ($existingTip) {
+                $idTipToner = $existingTip['id_tip_toner'];
+                $stmtUpd = $db->prepare("UPDATE tipuri_toner SET consum_referinta = :c WHERE id_tip_toner = :id");
+                $stmtUpd->execute([':c' => $consumRef, ':id' => $idTipToner]);
+            } else {
+                $stmtIns = $db->prepare("INSERT INTO tipuri_toner (denumire_tip, consum_referinta) VALUES (:d, :c)");
+                $stmtIns->execute([':d' => $denumire, ':c' => $consumRef]);
+                $idTipToner = $db->lastInsertId();
+            }
+
+            // Adăugăm intrările în `tonere` pentru fiecare sediu selectat
+            $createdTonerIds = [];
+            foreach ($offices as $offId) {
+                $offId = (int)$offId;
+                $stmtCheckToner = $db->prepare("SELECT id_toner FROM tonere WHERE id_tip_toner = :tip AND office = :off LIMIT 1");
+                $stmtCheckToner->execute([':tip' => $idTipToner, ':off' => $offId]);
+                $exToner = $stmtCheckToner->fetch();
+
+                if ($exToner) {
+                    $idToner = $exToner['id_toner'];
+                    $stmtReact = $db->prepare("UPDATE tonere SET toner_activ = 1 WHERE id_toner = :id");
+                    $stmtReact->execute([':id' => $idToner]);
+                } else {
+                    $stmtInsToner = $db->prepare("INSERT INTO tonere (id_tip_toner, office, stoc, toner_activ) VALUES (:tip, :off, 0, 1)");
+                    $stmtInsToner->execute([':tip' => $idTipToner, ':off' => $offId]);
+                    $idToner = $db->lastInsertId();
+                }
+                $createdTonerIds[] = $idToner;
+            }
+
+            // Asociem cu aparatele selectate
+            if (!empty($aparateCompatibile) && !empty($createdTonerIds)) {
+                foreach ($createdTonerIds as $tId) {
+                    foreach ($aparateCompatibile as $aId) {
+                        $aId = (int)$aId;
+                        $stmtCheckLeg = $db->prepare("SELECT COUNT(*) as cnt FROM tonere_aparate WHERE id_toner = :t AND id_aparat = :a");
+                        $stmtCheckLeg->execute([':t' => $tId, ':a' => $aId]);
+                        if ($stmtCheckLeg->fetch()['cnt'] == 0) {
+                            $stmtInsLeg = $db->prepare("INSERT INTO tonere_aparate (id_toner, id_aparat) VALUES (:t, :a)");
+                            $stmtInsLeg->execute([':t' => $tId, ':a' => $aId]);
+                        }
+                    }
+                }
+            }
+
+            $db->commit();
+            sendResponse(true, "Tipul de toner '{$denumire}' a fost salvat și asociat cu succes.");
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) $db->rollBack();
+            sendResponse(false, 'Eroare la salvare toner: ' . $e->getMessage());
+        }
+    } else {
+        sendResponse(true, "Tipul de toner '{$denumire}' a fost creat cu succes (Demo).");
+    }
+}
+elseif ($action === 'save-aparat') {
+    $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $numeAparat = trim($input['nume_aparat'] ?? '');
+    $officeId = (int)($input['office'] ?? 2);
+    $tonereCompatibile = $input['tonere_ids'] ?? [];
+
+    if (empty($numeAparat)) {
+        sendResponse(false, 'Numele aparatului este obligatoriu.', null, 400);
+    }
+
+    if ($db) {
+        try {
+            $db->beginTransaction();
+
+            $stmtCheck = $db->prepare("SELECT id_aparat FROM aparate WHERE nume_aparat = :n LIMIT 1");
+            $stmtCheck->execute([':n' => $numeAparat]);
+            $existing = $stmtCheck->fetch();
+
+            if ($existing) {
+                $idAparat = $existing['id_aparat'];
+                $stmtUpd = $db->prepare("UPDATE aparate SET office = :off, aparat_activ = 1 WHERE id_aparat = :id");
+                $stmtUpd->execute([':off' => $officeId, ':id' => $idAparat]);
+            } else {
+                $stmtIns = $db->prepare("INSERT INTO aparate (nume_aparat, office, aparat_activ) VALUES (:n, :off, 1)");
+                $stmtIns->execute([':n' => $numeAparat, ':off' => $officeId]);
+                $idAparat = $db->lastInsertId();
+            }
+
+            // Actualizare asocieri în `tonere_aparate`
+            if (!empty($tonereCompatibile)) {
+                foreach ($tonereCompatibile as $tId) {
+                    $tId = (int)$tId;
+                    $stmtCheckLeg = $db->prepare("SELECT COUNT(*) as cnt FROM tonere_aparate WHERE id_toner = :t AND id_aparat = :a");
+                    $stmtCheckLeg->execute([':t' => $tId, ':a' => $idAparat]);
+                    if ($stmtCheckLeg->fetch()['cnt'] == 0) {
+                        $stmtInsLeg = $db->prepare("INSERT INTO tonere_aparate (id_toner, id_aparat) VALUES (:t, :a)");
+                        $stmtInsLeg->execute([':t' => $tId, ':a' => $idAparat]);
+                    }
+                }
+            }
+
+            $db->commit();
+            sendResponse(true, "Aparatul '{$numeAparat}' a fost salvat și configurat cu succes.");
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) $db->rollBack();
+            sendResponse(false, 'Eroare la salvare aparat: ' . $e->getMessage());
+        }
+    } else {
+        sendResponse(true, "Aparatul '{$numeAparat}' a fost salvat cu succes (Demo).");
+    }
+}
+elseif ($action === 'toggle-status') {
+    $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $target = $input['target'] ?? ''; // 'toner' sau 'aparat'
+    $id = (int)($input['id'] ?? 0);
+    $newStatus = (int)($input['status'] ?? 0); // 0 = dezactivat, 1 = activat
+
+    if ($id <= 0 || !in_array($target, ['toner', 'aparat'])) {
+        sendResponse(false, 'Parametri invalizi pentru schimbarea statusului.', null, 400);
+    }
+
+    if ($db) {
+        try {
+            if ($target === 'toner') {
+                $stmt = $db->prepare("UPDATE tonere SET toner_activ = :st WHERE id_toner = :id");
+                $stmt->execute([':st' => $newStatus, ':id' => $id]);
+            } else {
+                $stmt = $db->prepare("UPDATE aparate SET aparat_activ = :st WHERE id_aparat = :id");
+                $stmt->execute([':st' => $newStatus, ':id' => $id]);
+            }
+            $stLabel = ($newStatus === 1) ? 'activat' : 'dezactivat';
+            sendResponse(true, "Elementul a fost {$stLabel} cu succes.");
+        } catch (Throwable $e) {
+            sendResponse(false, 'Eroare actualizare status: ' . $e->getMessage());
+        }
+    } else {
+        $stLabel = ($newStatus === 1) ? 'activat' : 'dezactivat';
+        sendResponse(true, "Statusul a fost schimbat în '{$stLabel}' (Demo).");
+    }
+}
+
