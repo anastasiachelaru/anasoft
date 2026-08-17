@@ -212,14 +212,30 @@ elseif ($action === 'manage-catalog') {
             // Preluăm toate tonerele (inclusiv inactive)
             $stmtTonere = $db->query("SELECT t.id_toner, t.id_tip_toner, t.office, t.stoc, t.toner_activ, tt.denumire_tip, tt.consum_referinta FROM tonere t JOIN tipuri_toner tt ON t.id_tip_toner = tt.id_tip_toner ORDER BY t.id_toner DESC");
             $tonere = $stmtTonere ? $stmtTonere->fetchAll() : [];
+            foreach ($tonere as &$t) {
+                $t['id_toner'] = (int)$t['id_toner'];
+                $t['id_tip_toner'] = (int)$t['id_tip_toner'];
+                $t['office'] = (int)$t['office'];
+                $t['stoc'] = (int)$t['stoc'];
+                $t['toner_activ'] = (int)$t['toner_activ'];
+            }
 
             // Preluăm toate aparatele (inclusiv inactive)
             $stmtAparate = $db->query("SELECT id_aparat, nume_aparat, office, aparat_activ FROM aparate ORDER BY nume_aparat ASC");
             $aparate = $stmtAparate ? $stmtAparate->fetchAll() : [];
+            foreach ($aparate as &$a) {
+                $a['id_aparat'] = (int)$a['id_aparat'];
+                $a['office'] = (int)$a['office'];
+                $a['aparat_activ'] = (int)$a['aparat_activ'];
+            }
 
             // Legăturile tonere-aparate
             $stmtLegaturi = $db->query("SELECT id_toner, id_aparat FROM tonere_aparate");
             $legaturi = $stmtLegaturi ? $stmtLegaturi->fetchAll() : [];
+            foreach ($legaturi as &$l) {
+                $l['id_toner'] = (int)$l['id_toner'];
+                $l['id_aparat'] = (int)$l['id_aparat'];
+            }
 
             sendResponse(true, 'Catalog complet încărcat.', [
                 'tipuri' => $tipuri,

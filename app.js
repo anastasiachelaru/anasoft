@@ -14,21 +14,28 @@ const OFFICE_NAMES = {
 };
 
 function formatOfficeName(officeIdOrName) {
-  if (OFFICE_NAMES[officeIdOrName]) return OFFICE_NAMES[officeIdOrName];
-  if (officeIdOrName !== null && officeIdOrName !== undefined) {
-    const key = parseInt(officeIdOrName);
-    if (OFFICE_NAMES[key]) return OFFICE_NAMES[key];
-    const str = String(officeIdOrName).trim();
-    if (str.toUpperCase() === 'TIPO' || str.toUpperCase().includes('TIPOGRAFIE')) return 'Tipografie';
-    if (str.toUpperCase() === 'TUDOR') return 'Tudor';
-    if (str.toUpperCase() === 'SMÂRDAN' || str.toUpperCase() === 'SMARDAN') return 'Smârdan';
-    if (str.toUpperCase() === 'UMF2' || str.toUpperCase() === 'UMF 2') return 'UMF 2';
-    if (str.length > 0) {
-      return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-    }
+  if (officeIdOrName === 0 || officeIdOrName === '0' || officeIdOrName === null || officeIdOrName === undefined) {
+    return 'Inexistent';
   }
-  return 'PIM';
+  const key = parseInt(officeIdOrName);
+  if (!isNaN(key)) {
+    if (key === 0) return 'Inexistent';
+    if (OFFICE_NAMES[key]) return OFFICE_NAMES[key];
+  }
+  if (OFFICE_NAMES[officeIdOrName]) return OFFICE_NAMES[officeIdOrName];
+
+  const str = String(officeIdOrName).trim();
+  if (str === '0' || str.toLowerCase() === '0' || str === '') return 'Inexistent';
+  if (str.toUpperCase() === 'TIPO' || str.toUpperCase().includes('TIPOGRAFIE')) return 'Tipografie';
+  if (str.toUpperCase() === 'TUDOR') return 'Tudor';
+  if (str.toUpperCase() === 'SMÂRDAN' || str.toUpperCase() === 'SMARDAN') return 'Smârdan';
+  if (str.toUpperCase() === 'UMF2' || str.toUpperCase() === 'UMF 2') return 'UMF 2';
+  if (str.length > 0) {
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  }
+  return 'Inexistent';
 }
+
 
 // Cache de date în memorie
 let tonersData = [];
@@ -913,51 +920,52 @@ function closeWizardModal() {
 function goToWizardStep(stepNum) {
   wizardCurrentStep = stepNum;
   
-  document.querySelectorAll(".wizard-step-item").forEach((el, idx) => {
-    const num = idx + 1;
-    if (num === stepNum) {
-      el.classList.add("active");
-      el.classList.remove("completed");
-    } else if (num < stepNum) {
-      el.classList.remove("active");
-      el.classList.add("completed");
-    } else {
-      el.classList.remove("active");
-      el.classList.remove("completed");
-    }
-  });
-  
-  document.querySelectorAll(".step-connector").forEach((el, idx) => {
+  document.querySelectorAll(".wizard-step-item").forEach((elem, idx) => {
     if (idx + 1 < stepNum) {
-      el.classList.add("active");
+      elem.className = "wizard-step-item completed";
+    } else if (idx + 1 === stepNum) {
+      elem.className = "wizard-step-item active";
     } else {
-      el.classList.remove("active");
+      elem.className = "wizard-step-item";
     }
   });
   
-  document.querySelectorAll(".wizard-step-content").forEach(el => el.classList.remove("active"));
-  const currentContent = document.getElementById(`wizard-step-${stepNum}`);
-  if (currentContent) currentContent.classList.add("active");
+  document.querySelectorAll(".step-connector").forEach((conn, idx) => {
+    if (idx + 1 < stepNum) {
+      conn.classList.add("active");
+    } else {
+      conn.classList.remove("active");
+    }
+  });
   
-  if (stepNum === 3) {
+  document.querySelectorAll(".wizard-step-content").forEach(step => step.classList.remove("active"));
+  document.getElementById(`wizard-step-${stepNum}`).classList.add("active");
+  
+  if (stepNum === 1) {
+    renderWizardStep1Aparate();
+  } else if (stepNum === 3) {
     initWizardStep3Data();
   }
 }
 
-// PASUL 1: REDARE APARATE PE PUNCTUL DE LUCRU SELECTAT
+// PASUL 1: REDARE APARATE PE PUNCTUL DE LUCRU SELECTAT (DOAR ACTIVE)
 function renderWizardStep1Aparate() {
   const container = document.getElementById("wizard-aparate-container");
+  if (!container) return;
   container.innerHTML = "";
   
   const effectiveOffice = (currentOfficeFilter !== 'all') ? parseInt(currentOfficeFilter) : (currentUser ? currentUser.office : 4);
   const search = (document.getElementById("wizard-aparat-search").value || "").toLowerCase();
   
+  // EXCLUDERE STRICTĂ APARATE INACTIVE (aparat_activ === 0)
+  const activeAparateData = aparateData.filter(a => parseInt(a.aparat_activ) === 1 || a.aparat_activ === undefined);
+  
   let officeAparate = (currentOfficeFilter === 'all')
-    ? aparateData 
-    : aparateData.filter(a => a.office == effectiveOffice);
+    ? activeAparateData 
+    : activeAparateData.filter(a => parseInt(a.office) === effectiveOffice);
 
   if (search) {
-    officeAparate = officeAparate.filter(a => a.nume_aparat.toLowerCase().includes(search));
+    officeAparate = officeAparate.filter(a => (a.nume_aparat || '').toLowerCase().includes(search));
   }
   
   if (officeAparate.length === 0) {
