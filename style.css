@@ -1478,57 +1478,83 @@ section::-webkit-scrollbar-thumb:hover {
 }
 
 /* ----------------------------------------------------
-   STILURI MODAL GESTIUNE TIPURI TONERE & APARATE
+   BARĂ DE CĂUTARE ȘI ALINIERE BUTOANE HEADERS
 ---------------------------------------------------- */
 .action-buttons {
   display: flex !important;
   flex-direction: row !important;
   align-items: center !important;
-  gap: 12px !important;
-  flex-wrap: wrap !important;
   justify-content: flex-end !important;
+  gap: 12px !important;
+  flex-wrap: nowrap !important;
 }
 
-.modal-card {
-  max-height: 90vh !important;
-  display: flex !important;
-  flex-direction: column !important;
-  overflow: hidden !important;
-  background: #0f172a !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  border-radius: 20px !important;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8) !important;
-}
-
-.modal-header {
-  padding: 18px 24px !important;
-  background: rgba(15, 23, 42, 0.95) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
-  display: flex !important;
-  justify-content: space-between !important;
+.search-box-wrap {
+  position: relative !important;
+  display: inline-flex !important;
   align-items: center !important;
-  flex-shrink: 0 !important;
+  width: auto !important;
+  margin: 0 !important;
 }
 
-.manage-body {
-  padding: 24px !important;
-  overflow-y: auto !important;
-  flex: 1 !important;
-  max-height: calc(90vh - 120px) !important;
+.search-box-wrap.full-width {
+  width: 100% !important;
 }
 
-.manage-body::-webkit-scrollbar {
-  width: 8px;
+.search-box-wrap .search-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  pointer-events: none;
 }
-.manage-body::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.6);
+
+.search-input {
+  background: rgba(15, 23, 42, 0.8) !important;
+  border: 1px solid var(--border-color) !important;
+  color: #fff !important;
+  padding: 10px 14px 10px 36px !important;
+  border-radius: 10px !important;
+  font-family: inherit !important;
+  font-size: 0.88rem !important;
+  outline: none !important;
+  width: 220px !important;
+  transition: all 0.2s !important;
 }
-.manage-body::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
+
+.search-input:focus {
+  border-color: var(--cyan-accent) !important;
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.2) !important;
 }
-.manage-body::-webkit-scrollbar-thumb:hover {
-  background: var(--cyan-accent);
+
+.search-input.full-width {
+  width: 100% !important;
+}
+
+/* ----------------------------------------------------
+   STILURI MODAL GESTIUNE TIPURI TONERE & APARATE
+---------------------------------------------------- */
+.modal-close-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-muted);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.modal-close-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: #ef4444;
+  color: #fff;
+  transform: rotate(90deg);
 }
 
 .manage-tabs-bar {
@@ -1629,41 +1655,42 @@ section::-webkit-scrollbar-thumb:hover {
 }
 
 .compatibility-picker-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 8px;
-  max-height: 180px;
-  overflow-y: auto;
-  padding: 10px;
-  background: rgba(9, 13, 22, 0.7);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)) !important;
+  gap: 10px !important;
+  max-height: 220px !important;
+  overflow-y: auto !important;
+  padding: 12px !important;
+  background: rgba(9, 13, 22, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 12px !important;
 }
 
 .checkbox-card {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: rgba(30, 41, 59, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-size: 0.84rem;
-  color: #e2e8f0;
-  cursor: pointer;
-  transition: all 0.15s;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  background: rgba(30, 41, 59, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  padding: 10px 14px !important;
+  border-radius: 10px !important;
+  font-size: 0.88rem !important;
+  color: #f1f5f9 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  user-select: none !important;
 }
 
 .checkbox-card:hover {
-  background: rgba(30, 41, 59, 0.9);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(2, 132, 199, 0.2) !important;
+  border-color: #38bdf8 !important;
 }
 
 .checkbox-card input[type="checkbox"] {
-  accent-color: #3b82f6;
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
+  accent-color: #00f2fe !important;
+  width: 17px !important;
+  height: 17px !important;
+  cursor: pointer !important;
 }
 
 .btn-warning {
@@ -1702,5 +1729,6 @@ section::-webkit-scrollbar-thumb:hover {
   color: #ef4444;
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
+
 
 

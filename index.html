@@ -706,21 +706,23 @@
 
   <!-- MODAL GESTIUNE TIPURI TONERE ȘI APARATE -->
   <div id="modal-manage-types" class="modal-overlay hidden">
-    <div class="modal-card modal-xl" style="max-width: 920px; width: 95%;">
-      <div class="modal-header">
-        <div>
-          <h3 style="display: flex; align-items: center; gap: 10px; color: #f59e0b; font-size: 1.25rem;">
-            <i class="fa-solid fa-sliders"></i> GESTIONARE TIPURI TONERE & APARATE
-          </h3>
-          <p style="color: var(--text-muted); font-size: 0.82rem; margin-top: 3px;">Configurare echipamente noi, asociere compatibilități și dezactivare consumabile PIM</p>
+    <div class="wizard-modal-card">
+      
+      <div class="wizard-header">
+        <div class="wizard-title-wrap">
+          <div class="wizard-icon-box" style="background: linear-gradient(135deg, #d97706, #f59e0b);">
+            <i class="fa-solid fa-sliders"></i>
+          </div>
+          <div>
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff;">Gestionare Tipuri Tonere & Aparate</h3>
+            <span class="wizard-subtitle">Configurare echipamente noi, asociere compatibilități și dezactivare consumabile PIM</span>
+          </div>
         </div>
-        <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('modal-manage-types')" style="display: inline-flex; align-items: center; gap: 8px; font-weight: 700; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; padding: 6px 14px; border-radius: 8px; cursor: pointer;">
-          <i class="fa-solid fa-xmark"></i> ÎNCHD / ÎNAPOI
-        </button>
+        <button type="button" class="modal-close-btn" onclick="closeModal('modal-manage-types')" title="Închide fereastra">&times;</button>
       </div>
 
       <!-- TAB-URI DE COMUTARE GESTIUNE (TONERE VS APARATE) -->
-      <div class="manage-tabs-bar" style="padding: 0 24px;">
+      <div class="manage-tabs-bar">
         <button class="manage-tab-btn active" id="tab-manage-tonere-btn" onclick="switchManageTab('tonere')">
           <i class="fa-solid fa-fill-drip text-cyan"></i> Gestiune Tonere & Tipuri
         </button>
@@ -728,6 +730,7 @@
           <i class="fa-solid fa-print text-magenta"></i> Gestiune Aparate & Echipamente
         </button>
       </div>
+
 
       <!-- CORPUL TAB-URILOR -->
       <div class="manage-body">
