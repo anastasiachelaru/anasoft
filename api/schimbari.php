@@ -99,8 +99,11 @@ elseif ($action === 'get-last-index') {
     $idAparat = (int)($_GET['id_aparat'] ?? 0);
     $idToner = (int)($_GET['id_toner'] ?? 0);
     
-    if ($idAparat <= 0 || $idToner <= 0) {
-        sendResponse(false, 'Aparatul și tonerul sunt obligatorii.', null, 400);
+    if ($idAparat <= 0) {
+        sendResponse(false, 'Aparatul este obligatoriu.', null, 400);
+    }
+    if ($idToner <= 0) {
+        $idToner = 1;
     }
     
     if ($db) {
