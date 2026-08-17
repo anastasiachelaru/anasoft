@@ -22,9 +22,8 @@ if ($action === 'list') {
                 $db->exec("ALTER TABLE users ADD COLUMN password_plain VARCHAR(255) DEFAULT NULL");
             } catch (Throwable $e) {}
 
-            // Setăm PIN-ul de 12 cifre de 0 pentru Admin PIM și curățăm conturile vechi de test
-            $db->exec("UPDATE users SET pin_code = '000000000000', role = 'admin', password_plain = 'admin123' WHERE username = 'admin' OR id_user = 1");
-            $db->exec("DELETE FROM users WHERE username != 'admin' AND id_user != 1");
+            // Setăm PIN-ul de 12 cifre de 0 pentru Admin PIM dacă e necesar
+            $db->exec("UPDATE users SET pin_code = '000000000000', role = 'admin', password_plain = IF(password_plain IS NULL OR password_plain='', 'admin123', password_plain) WHERE username = 'admin' OR id_user = 1");
 
             // Garantăm existența contului Admin PIM
             $stmtCheckAdmin = $db->query("SELECT COUNT(*) as cnt FROM users WHERE username = 'admin'");
@@ -32,6 +31,14 @@ if ($action === 'list') {
             if (!$cntRow || (int)$cntRow['cnt'] === 0) {
                 $stmtIns = $db->prepare("INSERT INTO users (username, email, password, password_plain, role, office, first_name, last_name, cont_active, pin_code) VALUES ('admin', 'admin@pimcopy.ro', md5('admin123'), 'admin123', 'admin', 2, 'Admin', 'PIM', 1, '000000000000')");
                 $stmtIns->execute();
+            }
+
+            // Garantăm existența cel puțin unui cont de operator demo dacă baza de date conține doar admin
+            $stmtCheckOp = $db->query("SELECT COUNT(*) as cnt FROM users WHERE role = 'operator'");
+            $opRow = $stmtCheckOp ? $stmtCheckOp->fetch() : null;
+            if (!$opRow || (int)$opRow['cnt'] === 0) {
+                $stmtInsOp = $db->prepare("INSERT INTO users (username, email, password, password_plain, role, office, first_name, last_name, cont_active, pin_code) VALUES ('operator', 'operator@pimcopy.ro', md5('operator123'), 'operator123', 'operator', 2, 'Operator', 'Independenței', 1, '123456')");
+                $stmtInsOp->execute();
             }
 
             $stmt = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active, pin_code, password, password_plain FROM users ORDER BY id_user DESC");
@@ -46,15 +53,8 @@ if ($action === 'list') {
                     $u['full_name'] = trim(($u['first_name'] ?? '') . ' ' . ($u['last_name'] ?? ''));
                 }
 
-                // Pentru conturile de administrator, ascundem parola
-                if ($u['role'] === 'admin' || strtolower($u['username']) === 'admin') {
-                    $u['password'] = '[Protejată]';
-                    $u['password_plain'] = '[Protejată]';
-                } else {
-                    // Pentru operatori, oferim parola necriptată pentru vizualizare de către admin
-                    if (empty($u['password_plain'])) {
-                        $u['password_plain'] = !empty($u['password']) ? $u['password'] : 'operator123';
-                    }
+                if (empty($u['password_plain'])) {
+                    $u['password_plain'] = !empty($u['password']) && strlen($u['password']) < 32 ? $u['password'] : ($u['role'] === 'admin' ? 'admin123' : 'operator123');
                 }
             }
             
@@ -63,9 +63,10 @@ if ($action === 'list') {
             sendResponse(false, 'Eroare preluare utilizatori: ' . $e->getMessage(), null, 200);
         }
     } else {
-        // Mock data cu singurul admin de test (PIN 12 de 0)
+        // Mock data cu adminul și operatorul demo
         sendResponse(true, 'Mock utilizatori.', [
-            ['id_user' => 1, 'username' => 'admin', 'role' => 'admin', 'office' => 2, 'office_nume' => 'Independenței', 'full_name' => 'Admin PIM', 'cont_active' => 1, 'pin_code' => '000000000000', 'password' => '[Protejată]', 'password_plain' => '[Protejată]']
+            ['id_user' => 1, 'username' => 'admin', 'role' => 'admin', 'office' => 2, 'office_nume' => 'Independenței', 'full_name' => 'Admin PIM', 'cont_active' => 1, 'pin_code' => '000000000000', 'password_plain' => 'admin123'],
+            ['id_user' => 46, 'username' => 'operator', 'role' => 'operator', 'office' => 2, 'office_nume' => 'Independenței', 'full_name' => 'Operator Independenței', 'cont_active' => 1, 'pin_code' => '123456', 'password_plain' => 'operator123']
         ]);
     }
 }

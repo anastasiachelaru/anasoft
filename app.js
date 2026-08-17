@@ -398,6 +398,11 @@ function renderUsersTable() {
   const tbody = document.getElementById("users-table-body");
   if (!tbody) return;
   tbody.innerHTML = "";
+
+  if (!usersData || usersData.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:28px; color:#94a3b8;"><i class="fa-solid fa-users-slash" style="font-size:1.5rem; margin-bottom:8px; display:block;"></i>Nu au fost găsiți utilizatori în baza de date.<br>Apasă pe butonul <strong style="color:#38bdf8;">"+ Utilizator Nou"</strong> pentru a crea un cont.</td></tr>`;
+    return;
+  }
   
   usersData.forEach(u => {
     const tr = document.createElement("tr");
@@ -408,14 +413,26 @@ function renderUsersTable() {
     const statusBadge = isActive 
       ? '<span class="badge badge-stock-ok">Activ</span>' 
       : '<span class="badge badge-stock-low">Inactiv</span>';
+
+    // Verificăm dacă utilizatorul din rând este cel conectat în prezent
+    const isCurrentLoggedInUser = currentUser && (
+      (currentUser.id_user && parseInt(currentUser.id_user) === parseInt(u.id_user)) || 
+      (currentUser.username && u.username && currentUser.username.toLowerCase() === u.username.toLowerCase())
+    );
     
     const pinDisplay = u.pin_code 
       ? `<code style="color:${isAdmin ? '#fbbf24' : '#00f2fe'}; font-weight:700;">PIN: ${u.pin_code}</code>` 
       : '<small style="color:#94a3b8;">Fără PIN</small>';
 
-    const passDisplay = isAdmin
-      ? `<span class="badge" style="background:rgba(239, 68, 68, 0.15); color:#fca5a5; border:1px solid rgba(239, 68, 68, 0.3); font-size:0.75rem;"><i class="fa-solid fa-lock"></i> Parolă Protejată</span>`
-      : `<code style="color:#a7f3d0; font-weight:600;"><i class="fa-solid fa-key"></i> Parolă: ${u.password_plain || u.password || 'operator123'}</code>`;
+    let passDisplay = "";
+    if (isAdmin && !isCurrentLoggedInUser) {
+      // Parolă protejată pentru alți administratori
+      passDisplay = `<span class="badge" style="background:rgba(239, 68, 68, 0.15); color:#fca5a5; border:1px solid rgba(239, 68, 68, 0.3); font-size:0.75rem;"><i class="fa-solid fa-lock"></i> Parolă Protejată</span>`;
+    } else {
+      // Afișăm parola pentru Operatori și pentru Contul Propriu de Admin
+      const passVal = u.password_plain || (u.password && !u.password.includes('[Protejată]') ? u.password : (isAdmin ? 'admin123' : 'operator123'));
+      passDisplay = `<code style="color:#a7f3d0; font-weight:600;"><i class="fa-solid fa-key"></i> Parolă: ${passVal}</code>`;
+    }
 
     const pinPassCombined = `<div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start;">${pinDisplay}${passDisplay}</div>`;
 
@@ -426,6 +443,7 @@ function renderUsersTable() {
     tr.innerHTML = `
       <td>
         <strong>${u.full_name || u.username}</strong>
+        ${isCurrentLoggedInUser ? ' <span class="badge" style="background:rgba(56, 189, 248, 0.2); color:#38bdf8; border:1px solid rgba(56,189,248,0.4); font-size:0.7rem; padding:2px 6px;">(Tu)</span>' : ''}
         <br><small style="color:#94a3b8;">@${u.username} (ID #${u.id_user})</small>
       </td>
       <td><span class="badge ${roleBadgeClass}">${roleLabel}</span></td>
