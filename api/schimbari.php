@@ -247,8 +247,12 @@ elseif ($action === 'update-aparat-index') {
             $stmtUpd = $db->prepare("UPDATE istoric_schimbari SET contor = :c WHERE id_istoric_schimbare = :id");
             $stmtUpd->execute([':c' => $contor, ':id' => $lastEntry['id_istoric_schimbare']]);
         } else {
-            $stmtIns = $db->prepare("INSERT INTO istoric_schimbari (id_aparat, id_toner, contor, data_schimbare, id_user, copii_realizate, consum_referinta, procent_realizat) VALUES (:aparat, 0, :contor, NOW(), 1, 0, 105000, 0)");
-            $stmtIns->execute([':aparat' => $idAparat, ':contor' => $contor]);
+            $stmtT = $db->query("SELECT id_toner FROM tonere LIMIT 1");
+            $tRow = $stmtT ? $stmtT->fetch() : null;
+            $tonerIdValid = $tRow ? (int)$tRow['id_toner'] : 34;
+
+            $stmtIns = $db->prepare("INSERT INTO istoric_schimbari (id_aparat, id_toner, contor, data_schimbare, id_user, copii_realizate, consum_referinta, procent_realizat) VALUES (:aparat, :toner, :contor, NOW(), 1, 0, 105000, 0)");
+            $stmtIns->execute([':aparat' => $idAparat, ':toner' => $tonerIdValid, ':contor' => $contor]);
         }
 
         sendResponse(true, 'Indexul și datele aparatului au fost actualizate cu succes.');

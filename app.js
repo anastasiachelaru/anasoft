@@ -1137,6 +1137,8 @@ function renderWizardStep2Tonere(tonersList) {
   });
 }
 
+let aparateCustomIndexesMap = {};
+
 // PASUL 3: PRELUARE INDEX VECHI, CALCUL LIMITĂ MIN/MAX & METRICE ÎN TIMP REAL
 async function initWizardStep3Data() {
   if (!wizardSelectedAparat || !wizardSelectedToner) return;
@@ -1162,9 +1164,15 @@ async function initWizardStep3Data() {
     : tonerSpecificRef;
   
   wizardConsumRef = (rawRef > 0) ? rawRef : tonerSpecificRef;
-  wizardIndexVechi = (lastIndexData && lastIndexData.index_vechi !== undefined && lastIndexData.index_vechi !== null) 
-    ? parseInt(lastIndexData.index_vechi) 
-    : 0;
+
+  const customIndex = aparateCustomIndexesMap[wizardSelectedAparat.id_aparat];
+  if (customIndex !== undefined && customIndex !== null) {
+    wizardIndexVechi = parseInt(customIndex);
+  } else if (lastIndexData && lastIndexData.index_vechi !== undefined && lastIndexData.index_vechi !== null && parseInt(lastIndexData.index_vechi) > 0) {
+    wizardIndexVechi = parseInt(lastIndexData.index_vechi);
+  } else {
+    wizardIndexVechi = 0;
+  }
 
   // Garantare calcul corect al minimului și maximului (200% din consumul de referință specific al tonerului)
   wizardMinAllowed = wizardIndexVechi + 1;
@@ -1299,7 +1307,9 @@ function populateAddStockModalSelect() {
   availableToners.forEach(t => {
     const opt = document.createElement("option");
     opt.value = t.id_toner;
-    opt.innerText = `${t.denumire_tip} (${formatOfficeName(t.office || t.office_nume)}) - Stoc: ${t.stoc} buc`;
+    let cleanName = (t.denumire_tip || "").trim();
+    cleanName = cleanName.replace(/^(cyan|magenta|yellow|black)\s+/i, '');
+    opt.innerText = `${cleanName} (${formatOfficeName(t.office || t.office_nume)}) - Stoc: ${t.stoc} buc`;
     select.appendChild(opt);
   });
 }
@@ -1808,17 +1818,20 @@ async function handleEditTonerSubmit(e) {
 async function openEditAparatModal(idAparat, numeAparat) {
   document.getElementById("edit-aparat-id").value = idAparat;
   document.getElementById("edit-aparat-name").value = numeAparat;
-  document.getElementById("edit-aparat-index").value = "0";
+  
+  const customIdx = aparateCustomIndexesMap[idAparat];
+  document.getElementById("edit-aparat-index").value = (customIdx !== undefined) ? customIdx : "0";
   document.getElementById("edit-aparat-modal").classList.remove("hidden");
 
   try {
     const res = await fetch(`api/schimbari.php?action=get-last-index&id_aparat=${idAparat}&id_toner=1`);
     const json = await res.json();
-    if (json.success && json.data) {
-      document.getElementById("edit-aparat-index").value = json.data.index_vechi || 0;
+    if (json.success && json.data && json.data.index_vechi > 0) {
+      aparateCustomIndexesMap[idAparat] = json.data.index_vechi;
+      document.getElementById("edit-aparat-index").value = json.data.index_vechi;
     }
   } catch (e) {
-    document.getElementById("edit-aparat-index").value = 0;
+    if (customIdx !== undefined) document.getElementById("edit-aparat-index").value = customIdx;
   }
 }
 
@@ -1836,6 +1849,9 @@ async function handleEditAparatSubmit(e) {
     alert("Te rugăm să introduci o valoare validă pentru contor.");
     return;
   }
+
+  // Sincronizare locală instantanee a contorului în timp real
+  aparateCustomIndexesMap[idAparat] = contorVal;
 
   try {
     const res = await fetch("api/schimbari.php?action=update-aparat-index", {
