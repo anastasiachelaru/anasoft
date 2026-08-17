@@ -1422,6 +1422,11 @@ async function loadManageCatalogData() {
 // ----------------------------------------------------
 // SEARCHABLE PICKER PENTRU APARATE (LA CREARE TONER)
 // ----------------------------------------------------
+function onTonerOfficeSelectChange(officeVal) {
+  const currentQuery = document.getElementById("picker-aparat-search")?.value || '';
+  renderAparatePicker(currentQuery);
+}
+
 function onAparatPickerSearch(query) {
   renderAparatePicker(query);
 }
@@ -1431,9 +1436,13 @@ function renderAparatePicker(query = '') {
   if (!container) return;
 
   const activeAparate = (manageCatalogState.aparate || []).filter(a => parseInt(a.aparat_activ) === 1);
+  const selectedOffice = document.getElementById("newtoner-office-select")?.value || 'all';
   const q = query.trim().toLowerCase();
 
   const filtered = activeAparate.filter(a => {
+    if (selectedOffice !== 'all' && parseInt(a.office) !== parseInt(selectedOffice)) {
+      return false;
+    }
     if (!q) return true;
     const nameMatch = (a.nume_aparat || '').toLowerCase().includes(q);
     const officeMatch = formatOfficeName(a.office).toLowerCase().includes(q);
@@ -1441,7 +1450,11 @@ function renderAparatePicker(query = '') {
   });
 
   if (filtered.length === 0) {
-    container.innerHTML = `<span style="color:#94a3b8; font-size:0.85rem; padding:6px; grid-column: 1 / -1;">Nu s-a găsit niciun aparat cu numele "${query}".</span>`;
+    const officeName = (selectedOffice !== 'all') ? formatOfficeName(selectedOffice) : '';
+    const msg = officeName 
+      ? `Nu există aparate active în ${officeName}${q ? ' care să se potrivească cu "' + query + '"' : ''}.`
+      : `Nu s-a găsit niciun aparat cu numele "${query}".`;
+    container.innerHTML = `<span style="color:#94a3b8; font-size:0.85rem; padding:6px; grid-column: 1 / -1;">${msg}</span>`;
     return;
   }
 
@@ -1669,6 +1682,7 @@ function filterManageAparateList() {
 async function handleCreateTonerTypeSubmit(e) {
   e.preventDefault();
   const denumire = document.getElementById("newtoner-name")?.value.trim();
+  const culoare = document.getElementById("newtoner-color")?.value || 'Black';
   const consum = parseInt(document.getElementById("newtoner-consum")?.value || 95000);
   const officeSel = document.getElementById("newtoner-office-select")?.value || 'all';
 
@@ -1690,7 +1704,7 @@ async function handleCreateTonerTypeSubmit(e) {
     const res = await fetch("api/tonere.php?action=save-toner-type", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ denumire, consum_referinta: consum, offices, aparate_ids })
+      body: JSON.stringify({ denumire, culoare, consum_referinta: consum, offices, aparate_ids })
     });
     const json = await res.json();
     alert(json.message || "Toner creat cu succes!");
@@ -1713,6 +1727,7 @@ async function handleCreateTonerTypeSubmit(e) {
     await loadTonersData();
   }
 }
+
 
 async function handleCreateAparatSubmit(e) {
   e.preventDefault();

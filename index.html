@@ -724,13 +724,12 @@
       <!-- TAB-URI DE COMUTARE GESTIUNE (TONERE VS APARATE) -->
       <div class="manage-tabs-bar">
         <button class="manage-tab-btn active" id="tab-manage-tonere-btn" onclick="switchManageTab('tonere')">
-          <i class="fa-solid fa-fill-drip text-cyan"></i> Gestiune Tonere & Tipuri
+          <i class="fa-solid fa-fill-drip text-cyan"></i> Gestiune Tonere
         </button>
         <button class="manage-tab-btn" id="tab-manage-aparate-btn" onclick="switchManageTab('aparate')">
-          <i class="fa-solid fa-print text-magenta"></i> Gestiune Aparate & Echipamente
+          <i class="fa-solid fa-print text-magenta"></i> Gestiune Aparate
         </button>
       </div>
-
 
       <!-- CORPUL TAB-URILOR -->
       <div class="manage-body">
@@ -745,12 +744,24 @@
             </h4>
 
             <form onsubmit="handleCreateTonerTypeSubmit(event)">
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
                 <div class="form-group">
                   <label for="newtoner-name" style="color: #38bdf8; font-weight: 700; font-size: 0.88rem; display: block; margin-bottom: 6px;">
                     <i class="fa-solid fa-tag"></i> Denumire & Model Toner *
                   </label>
-                  <input type="text" id="newtoner-name" placeholder="ex: TN622C Cyan (Bizhub Press C1085)" required style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(56, 189, 248, 0.4); color: #fff; padding: 10px 14px; border-radius: 8px; width: 100%; font-size: 0.9rem;">
+                  <input type="text" id="newtoner-name" placeholder="ex: TN622C Cyan (Bizhub C1085)" required style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(56, 189, 248, 0.4); color: #fff; padding: 10px 14px; border-radius: 8px; width: 100%; font-size: 0.9rem;">
+                </div>
+
+                <div class="form-group">
+                  <label for="newtoner-color" style="color: #38bdf8; font-weight: 700; font-size: 0.88rem; display: block; margin-bottom: 6px;">
+                    <i class="fa-solid fa-palette"></i> Culoare Toner *
+                  </label>
+                  <select id="newtoner-color" style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(56, 189, 248, 0.4); color: #fff; padding: 10px 14px; border-radius: 8px; width: 100%; font-size: 0.9rem;">
+                    <option value="Black" selected>Black (Negru)</option>
+                    <option value="Cyan">Cyan (Albastru)</option>
+                    <option value="Magenta">Magenta (Roz / Roșu)</option>
+                    <option value="Yellow">Yellow (Galben)</option>
+                  </select>
                 </div>
 
                 <div class="form-group">
@@ -766,7 +777,7 @@
                 <label for="newtoner-office-select" style="color: #38bdf8; font-weight: 700; font-size: 0.88rem; display: block; margin-bottom: 6px;">
                   <i class="fa-solid fa-building"></i> Selectează Sediu PIM unde va fi adăugat Tonerul *
                 </label>
-                <select id="newtoner-office-select" style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(56, 189, 248, 0.4); color: #fff; padding: 10px 14px; border-radius: 8px; width: 100%; font-size: 0.9rem;">
+                <select id="newtoner-office-select" onchange="onTonerOfficeSelectChange(this.value)" style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(56, 189, 248, 0.4); color: #fff; padding: 10px 14px; border-radius: 8px; width: 100%; font-size: 0.9rem;">
                   <option value="all" selected>Toate Sediile PIM Iași (Independenței, Tudor, Tipografie, Smârdan, UMF 2)</option>
                   <option value="2">Sediu Independenței</option>
                   <option value="3">Sediu Tudor</option>
@@ -787,9 +798,8 @@
                   <input type="text" id="picker-aparat-search" placeholder="Caută aparat după nume (ex: UMF-AN3, C1100, TUDOR)..." oninput="onAparatPickerSearch(this.value)" class="search-input full-width">
                 </div>
 
-                <div style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
-                  <span>Aparate Bifate / Selectate până acum (<strong id="picker-aparate-count" style="color: #38bdf8;">0</strong>):</span>
-                  <button type="button" onclick="clearAllSelectedAparate()" style="background: none; border: none; color: #ef4444; font-size: 0.78rem; cursor: pointer; text-decoration: underline;">Șterge selecția</button>
+                <div style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 6px;">
+                  Aparate Bifate / Selectate până acum (<strong id="picker-aparate-count" style="color: #38bdf8;">0</strong>):
                 </div>
                 
                 <div id="selected-aparate-chips" class="selected-chips-container">
@@ -801,10 +811,7 @@
                 </div>
               </div>
 
-              <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('modal-manage-types')">
-                  <i class="fa-solid fa-arrow-left"></i> Înapoi
-                </button>
+              <div style="margin-top: 20px; text-align: right;">
                 <button type="submit" class="btn btn-success">
                   <i class="fa-solid fa-floppy-disk"></i> Salvează & Asociază Toner
                 </button>
@@ -885,9 +892,8 @@
                   <input type="text" id="picker-toner-search" placeholder="Caută toner după nume (ex: TN622, TN14, TN321)..." oninput="onTonerPickerSearch(this.value)" class="search-input full-width">
                 </div>
 
-                <div style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
-                  <span>Tonere Bifate / Selectate până acum (<strong id="picker-tonere-count" style="color: #f472b6;">0</strong>):</span>
-                  <button type="button" onclick="clearAllSelectedTonere()" style="background: none; border: none; color: #ef4444; font-size: 0.78rem; cursor: pointer; text-decoration: underline;">Șterge selecția</button>
+                <div style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 6px;">
+                  Tonere Bifate / Selectate până acum (<strong id="picker-tonere-count" style="color: #f472b6;">0</strong>):
                 </div>
 
                 <div id="selected-tonere-chips" class="selected-chips-container">
@@ -899,16 +905,14 @@
                 </div>
               </div>
 
-              <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('modal-manage-types')">
-                  <i class="fa-solid fa-arrow-left"></i> Înapoi
-                </button>
+              <div style="margin-top: 20px; text-align: right;">
                 <button type="submit" class="btn btn-success">
                   <i class="fa-solid fa-floppy-disk"></i> Salvează & Configurează Aparat
                 </button>
               </div>
             </form>
           </div>
+
 
           <!-- LISTA SI DEZACTIVAREA APARATELOR -->
           <div class="manage-card-box" style="margin-top: 24px;">
