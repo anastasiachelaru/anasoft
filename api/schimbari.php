@@ -104,9 +104,9 @@ elseif ($action === 'get-last-index') {
     }
     
     if ($db) {
-        // Caută ultimul contor ("Index Vechi")
-        $stmt = $db->prepare("SELECT contor FROM istoric_schimbari WHERE id_aparat = :aparat AND id_toner = :toner ORDER BY data_schimbare DESC, id_istoric_schimbare DESC LIMIT 1");
-        $stmt->execute([':aparat' => $idAparat, ':toner' => $idToner]);
+        // Caută ultimul contor ("Index Vechi") înregistrat pe APARATUL selectat
+        $stmt = $db->prepare("SELECT contor FROM istoric_schimbari WHERE id_aparat = :aparat ORDER BY data_schimbare DESC, id_istoric_schimbare DESC LIMIT 1");
+        $stmt->execute([':aparat' => $idAparat]);
         $row = $stmt->fetch();
         $indexVechi = $row ? (int)$row['contor'] : 0;
         
@@ -158,21 +158,27 @@ elseif ($action === 'add') {
     }
     
     if ($db) {
-        // Caută schimbarea anterioară pentru calculul de copii realizate
-        $stmtPrev = $db->prepare("SELECT contor FROM istoric_schimbari WHERE id_aparat = :aparat AND id_toner = :toner ORDER BY data_schimbare DESC, id_istoric_schimbare DESC LIMIT 1");
-        $stmtPrev->execute([':aparat' => $idAparat, ':toner' => $idToner]);
+        // Caută schimbarea anterioară pe aparat pentru calculul de copii realizate
+        $stmtPrev = $db->prepare("SELECT contor FROM istoric_schimbari WHERE id_aparat = :aparat ORDER BY data_schimbare DESC, id_istoric_schimbare DESC LIMIT 1");
+        $stmtPrev->execute([':aparat' => $idAparat]);
         $prevEntry = $stmtPrev->fetch();
         
         $indexVechi = $prevEntry ? (int)$prevEntry['contor'] : 0;
         $copiiRealizate = ($contor > $indexVechi) ? ($contor - $indexVechi) : 0;
         
         // Preluare consum referință
-        $stmtRef = $db->prepare("SELECT tt.consum_referinta 
-                                 FROM tonere t 
-                                 JOIN tipuri_toner tt ON t.id_tip_toner = tt.id_tip_toner 
-                                 WHERE t.id_toner = :toner");
+        $stmtRef = $db->prepare("
+            SELECT tt.consum_referinta 
+            FROM tipuri_toner tt 
+            LEFT JOIN tonere t ON t.id_tip_toner = tt.id_tip_toner 
+            WHERE t.id_toner = :toner OR tt.id_tip_toner = :toner 
+            ORDER BY tt.id_tip_toner DESC 
+            LIMIT 1
+        ");
         $stmtRef->execute([':toner' => $idToner]);
         $refEntry = $stmtRef->fetch();
+        $rawRef = ($refEntry && isset($refEntry['consum_referinta'])) ? (int)$refEntry['consum_referinta'] : 0;
+        $consumRef = ($rawRef > 0) ? $rawRef : 105000;
         $consumReferinta = $refEntry ? (int)$refEntry['consum_referinta'] : 105000;
         
         // Validare strictă minim și maxim (max 200% din consumul de referință)
