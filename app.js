@@ -1443,7 +1443,9 @@ function renderAparatePicker(query = '') {
   const container = document.getElementById("newtoner-aparate-checkboxes");
   if (!container) return;
 
-  const activeAparate = (manageCatalogState.aparate || []).filter(a => parseInt(a.aparat_activ) === 1);
+  const activeAparate = (manageCatalogState.aparate || []).filter(a => 
+    parseInt(a.aparat_activ) === 1 && parseInt(a.office) > 0
+  );
   const selectedOffice = document.getElementById("newtoner-office-select")?.value || 'all';
   const q = query.trim().toLowerCase();
 
@@ -1609,11 +1611,19 @@ function renderManageTonersView() {
   const tbody = document.getElementById("manage-toners-tbody");
   if (!tbody) return;
 
-  const list = manageCatalogState.tonere || [];
-  if (list.length === 0) {
+  const rawList = manageCatalogState.tonere || [];
+  if (rawList.length === 0) {
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#94a3b8;">Niciun toner înregistrat.</td></tr>';
     return;
   }
+
+  // Sortare: Mai întâi cele ACTIVE (toner_activ == 1), iar la final cele INACTIVE (toner_activ == 0)
+  const list = [...rawList].sort((a, b) => {
+    const actA = parseInt(a.toner_activ) === 1 ? 1 : 0;
+    const actB = parseInt(b.toner_activ) === 1 ? 1 : 0;
+    if (actA !== actB) return actB - actA;
+    return (a.denumire_tip || '').localeCompare(b.denumire_tip || '');
+  });
 
   tbody.innerHTML = list.map(t => {
     const isAct = parseInt(t.toner_activ) === 1;
@@ -1642,11 +1652,19 @@ function renderManageAparateView() {
   const tbody = document.getElementById("manage-aparate-tbody");
   if (!tbody) return;
 
-  const list = manageCatalogState.aparate || [];
-  if (list.length === 0) {
+  const rawList = manageCatalogState.aparate || [];
+  if (rawList.length === 0) {
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#94a3b8;">Niciun aparat înregistrat.</td></tr>';
     return;
   }
+
+  // Sortare: Mai întâi cele ACTIVE (aparat_activ == 1), iar la final cele INACTIVE (aparat_activ == 0)
+  const list = [...rawList].sort((a, b) => {
+    const actA = parseInt(a.aparat_activ) === 1 ? 1 : 0;
+    const actB = parseInt(b.aparat_activ) === 1 ? 1 : 0;
+    if (actA !== actB) return actB - actA;
+    return (a.nume_aparat || '').localeCompare(b.nume_aparat || '');
+  });
 
   tbody.innerHTML = list.map(a => {
     const isAct = parseInt(a.aparat_activ) === 1;
@@ -1668,6 +1686,7 @@ function renderManageAparateView() {
     `;
   }).join('');
 }
+
 
 function filterManageTonersList() {
   const query = (document.getElementById("manage-toner-search")?.value || "").toLowerCase();

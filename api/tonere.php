@@ -70,7 +70,7 @@ if ($action === 'list') {
 }
 elseif ($action === 'aparate') {
     if ($db) {
-        $sql = "SELECT id_aparat, nume_aparat, office, aparat_activ FROM aparate WHERE aparat_activ = 1";
+        $sql = "SELECT id_aparat, nume_aparat, office, aparat_activ FROM aparate WHERE aparat_activ = 1 AND office > 0";
         if ($officeId !== null) {
             $sql .= " AND office = " . (int)$officeId;
         }
