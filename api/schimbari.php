@@ -117,7 +117,8 @@ elseif ($action === 'get-last-index') {
                                  WHERE t.id_toner = :toner");
         $stmtRef->execute([':toner' => $idToner]);
         $refRow = $stmtRef->fetch();
-        $consumReferinta = $refRow ? (int)$refRow['consum_referinta'] : 105000;
+        $rawRef = $refRow ? (int)$refRow['consum_referinta'] : 0;
+        $consumReferinta = ($rawRef > 0) ? $rawRef : 105000;
         
         $minContor = $indexVechi + 1;
         $maxContor = $indexVechi + ($consumReferinta * 2);

@@ -1069,12 +1069,22 @@ async function handleWizardSelectAparat(aparat) {
   // 2. DACA APARATUL ARE UN SINGUR TONER COMPATIBIL
   if (compatibleToners.length === 1) {
     wizardSelectedToner = compatibleToners[0];
-    document.getElementById("summary-toner-badge-final").innerText = `Toner: ${wizardSelectedToner.denumire_tip}`;
+    updateWizardStep3TonerHeader(wizardSelectedToner);
     goToWizardStep(3); // Sare direct la Pasul 3!
   } else {
     // 3. DACA APARATUL ARE MULTIPLE TONERE COMPATIBILE (ex: Color)
     renderWizardStep2Tonere(compatibleToners);
     goToWizardStep(2);
+  }
+}
+
+function updateWizardStep3TonerHeader(toner) {
+  if (!toner) return;
+  const colorInfo = getColorBadgeInfo(toner.denumire_tip, toner.culoare || toner.color);
+  const badgeElem = document.getElementById("summary-toner-badge-final");
+  if (badgeElem) {
+    badgeElem.className = `selected-summary-badge toner-color-badge-${colorInfo.color}`;
+    badgeElem.innerHTML = `<i class="fa-solid fa-droplet"></i> Toner: ${colorInfo.displayText}`;
   }
 }
 
@@ -1086,25 +1096,42 @@ function handleStep3Back() {
   }
 }
 
-// PASUL 2: REDARE TONERE COMPATIBILE
+// PASUL 2: REDARE TONERE COMPATIBILE (CU BLOCARE PE STOC 0)
 function renderWizardStep2Tonere(tonersList) {
   const container = document.getElementById("wizard-tonere-container");
   container.innerHTML = "";
   
   tonersList.forEach(t => {
     const colorInfo = getColorBadgeInfo(t.denumire_tip, t.culoare || t.color);
+    const stockCount = parseInt(t.stoc || 0);
+    const isOutOfStock = stockCount <= 0;
+
     const card = document.createElement("div");
     card.className = `card-select-item card-color-${colorInfo.color}`;
+    
+    if (isOutOfStock) {
+      card.style.opacity = "0.75";
+      card.style.border = "1px dashed #ef4444";
+    }
+
     card.onclick = () => {
+      if (isOutOfStock) {
+        alert(`Stoc Insuficient! Tonerul '${colorInfo.displayText}' are 0 bucăți în stoc și nu poate fi instalat până când stocul nu este suplimentat.`);
+        return;
+      }
       wizardSelectedToner = t;
-      document.getElementById("summary-toner-badge-final").innerText = `Toner: ${colorInfo.displayText}`;
+      updateWizardStep3TonerHeader(t);
       goToWizardStep(3);
     };
     
+    const stockBadge = isOutOfStock
+      ? `<span class="status-badge inactive" style="font-size:0.75rem; padding: 2px 8px;"><i class="fa-solid fa-ban"></i> Stoc Epuizat (0 buc)</span>`
+      : `<strong style="color:var(--cyan-accent);">${stockCount} buc</strong>`;
+
     card.innerHTML = `
       <div class="card-title">${colorInfo.badgeHtml}</div>
-      <div class="card-subtitle" style="margin-top: 6px;">Stoc disponibil: <strong>${t.stoc} buc</strong></div>
-      <div class="card-subtitle">Consum Referință: ${(t.consum_referinta || 105000).toLocaleString()} pagini</div>
+      <div class="card-subtitle" style="margin-top: 6px;">Stoc disponibil: ${stockBadge}</div>
+      <div class="card-subtitle">Consum Referință: ${(t.consum_referinta || 105000).toLocaleString('ro-RO')} pagini</div>
     `;
     container.appendChild(card);
   });
@@ -1114,38 +1141,35 @@ function renderWizardStep2Tonere(tonersList) {
 async function initWizardStep3Data() {
   if (!wizardSelectedAparat || !wizardSelectedToner) return;
   
+  // Garantare etichetă header toner cu stilizarea culorii corespunzătoare
+  updateWizardStep3TonerHeader(wizardSelectedToner);
+
   let lastIndexData = null;
   try {
     const res = await fetch(`api/schimbari.php?action=get-last-index&id_aparat=${wizardSelectedAparat.id_aparat}&id_toner=${wizardSelectedToner.id_toner}`);
     const json = await res.json();
     if (json.success) lastIndexData = json.data;
   } catch (e) {
-    lastIndexData = {
-      index_vechi: 39823097,
-      consum_referinta: wizardSelectedToner.consum_referinta || 105000,
-      min_contor: 39823098,
-      max_contor: 39823097 + ((wizardSelectedToner.consum_referinta || 105000) * 2)
-    };
+    lastIndexData = null;
   }
   
-  if (!lastIndexData) {
-    lastIndexData = {
-      index_vechi: 39823097,
-      consum_referinta: wizardSelectedToner.consum_referinta || 105000,
-      min_contor: 39823098,
-      max_contor: 39823097 + ((wizardSelectedToner.consum_referinta || 105000) * 2)
-    };
-  }
+  let rawRef = (lastIndexData && parseInt(lastIndexData.consum_referinta) > 0)
+    ? parseInt(lastIndexData.consum_referinta)
+    : ((wizardSelectedToner && parseInt(wizardSelectedToner.consum_referinta) > 0) ? parseInt(wizardSelectedToner.consum_referinta) : 105000);
   
-  wizardIndexVechi = lastIndexData.index_vechi;
-  wizardConsumRef = lastIndexData.consum_referinta;
-  wizardMinAllowed = lastIndexData.min_contor;
-  wizardMaxAllowed = lastIndexData.max_contor;
+  wizardConsumRef = rawRef;
+  wizardIndexVechi = (lastIndexData && lastIndexData.index_vechi !== undefined && lastIndexData.index_vechi !== null) 
+    ? parseInt(lastIndexData.index_vechi) 
+    : 0;
+
+  // Garantare calcul corect al minimului și maximului (200% din consumul de referință)
+  wizardMinAllowed = wizardIndexVechi + 1;
+  wizardMaxAllowed = wizardIndexVechi + (wizardConsumRef * 2);
   
-  document.getElementById("display-index-vechi").innerText = wizardIndexVechi.toLocaleString();
-  document.getElementById("display-min-allowed").innerText = wizardMinAllowed.toLocaleString();
-  document.getElementById("display-max-allowed").innerText = wizardMaxAllowed.toLocaleString();
-  document.getElementById("display-consum-ref").innerText = wizardConsumRef.toLocaleString();
+  document.getElementById("display-index-vechi").innerText = wizardIndexVechi.toLocaleString('ro-RO');
+  document.getElementById("display-min-allowed").innerText = wizardMinAllowed.toLocaleString('ro-RO');
+  document.getElementById("display-max-allowed").innerText = wizardMaxAllowed.toLocaleString('ro-RO');
+  document.getElementById("display-consum-ref").innerText = wizardConsumRef.toLocaleString('ro-RO');
   
   document.getElementById("input-wizard-contor").value = "";
   calculateWizardMetrics();
@@ -1171,16 +1195,16 @@ function calculateWizardMetrics() {
   const copiiRealizate = contorVal - wizardIndexVechi;
   const procentRealizat = (wizardConsumRef > 0 && copiiRealizate > 0) ? ((copiiRealizate / wizardConsumRef) * 100) : 0;
   
-  document.getElementById("display-copii-realizate").innerText = (copiiRealizate > 0 ? copiiRealizate : 0).toLocaleString();
+  document.getElementById("display-copii-realizate").innerText = (copiiRealizate > 0 ? copiiRealizate : 0).toLocaleString('ro-RO');
   document.getElementById("display-procent-realizat").innerText = `${procentRealizat.toFixed(2)}%`;
   
   // VALIDARE STRICTĂ CONFORM CERINȚEI (MINIM 1 copie, MAXIM 200% din referință)
   if (contorVal < wizardMinAllowed) {
-    alertText.innerText = `Contorul introdus (${contorVal.toLocaleString()}) este sub Minimul Permis (${wizardMinAllowed.toLocaleString()}). A fost efectuat cel puțin 1 copie?`;
+    alertText.innerText = `Contorul introdus (${contorVal.toLocaleString('ro-RO')}) este sub Minimul Permis (${wizardMinAllowed.toLocaleString('ro-RO')}). A fost efectuat cel puțin 1 copie?`;
     alertDiv.classList.remove("hidden");
     submitBtn.disabled = true;
   } else if (contorVal > wizardMaxAllowed) {
-    alertText.innerText = `Contorul introdus (${contorVal.toLocaleString()}) depășește Maximul Permis de 200% (${wizardMaxAllowed.toLocaleString()}). Procentul maxim admis este de 200%.`;
+    alertText.innerText = `Contorul introdus (${contorVal.toLocaleString('ro-RO')}) depășește Maximul Permis de 200% (${wizardMaxAllowed.toLocaleString('ro-RO')}). Procentul maxim admis este de 200%.`;
     alertDiv.classList.remove("hidden");
     submitBtn.disabled = true;
   } else {
@@ -1192,6 +1216,11 @@ function calculateWizardMetrics() {
 // SALVARE SCHIMBARE DIN WIZARD
 async function handleWizardSubmit(e) {
   e.preventDefault();
+
+  if (!wizardSelectedToner || parseInt(wizardSelectedToner.stoc || 0) <= 0) {
+    alert("Imposibil de salvat! Tonerul selectat nu are stoc suficient (0 bucăți). Vă rugăm să suplimentați stocul mai întâi.");
+    return;
+  }
   
   const contorVal = parseInt(document.getElementById("input-wizard-contor").value);
   if (!contorVal || contorVal < wizardMinAllowed || contorVal > wizardMaxAllowed) {
