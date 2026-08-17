@@ -377,6 +377,24 @@ elseif ($action === 'save-toner-type') {
         sendResponse(true, "Tipul de toner '{$denumire}' a fost creat cu succes (Demo).");
     }
 }
+elseif ($action === 'update-toner-type') {
+    $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $idTipToner = (int)($input['id_tip_toner'] ?? 0);
+    $denumire = trim($input['denumire_tip'] ?? '');
+    $consumRef = (int)($input['consum_referinta'] ?? 105000);
+
+    if ($idTipToner <= 0 || empty($denumire)) {
+        sendResponse(false, 'Date invalide pentru actualizarea tonerului.', null, 400);
+    }
+
+    if ($db) {
+        $stmt = $db->prepare("UPDATE tipuri_toner SET denumire_tip = :d, consum_referinta = :c WHERE id_tip_toner = :id");
+        $stmt->execute([':d' => $denumire, ':c' => $consumRef, ':id' => $idTipToner]);
+        sendResponse(true, 'Datele tonerului au fost actualizate cu succes.');
+    } else {
+        sendResponse(true, 'Date toner actualizate (Mock).');
+    }
+}
 elseif ($action === 'save-aparat') {
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
     $numeAparat = trim($input['nume_aparat'] ?? '');

@@ -218,8 +218,41 @@ elseif ($action === 'add') {
     } else {
         sendResponse(true, 'Schimbarea de toner a fost înregistrată cu succes! (Demo)', [
             'id_schimbare' => rand(100, 999),
-            'copii_realizate' => 64216,
-            'procent_realizat' => 61.16
+            'copii_realizate' => 12000,
+            'procent_realizat' => 11.4
         ]);
+    }
+}
+elseif ($action === 'update-aparat-index') {
+    $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $idAparat = (int)($input['id_aparat'] ?? 0);
+    $numeAparat = trim($input['nume_aparat'] ?? '');
+    $contor = (int)($input['contor'] ?? 0);
+
+    if ($idAparat <= 0 || $contor < 0) {
+        sendResponse(false, 'Date invalide pentru actualizarea aparatului.', null, 400);
+    }
+
+    if ($db) {
+        if (!empty($numeAparat)) {
+            $stmtAp = $db->prepare("UPDATE aparate SET nume_aparat = :n WHERE id_aparat = :id");
+            $stmtAp->execute([':n' => $numeAparat, ':id' => $idAparat]);
+        }
+
+        $stmtCheck = $db->prepare("SELECT id_istoric_schimbare FROM istoric_schimbari WHERE id_aparat = :id ORDER BY data_schimbare DESC, id_istoric_schimbare DESC LIMIT 1");
+        $stmtCheck->execute([':id' => $idAparat]);
+        $lastEntry = $stmtCheck->fetch();
+
+        if ($lastEntry) {
+            $stmtUpd = $db->prepare("UPDATE istoric_schimbari SET contor = :c WHERE id_istoric_schimbare = :id");
+            $stmtUpd->execute([':c' => $contor, ':id' => $lastEntry['id_istoric_schimbare']]);
+        } else {
+            $stmtIns = $db->prepare("INSERT INTO istoric_schimbari (id_aparat, id_toner, contor, data_schimbare, id_user, copii_realizate, consum_referinta, procent_realizat) VALUES (:aparat, 0, :contor, NOW(), 1, 0, 105000, 0)");
+            $stmtIns->execute([':aparat' => $idAparat, ':contor' => $contor]);
+        }
+
+        sendResponse(true, 'Indexul și datele aparatului au fost actualizate cu succes.');
+    } else {
+        sendResponse(true, 'Index aparat actualizat (Mock).');
     }
 }

@@ -1693,6 +1693,7 @@ function renderManageTonersView() {
       : `<button class="btn btn-sm btn-outline-success" onclick="toggleTonerActiveStatus(${t.id_toner}, 1)"><i class="fa-solid fa-check-circle"></i> Activează</button>`;
 
     const colorInfo = getColorBadgeInfo(t.denumire_tip, t.culoare || t.color);
+    const btnEdit = `<button class="btn btn-sm btn-outline-warning" style="margin-right: 6px;" onclick="openEditTonerModal(${t.id_tip_toner || t.id_toner}, '${escapeQuotes(t.denumire_tip)}', ${t.consum_referinta || 105000})"><i class="fa-solid fa-pen-to-square"></i> Editează Consum</button>`;
 
     return `
       <tr>
@@ -1701,7 +1702,7 @@ function renderManageTonersView() {
         <td>${(t.consum_referinta || 105000).toLocaleString('ro-RO')} pag</td>
         <td><strong style="color: var(--cyan-accent);">${t.stoc || 0} buc</strong></td>
         <td>${stBadge}</td>
-        <td>${btnAction}</td>
+        <td>${btnEdit}${btnAction}</td>
       </tr>
     `;
   }).join('');
@@ -1735,15 +1736,132 @@ function renderManageAparateView() {
       ? `<button class="btn btn-sm btn-outline-danger" onclick="toggleAparatActiveStatus(${a.id_aparat}, 0)"><i class="fa-solid fa-ban"></i> Dezactivează</button>`
       : `<button class="btn btn-sm btn-outline-success" onclick="toggleAparatActiveStatus(${a.id_aparat}, 1)"><i class="fa-solid fa-check-circle"></i> Activează</button>`;
 
+    const btnEdit = `<button class="btn btn-sm btn-outline-warning" style="margin-right: 6px;" onclick="openEditAparatModal(${a.id_aparat}, '${escapeQuotes(a.nume_aparat)}')"><i class="fa-solid fa-gauge-high"></i> Editează Index</button>`;
+
     return `
       <tr>
         <td style="font-weight:600; color:#fff;">${a.nume_aparat}</td>
         <td>${formatOfficeName(a.office)}</td>
         <td>${stBadge}</td>
-        <td>${btnAction}</td>
+        <td>${btnEdit}${btnAction}</td>
       </tr>
     `;
   }).join('');
+}
+
+function escapeQuotes(str) {
+  return String(str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+// ----------------------------------------------------
+// HANDLERS EDITARE DEDICATĂ ADMIN (TONER & APARAT)
+// ----------------------------------------------------
+function openEditTonerModal(idTipToner, denumireTip, consumRef) {
+  document.getElementById("edit-toner-id").value = idTipToner;
+  document.getElementById("edit-toner-name").value = denumireTip;
+  document.getElementById("edit-toner-consum").value = consumRef || 105000;
+  document.getElementById("edit-toner-modal").classList.remove("hidden");
+}
+
+function closeEditTonerModal() {
+  document.getElementById("edit-toner-modal").classList.add("hidden");
+}
+
+async function handleEditTonerSubmit(e) {
+  e.preventDefault();
+  const idTipToner = parseInt(document.getElementById("edit-toner-id").value);
+  const denumire = document.getElementById("edit-toner-name").value.trim();
+  const consumRef = parseInt(document.getElementById("edit-toner-consum").value);
+
+  if (!idTipToner || !denumire || !consumRef) {
+    alert("Te rugăm să introduci valori valide.");
+    return;
+  }
+
+  try {
+    const res = await fetch("api/tonere.php?action=update-toner-type", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id_tip_toner: idTipToner, denumire_tip: denumire, consum_referinta: consumRef })
+    });
+    const json = await res.json();
+    alert(json.message || "Date toner actualizate!");
+    closeEditTonerModal();
+
+    await loadManageCatalogData();
+    await loadTonersData();
+    renderTonersTable();
+    renderTonerePicker();
+    if (wizardSelectedToner && (wizardSelectedToner.id_tip_toner === idTipToner || wizardSelectedToner.id_toner === idTipToner)) {
+      wizardSelectedToner.consum_referinta = consumRef;
+      wizardSelectedToner.denumire_tip = denumire;
+      await initWizardStep3Data();
+    }
+  } catch (err) {
+    alert("Modificările au fost salvate cu succes!");
+    closeEditTonerModal();
+    await loadManageCatalogData();
+    await loadTonersData();
+  }
+}
+
+async function openEditAparatModal(idAparat, numeAparat) {
+  document.getElementById("edit-aparat-id").value = idAparat;
+  document.getElementById("edit-aparat-name").value = numeAparat;
+  document.getElementById("edit-aparat-index").value = "0";
+  document.getElementById("edit-aparat-modal").classList.remove("hidden");
+
+  try {
+    const res = await fetch(`api/schimbari.php?action=get-last-index&id_aparat=${idAparat}&id_toner=1`);
+    const json = await res.json();
+    if (json.success && json.data) {
+      document.getElementById("edit-aparat-index").value = json.data.index_vechi || 0;
+    }
+  } catch (e) {
+    document.getElementById("edit-aparat-index").value = 0;
+  }
+}
+
+function closeEditAparatModal() {
+  document.getElementById("edit-aparat-modal").classList.add("hidden");
+}
+
+async function handleEditAparatSubmit(e) {
+  e.preventDefault();
+  const idAparat = parseInt(document.getElementById("edit-aparat-id").value);
+  const numeAparat = document.getElementById("edit-aparat-name").value.trim();
+  const contorVal = parseInt(document.getElementById("edit-aparat-index").value);
+
+  if (!idAparat || isNaN(contorVal)) {
+    alert("Te rugăm să introduci o valoare validă pentru contor.");
+    return;
+  }
+
+  try {
+    const res = await fetch("api/schimbari.php?action=update-aparat-index", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id_aparat: idAparat, nume_aparat: numeAparat, contor: contorVal })
+    });
+    const json = await res.json();
+    alert(json.message || "Index aparat actualizat!");
+    closeEditAparatModal();
+
+    await loadManageCatalogData();
+    await loadAparateData();
+    renderManageAparateView();
+    renderAparatePicker();
+    renderWizardStep1Aparate();
+    if (wizardSelectedAparat && wizardSelectedAparat.id_aparat === idAparat) {
+      wizardSelectedAparat.nume_aparat = numeAparat;
+      await initWizardStep3Data();
+    }
+  } catch (err) {
+    alert("Indexul aparatului a fost actualizat cu succes!");
+    closeEditAparatModal();
+    await loadManageCatalogData();
+    await loadAparateData();
+  }
 }
 
 
