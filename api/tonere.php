@@ -291,6 +291,7 @@ elseif ($action === 'manage-catalog') {
 elseif ($action === 'save-toner-type') {
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
     $denumire = trim($input['denumire'] ?? '');
+    $culoare = trim($input['culoare'] ?? 'Black');
     $consumRef = (int)($input['consum_referinta'] ?? 100000);
     $offices = $input['offices'] ?? [];
     $aparateCompatibile = $input['aparate_ids'] ?? [];
@@ -302,22 +303,32 @@ elseif ($action === 'save-toner-type') {
         sendResponse(false, 'Selectează cel puțin un sediu pentru adăugarea tonerului.', null, 400);
     }
 
+    // Include culoarea în denumirea tipului de toner dacă nu este menționată deja
+    $dLow = strtolower($denumire);
+    $hasColorInName = (str_contains($dLow, 'cyan') || str_contains($dLow, 'magenta') || str_contains($dLow, 'yellow') || str_contains($dLow, 'black') || str_contains($dLow, 'galben') || str_contains($dLow, 'albastru') || str_contains($dLow, 'roz') || str_contains($dLow, 'rosu') || str_contains($dLow, 'negru'));
+    
+    if (!$hasColorInName && !empty($culoare)) {
+        $fullDenumire = $culoare . ' ' . $denumire;
+    } else {
+        $fullDenumire = $denumire;
+    }
+
     if ($db) {
         try {
             $db->beginTransaction();
 
             // Verificăm dacă tipul de toner există deja
-            $stmtCheck = $db->prepare("SELECT id_tip_toner FROM tipuri_toner WHERE denumire_tip = :d LIMIT 1");
-            $stmtCheck->execute([':d' => $denumire]);
+            $stmtCheck = $db->prepare("SELECT id_tip_toner FROM tipuri_toner WHERE denumire_tip = :d OR denumire_tip = :dorig LIMIT 1");
+            $stmtCheck->execute([':d' => $fullDenumire, ':dorig' => $denumire]);
             $existingTip = $stmtCheck->fetch();
 
             if ($existingTip) {
                 $idTipToner = $existingTip['id_tip_toner'];
-                $stmtUpd = $db->prepare("UPDATE tipuri_toner SET consum_referinta = :c WHERE id_tip_toner = :id");
-                $stmtUpd->execute([':c' => $consumRef, ':id' => $idTipToner]);
+                $stmtUpd = $db->prepare("UPDATE tipuri_toner SET denumire_tip = :d, consum_referinta = :c WHERE id_tip_toner = :id");
+                $stmtUpd->execute([':d' => $fullDenumire, ':c' => $consumRef, ':id' => $idTipToner]);
             } else {
                 $stmtIns = $db->prepare("INSERT INTO tipuri_toner (denumire_tip, consum_referinta) VALUES (:d, :c)");
-                $stmtIns->execute([':d' => $denumire, ':c' => $consumRef]);
+                $stmtIns->execute([':d' => $fullDenumire, ':c' => $consumRef]);
                 $idTipToner = $db->lastInsertId();
             }
 

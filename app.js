@@ -607,8 +607,7 @@ function renderTonersTable() {
     const isLow = t.stoc <= 2;
     const badgeClass = isLow ? "badge-stock-low" : "badge-stock-ok";
     const aparateList = (t.aparate_compatibile || []).map(a => a.nume_aparat).join(", ") || "Generala";
-    const colorInfo = getColorBadgeInfo(t.denumire_tip);
-    
+    const colorInfo = getColorBadgeInfo(t.denumire_tip, t.culoare || t.color);
     tr.innerHTML = `
       <td>${colorInfo.badgeHtml}</td>
       <td><span class="office-badge">${formatOfficeName(t.office || t.office_nume)}</span></td>
@@ -617,6 +616,7 @@ function renderTonersTable() {
       <td>${(t.consum_referinta || 0).toLocaleString()} pagini</td>
       <td><small style="color:#94a3b8;">${aparateList}</small></td>
     `;
+
     tbody.appendChild(tr);
   });
   
@@ -629,45 +629,62 @@ function filterTonersTable() {
   renderTonersTable();
 }
 
-function getColorBadgeInfo(name) {
+function getColorBadgeInfo(name, rawColor = null) {
   const str = (name || "").trim();
   const lower = str.toLowerCase();
   
-  let color = "black";
-  let label = "Black";
-  
-  if (
-    lower.includes("cyan") || 
-    /\b[a-z0-9]+c\b/i.test(str) || 
-    /\b[a-z0-9]+c[\s\(\-]/.test(str) ||
-    /toner c\b/i.test(str) ||
-    lower.endsWith("c")
-  ) {
-    color = "cyan";
-    label = "Cyan";
-  } else if (
-    lower.includes("magenta") || 
-    /\b[a-z0-9]+m\b/i.test(str) || 
-    /\b[a-z0-9]+m[\s\(\-]/.test(str) ||
-    /toner m\b/i.test(str) ||
-    lower.endsWith("m")
-  ) {
-    color = "magenta";
-    label = "Magenta";
-  } else if (
-    lower.includes("yellow") || 
-    /\b[a-z0-9]+y\b/i.test(str) || 
-    /\b[a-z0-9]+y[\s\(\-]/.test(str) ||
-    /toner y\b/i.test(str) ||
-    lower.endsWith("y")
-  ) {
-    color = "yellow";
-    label = "Yellow";
+  let color = "";
+  let label = "";
+
+  if (rawColor) {
+    const cLow = String(rawColor).toLowerCase();
+    if (cLow.includes('yellow') || cLow.includes('galben')) { color = 'yellow'; label = 'Yellow'; }
+    else if (cLow.includes('cyan') || cLow.includes('albastru')) { color = 'cyan'; label = 'Cyan'; }
+    else if (cLow.includes('magenta') || cLow.includes('roz') || cLow.includes('rosu')) { color = 'magenta'; label = 'Magenta'; }
+    else if (cLow.includes('black') || cLow.includes('negru')) { color = 'black'; label = 'Black'; }
+  }
+
+  if (!color) {
+    if (
+      lower.includes("yellow") || lower.includes("galben") || 
+      /\b[a-z0-9]+y\b/i.test(str) || /\b[a-z0-9]+y[\s\(\-]/.test(str) ||
+      /toner y\b/i.test(str) || lower.endsWith("y")
+    ) {
+      color = "yellow";
+      label = "Yellow";
+    } else if (
+      lower.includes("cyan") || lower.includes("albastru") || 
+      /\b[a-z0-9]+c\b/i.test(str) || /\b[a-z0-9]+c[\s\(\-]/.test(str) ||
+      /toner c\b/i.test(str) || lower.endsWith("c")
+    ) {
+      color = "cyan";
+      label = "Cyan";
+    } else if (
+      lower.includes("magenta") || lower.includes("roz") || lower.includes("rosu") || lower.includes("roșu") ||
+      /\b[a-z0-9]+m\b/i.test(str) || /\b[a-z0-9]+m[\s\(\-]/.test(str) ||
+      /toner m\b/i.test(str) || lower.endsWith("m")
+    ) {
+      color = "magenta";
+      label = "Magenta";
+    } else if (
+      lower.includes("black") || lower.includes("negru") || 
+      /\b[a-z0-9]+k\b/i.test(str) || /\b[a-z0-9]+k[\s\(\-]/.test(str) ||
+      /toner k\b/i.test(str) || lower.endsWith("k")
+    ) {
+      color = "black";
+      label = "Black";
+    } else {
+      color = "black";
+      label = "Black";
+    }
   }
   
   let cleanModel = str;
   cleanModel = cleanModel.replace(/^(cyan|magenta|yellow|black)\s+/i, '');
-  const displayText = `${label} ${cleanModel}`;
+  
+  const hasColorWord = lower.includes('cyan') || lower.includes('magenta') || lower.includes('yellow') || lower.includes('black') || lower.includes('galben') || lower.includes('albastru') || lower.includes('roz') || lower.includes('rosu') || lower.includes('negru');
+  
+  const displayText = hasColorWord ? cleanModel : `${label} ${cleanModel}`;
   const badgeHtml = `<span class="toner-color-text toner-color-${color}"><i class="fa-solid fa-droplet"></i> ${displayText}</span>`;
   
   return {
@@ -677,6 +694,7 @@ function getColorBadgeInfo(name) {
     badgeHtml
   };
 }
+
 
 function getColorBadge(name) {
   return getColorBadgeInfo(name).badgeHtml;
@@ -1074,7 +1092,7 @@ function renderWizardStep2Tonere(tonersList) {
   container.innerHTML = "";
   
   tonersList.forEach(t => {
-    const colorInfo = getColorBadgeInfo(t.denumire_tip);
+    const colorInfo = getColorBadgeInfo(t.denumire_tip, t.culoare || t.color);
     const card = document.createElement("div");
     card.className = `card-select-item card-color-${colorInfo.color}`;
     card.onclick = () => {
@@ -1636,9 +1654,11 @@ function renderManageTonersView() {
       ? `<button class="btn btn-sm btn-outline-danger" onclick="toggleTonerActiveStatus(${t.id_toner}, 0)"><i class="fa-solid fa-ban"></i> Dezactivează</button>`
       : `<button class="btn btn-sm btn-outline-success" onclick="toggleTonerActiveStatus(${t.id_toner}, 1)"><i class="fa-solid fa-check-circle"></i> Activează</button>`;
 
+    const colorInfo = getColorBadgeInfo(t.denumire_tip, t.culoare || t.color);
+
     return `
       <tr>
-        <td style="font-weight:600; color:#fff;">${t.denumire_tip || 'Toner'}</td>
+        <td style="font-weight:600; color:#fff;">${colorInfo.badgeHtml}</td>
         <td>${formatOfficeName(t.office)}</td>
         <td>${(t.consum_referinta || 105000).toLocaleString('ro-RO')} pag</td>
         <td><strong style="color: var(--cyan-accent);">${t.stoc || 0} buc</strong></td>
