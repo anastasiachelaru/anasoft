@@ -830,6 +830,8 @@ select option {
   position: fixed;
   top: 0;
   left: 0;
+  right: 0;
+  bottom: 0;
   width: 100vw;
   width: 100%;
   height: 100vh;
@@ -839,12 +841,10 @@ select option {
   -webkit-backdrop-filter: blur(12px);
   z-index: 1000;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  padding: 24px 16px 48px 16px;
-  overflow-y: auto !important;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
+  padding: 16px 12px;
+  box-sizing: border-box;
 }
 
 .modal-overlay.hidden {
@@ -857,14 +857,13 @@ select option {
   border-radius: 20px;
   width: 95vw;
   max-width: 1180px;
-  margin-top: auto;
-  margin-bottom: auto;
-  flex-shrink: 0;
-  padding: 32px;
+  max-height: min(92vh, calc(100dvh - 24px));
+  margin: auto;
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 40px rgba(0, 242, 254, 0.08);
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  overflow: hidden;
+  padding: 0;
   animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -911,9 +910,13 @@ select option {
 }
 
 .wizard-header {
+  padding: 18px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  background: #090d16;
+  flex-shrink: 0;
 }
 
 .wizard-title-wrap {
@@ -945,9 +948,9 @@ select option {
   align-items: center;
   justify-content: space-between;
   background: rgba(0, 0, 0, 0.35);
-  padding: 14px 24px;
-  border-radius: 14px;
-  border: 1px solid var(--border-color);
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
 }
 
 .wizard-step-item {
@@ -1002,6 +1005,15 @@ select option {
 }
 
 /* Wizard Body */
+.wizard-body, .manage-body {
+  padding: 24px;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  flex: 1;
+  min-height: 0;
+}
+
 .wizard-step-content {
   display: none;
 }
@@ -1219,6 +1231,9 @@ select option {
   justify-content: flex-end;
   gap: 12px;
   margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
 }
 
 .modal-card {
@@ -1226,21 +1241,40 @@ select option {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   width: 100%;
-  max-width: 480px;
-  margin-top: auto;
-  margin-bottom: auto;
-  flex-shrink: 0;
-  padding: 28px;
-  box-shadow: var(--shadow-main);
+  max-width: 680px;
+  max-height: min(90vh, calc(100dvh - 24px));
   display: flex;
   flex-direction: column;
+  box-shadow: var(--shadow-main);
+  overflow: hidden;
+  padding: 0;
+  margin: auto;
 }
 
 .modal-header {
+  padding: 18px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border-color);
+  background: #0f172a;
+  flex-shrink: 0;
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.modal-body {
+  padding: 20px 24px;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  flex: 1;
 }
 
 .modal-close-btn {
@@ -1252,10 +1286,14 @@ select option {
 }
 
 .modal-footer {
+  padding: 16px 24px;
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: 12px;
-  margin-top: 24px;
+  border-top: 1px solid var(--border-color);
+  background: #0f172a;
+  flex-shrink: 0;
 }
 
 .text-cyan { color: var(--cyan-accent); }
@@ -1555,7 +1593,7 @@ section::-webkit-scrollbar-thumb:hover {
   align-items: center !important;
   justify-content: flex-end !important;
   gap: 12px !important;
-  flex-wrap: nowrap !important;
+  flex-wrap: wrap !important;
 }
 
 .search-box-wrap {
@@ -2107,6 +2145,22 @@ td.action-cell,
 
   .full-span {
     grid-column: 1 !important;
+  }
+
+  .action-buttons {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    gap: 10px !important;
+  }
+
+  .action-buttons .search-box-wrap,
+  .action-buttons .search-input,
+  .action-buttons .btn {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
   }
 
   .app-header {

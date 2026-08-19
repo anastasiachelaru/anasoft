@@ -510,40 +510,42 @@
         </h4>
         <button class="modal-close-btn" onclick="closeModal('modal-add-stock')">&times;</button>
       </div>
-      <form onsubmit="handleAddStockSubmit(event)">
-        <div class="form-group">
-          <label for="stock-modal-toner"><i class="fa-solid fa-fill-drip"></i> Selectează Toner *</label>
-          <select id="stock-modal-toner" onchange="updateStockModalPreview()" required>
-            <!-- Populat dinamic -->
-          </select>
-        </div>
+      <form onsubmit="handleAddStockSubmit(event)" class="modal-form">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="stock-modal-toner"><i class="fa-solid fa-fill-drip"></i> Selectează Toner *</label>
+            <select id="stock-modal-toner" onchange="updateStockModalPreview()" required>
+              <!-- Populat dinamic -->
+            </select>
+          </div>
 
-        <div class="form-group">
-          <label><i class="fa-solid fa-arrow-left-right"></i> Tip Operațiune *</label>
-          <div class="stock-op-toggle">
-            <div class="op-option active" id="op-label-add" onclick="toggleStockOp('add')">
-              <i class="fa-solid fa-circle-plus text-green"></i> Adăugare (+ Bucăți)
-            </div>
-            <div class="op-option" id="op-label-sub" onclick="toggleStockOp('subtract')">
-              <i class="fa-solid fa-circle-minus text-red"></i> Scădere (- Bucăți)
+          <div class="form-group">
+            <label><i class="fa-solid fa-arrow-left-right"></i> Tip Operațiune *</label>
+            <div class="stock-op-toggle">
+              <div class="op-option active" id="op-label-add" onclick="toggleStockOp('add')">
+                <i class="fa-solid fa-circle-plus text-green"></i> Adăugare (+ Bucăți)
+              </div>
+              <div class="op-option" id="op-label-sub" onclick="toggleStockOp('subtract')">
+                <i class="fa-solid fa-circle-minus text-red"></i> Scădere (- Bucăți)
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="form-group">
-          <label for="stock-modal-qty" id="stock-modal-qty-label"><i class="fa-solid fa-calculator"></i> Cantitate (Bucăți) *</label>
-          <input type="number" id="stock-modal-qty" min="1" value="1" oninput="updateStockModalPreview()" required>
-        </div>
-
-        <!-- PREVIEW REZULTAT STOC -->
-        <div class="stock-preview-box" id="stock-preview-box">
-          <div class="stock-preview-row">
-            <span>Stoc Actual:</span>
-            <strong id="preview-current-stock">0 bucăți</strong>
+          <div class="form-group">
+            <label for="stock-modal-qty" id="stock-modal-qty-label"><i class="fa-solid fa-calculator"></i> Cantitate (Bucăți) *</label>
+            <input type="number" id="stock-modal-qty" min="1" value="1" oninput="updateStockModalPreview()" required>
           </div>
-          <div class="stock-preview-row highlight">
-            <span>Stoc Nou după Operațiune:</span>
-            <strong id="preview-new-stock">0 bucăți</strong>
+
+          <!-- PREVIEW REZULTAT STOC -->
+          <div class="stock-preview-box" id="stock-preview-box">
+            <div class="stock-preview-row">
+              <span>Stoc Actual:</span>
+              <strong id="preview-current-stock">0 bucăți</strong>
+            </div>
+            <div class="stock-preview-row highlight">
+              <span>Stoc Nou după Operațiune:</span>
+              <strong id="preview-new-stock">0 bucăți</strong>
+            </div>
           </div>
         </div>
 
@@ -567,66 +569,68 @@
         <button class="modal-close-btn" onclick="closeModal('modal-new-user')">&times;</button>
       </div>
 
-      <form onsubmit="handleCreateUserSubmit(event)">
-        <!-- SECȚIUNEA DATE UTILIZATOR -->
-        <h5 style="color: #22c55e; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px; border-bottom: 1px solid rgba(34, 197, 94, 0.3); padding-bottom: 6px;">
-          DATE UTILIZATOR
-        </h5>
+      <form onsubmit="handleCreateUserSubmit(event)" class="modal-form">
+        <div class="modal-body">
+          <!-- SECȚIUNEA DATE UTILIZATOR -->
+          <h5 style="color: #22c55e; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px; border-bottom: 1px solid rgba(34, 197, 94, 0.3); padding-bottom: 6px;">
+            DATE UTILIZATOR
+          </h5>
 
-        <div class="form-grid-2col">
-          <div class="form-group">
-            <label for="newuser-office">Sediu *</label>
-            <select id="newuser-office" required>
-              <option value="2">Independenței</option>
-              <option value="3">Tudor</option>
-              <option value="4" selected>Tipografie</option>
-              <option value="5">Smârdan</option>
-              <option value="6">UMF 2</option>
-            </select>
+          <div class="form-grid-2col">
+            <div class="form-group">
+              <label for="newuser-office">Sediu *</label>
+              <select id="newuser-office" required>
+                <option value="2">Independenței</option>
+                <option value="3">Tudor</option>
+                <option value="4" selected>Tipografie</option>
+                <option value="5">Smârdan</option>
+                <option value="6">UMF 2</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="newuser-username">Nume de utilizator *</label>
+              <input type="text" id="newuser-username" placeholder="ex: ioanap" required>
+            </div>
+
+            <div class="form-group">
+              <label for="newuser-role">Rol *</label>
+              <select id="newuser-role" onchange="onUserModalRoleChange('newuser')" required>
+                <option value="operator" selected>Operator (Angajat)</option>
+                <option value="admin">Administrator</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="newuser-fullname">Nume complet</label>
+              <input type="text" id="newuser-fullname" placeholder="ex: Ioana Popescu">
+            </div>
           </div>
 
-          <div class="form-group">
-            <label for="newuser-username">Nume de utilizator *</label>
-            <input type="text" id="newuser-username" placeholder="ex: ioanap" required>
-          </div>
+          <!-- SECȚIUNEA SETARE PAROLĂ -->
+          <h5 style="color: #22c55e; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 20px; margin-bottom: 12px; border-bottom: 1px solid rgba(34, 197, 94, 0.3); padding-bottom: 6px;">
+            SETARE PAROLĂ & PIN
+          </h5>
 
-          <div class="form-group">
-            <label for="newuser-role">Rol *</label>
-            <select id="newuser-role" onchange="onUserModalRoleChange('newuser')" required>
-              <option value="operator" selected>Operator (Angajat)</option>
-              <option value="admin">Administrator</option>
-            </select>
-          </div>
+          <div class="form-grid-2col">
+            <div class="form-group">
+              <label for="newuser-password">Parolă *</label>
+              <input type="password" id="newuser-password" required placeholder="••••••••">
+            </div>
 
-          <div class="form-group">
-            <label for="newuser-fullname">Nume complet</label>
-            <input type="text" id="newuser-fullname" placeholder="ex: Ioana Popescu">
+            <div class="form-group">
+              <label for="newuser-confirm-password">Reintrodu parola *</label>
+              <input type="password" id="newuser-confirm-password" required placeholder="••••••••">
+            </div>
+
+            <div class="form-group full-span">
+              <label for="newuser-pin" id="newuser-pin-label">Cod PIN Operator (6 Cifre) * - <small style="color:#94a3b8;">(Se generează automat dacă e gol)</small></label>
+              <input type="text" id="newuser-pin" maxlength="6" placeholder="ex: 111111">
+            </div>
           </div>
         </div>
 
-        <!-- SECȚIUNEA SETARE PAROLĂ -->
-        <h5 style="color: #22c55e; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 20px; margin-bottom: 12px; border-bottom: 1px solid rgba(34, 197, 94, 0.3); padding-bottom: 6px;">
-          SETARE PAROLĂ & PIN
-        </h5>
-
-        <div class="form-grid-2col">
-          <div class="form-group">
-            <label for="newuser-password">Parolă *</label>
-            <input type="password" id="newuser-password" required placeholder="••••••••">
-          </div>
-
-          <div class="form-group">
-            <label for="newuser-confirm-password">Reintrodu parola *</label>
-            <input type="password" id="newuser-confirm-password" required placeholder="••••••••">
-          </div>
-
-          <div class="form-group full-span">
-            <label for="newuser-pin" id="newuser-pin-label">Cod PIN Operator (6 Cifre) * - <small style="color:#94a3b8;">(Se generează automat dacă e gol)</small></label>
-            <input type="text" id="newuser-pin" maxlength="6" placeholder="ex: 111111">
-          </div>
-        </div>
-
-        <div class="modal-footer" style="margin-top: 24px;">
+        <div class="modal-footer">
           <button type="button" class="btn btn-secondary" onclick="closeModal('modal-new-user')">Renunță</button>
           <button type="submit" class="btn btn-success"><i class="fa-solid fa-floppy-disk"></i> Salvează</button>
         </div>
@@ -644,67 +648,69 @@
         <button class="modal-close-btn" onclick="closeModal('modal-edit-user')">&times;</button>
       </div>
 
-      <form onsubmit="handleEditUserSubmit(event)">
-        <!-- SELECTARE UTILIZATOR -->
-        <div class="form-group" style="margin-bottom: 20px;">
-          <label for="edituser-select" style="color: #60a5fa; font-weight: 700;">Selectează Angajat / Operator pentru Modificare *</label>
-          <select id="edituser-select" onchange="onEditUserSelectChange()" required style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(59, 130, 246, 0.4); color: #fff; padding: 10px; border-radius: 8px; width: 100%;">
-            <!-- Populat dinamic -->
-          </select>
-        </div>
-
-        <h5 style="color: #3b82f6; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px; border-bottom: 1px solid rgba(59, 130, 246, 0.3); padding-bottom: 6px;">
-          ACTUALIZARE DATE & PUNCT DE LUCRU
-        </h5>
-
-        <div class="form-grid-2col">
-          <div class="form-group">
-            <label for="edituser-office">Sediu *</label>
-            <select id="edituser-office" required>
-              <option value="2">Independenței</option>
-              <option value="3">Tudor</option>
-              <option value="4">Tipografie</option>
-              <option value="5">Smârdan</option>
-              <option value="6">UMF 2</option>
+      <form onsubmit="handleEditUserSubmit(event)" class="modal-form">
+        <div class="modal-body">
+          <!-- SELECTARE UTILIZATOR -->
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label for="edituser-select" style="color: #60a5fa; font-weight: 700;">Selectează Angajat / Operator pentru Modificare *</label>
+            <select id="edituser-select" onchange="onEditUserSelectChange()" required style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(59, 130, 246, 0.4); color: #fff; padding: 10px; border-radius: 8px; width: 100%;">
+              <!-- Populat dinamic -->
             </select>
           </div>
 
-          <div class="form-group">
-            <label for="edituser-username">Nume de utilizator *</label>
-            <input type="text" id="edituser-username" placeholder="ex: ioanap" required>
+          <h5 style="color: #3b82f6; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px; border-bottom: 1px solid rgba(59, 130, 246, 0.3); padding-bottom: 6px;">
+            ACTUALIZARE DATE & PUNCT DE LUCRU
+          </h5>
+
+          <div class="form-grid-2col">
+            <div class="form-group">
+              <label for="edituser-office">Sediu *</label>
+              <select id="edituser-office" required>
+                <option value="2">Independenței</option>
+                <option value="3">Tudor</option>
+                <option value="4">Tipografie</option>
+                <option value="5">Smârdan</option>
+                <option value="6">UMF 2</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="edituser-username">Nume de utilizator *</label>
+              <input type="text" id="edituser-username" placeholder="ex: ioanap" required>
+            </div>
+
+            <div class="form-group">
+              <label for="edituser-role">Rol Acces *</label>
+              <select id="edituser-role" onchange="onUserModalRoleChange('edituser')" required>
+                <option value="operator">Operator (Angajat)</option>
+                <option value="admin">Administrator</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="edituser-fullname">Nume complet</label>
+              <input type="text" id="edituser-fullname" placeholder="ex: Ioana Popescu">
+            </div>
           </div>
 
-          <div class="form-group">
-            <label for="edituser-role">Rol Acces *</label>
-            <select id="edituser-role" onchange="onUserModalRoleChange('edituser')" required>
-              <option value="operator">Operator (Angajat)</option>
-              <option value="admin">Administrator</option>
-            </select>
-          </div>
+          <h5 style="color: #3b82f6; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 20px; margin-bottom: 12px; border-bottom: 1px solid rgba(59, 130, 246, 0.3); padding-bottom: 6px;">
+            SCHIMBARE PAROLĂ & PIN
+          </h5>
 
-          <div class="form-group">
-            <label for="edituser-fullname">Nume complet</label>
-            <input type="text" id="edituser-fullname" placeholder="ex: Ioana Popescu">
+          <div class="form-grid-2col">
+            <div class="form-group">
+              <label for="edituser-pin" id="edituser-pin-label">Cod PIN Operator (6 cifre) *</label>
+              <input type="text" id="edituser-pin" maxlength="12" placeholder="ex: 111111" required>
+            </div>
+
+            <div class="form-group">
+              <label for="edituser-password">Parolă Nouă (opțional)</label>
+              <input type="password" id="edituser-password" placeholder="••••••••">
+            </div>
           </div>
         </div>
 
-        <h5 style="color: #3b82f6; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 20px; margin-bottom: 12px; border-bottom: 1px solid rgba(59, 130, 246, 0.3); padding-bottom: 6px;">
-          SCHIMBARE PAROLĂ & PIN
-        </h5>
-
-        <div class="form-grid-2col">
-          <div class="form-group">
-            <label for="edituser-pin" id="edituser-pin-label">Cod PIN Operator (6 cifre) *</label>
-            <input type="text" id="edituser-pin" maxlength="12" placeholder="ex: 111111" required>
-          </div>
-
-          <div class="form-group">
-            <label for="edituser-password">Parolă Nouă (opțional)</label>
-            <input type="password" id="edituser-password" placeholder="••••••••">
-          </div>
-        </div>
-
-        <div class="modal-footer" style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 12px;">
+        <div class="modal-footer">
           <button type="button" class="btn btn-secondary" onclick="closeModal('modal-edit-user')">Anulează</button>
           <button type="submit" class="btn btn-primary">
             <i class="fa-solid fa-floppy-disk"></i> Salvează Modificările
@@ -964,17 +970,19 @@
         <h4><i class="fa-solid fa-pen-to-square text-cyan"></i> Editare Toner & Consum Referință</h4>
         <button class="modal-close" onclick="closeEditTonerModal()">&times;</button>
       </div>
-      <form onsubmit="handleEditTonerSubmit(event)" style="padding: 20px;">
-        <input type="hidden" id="edit-toner-id">
-        <div class="form-group" style="margin-bottom: 14px;">
-          <label style="color: #cbd5e1; font-weight: 600; font-size: 0.88rem; display: block; margin-bottom: 6px;">Denumire / Model Toner *</label>
-          <input type="text" id="edit-toner-name" required class="search-input full-width" style="width:100%;">
+      <form onsubmit="handleEditTonerSubmit(event)" class="modal-form">
+        <div class="modal-body">
+          <input type="hidden" id="edit-toner-id">
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label style="color: #cbd5e1; font-weight: 600; font-size: 0.88rem; display: block; margin-bottom: 6px;">Denumire / Model Toner *</label>
+            <input type="text" id="edit-toner-name" required class="search-input full-width" style="width:100%;">
+          </div>
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label style="color: #cbd5e1; font-weight: 600; font-size: 0.88rem; display: block; margin-bottom: 6px;">Consum de Referință (Pagini Standard) *</label>
+            <input type="number" id="edit-toner-consum" min="1000" max="500000" required class="search-input full-width" style="width:100%;">
+          </div>
         </div>
-        <div class="form-group" style="margin-bottom: 14px;">
-          <label style="color: #cbd5e1; font-weight: 600; font-size: 0.88rem; display: block; margin-bottom: 6px;">Consum de Referință (Pagini Standard) *</label>
-          <input type="number" id="edit-toner-consum" min="1000" max="500000" required class="search-input full-width" style="width:100%;">
-        </div>
-        <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+        <div class="modal-footer">
           <button type="button" class="btn btn-secondary" onclick="closeEditTonerModal()">Renunță</button>
           <button type="submit" class="btn btn-success"><i class="fa-solid fa-floppy-disk"></i> Salvează Modificarea</button>
         </div>
@@ -987,19 +995,21 @@
     <div class="modal-card" style="max-width: 480px;">
       <div class="modal-header">
         <h4><i class="fa-solid fa-gauge-high text-cyan"></i> Editare Index / Contor Curent Aparat</h4>
-        <button class="modal-close" onclick="closeEditAparatModal()">&times;</button>
+        <button class="modal-close-btn" onclick="closeEditAparatModal()">&times;</button>
       </div>
-      <form onsubmit="handleEditAparatSubmit(event)" style="padding: 20px;">
-        <input type="hidden" id="edit-aparat-id">
-        <div class="form-group" style="margin-bottom: 14px;">
-          <label style="color: #cbd5e1; font-weight: 600; font-size: 0.88rem; display: block; margin-bottom: 6px;">Nume / Cod Aparat *</label>
-          <input type="text" id="edit-aparat-name" required class="search-input full-width" style="width:100%;">
+      <form onsubmit="handleEditAparatSubmit(event)" class="modal-form">
+        <div class="modal-body">
+          <input type="hidden" id="edit-aparat-id">
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label style="color: #cbd5e1; font-weight: 600; font-size: 0.88rem; display: block; margin-bottom: 6px;">Nume / Cod Aparat *</label>
+            <input type="text" id="edit-aparat-name" required class="search-input full-width" style="width:100%;">
+          </div>
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label style="color: #cbd5e1; font-weight: 600; font-size: 0.88rem; display: block; margin-bottom: 6px;">Index Curent Aparat (Număr Pagini Odometru) *</label>
+            <input type="number" id="edit-aparat-index" min="0" required class="search-input full-width" style="width:100%;">
+          </div>
         </div>
-        <div class="form-group" style="margin-bottom: 14px;">
-          <label style="color: #cbd5e1; font-weight: 600; font-size: 0.88rem; display: block; margin-bottom: 6px;">Index Curent Aparat (Număr Pagini Odometru) *</label>
-          <input type="number" id="edit-aparat-index" min="0" required class="search-input full-width" style="width:100%;">
-        </div>
-        <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+        <div class="modal-footer">
           <button type="button" class="btn btn-secondary" onclick="closeEditAparatModal()">Renunță</button>
           <button type="submit" class="btn btn-success"><i class="fa-solid fa-floppy-disk"></i> Salvează Noul Index</button>
         </div>
