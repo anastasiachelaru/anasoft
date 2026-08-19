@@ -29,13 +29,19 @@
   padding: 0;
 }
 
+html, body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  position: relative;
+}
+
 body {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: var(--bg-dark);
   color: var(--text-main);
   min-height: 100vh;
-  overflow-x: hidden;
-  position: relative;
+  min-height: 100dvh;
 }
 
 /* Background CMYK Glow Effects */
@@ -43,8 +49,8 @@ body {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   z-index: -1;
   pointer-events: none;
 }
@@ -763,12 +769,19 @@ select option {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  overflow: hidden;
+  overflow-x: auto !important;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-x pan-y !important;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 100%;
+  position: relative;
 }
 
 .custom-table {
   width: 100%;
+  min-width: 720px !important;
   border-collapse: collapse;
   text-align: left;
   font-size: 0.9rem;
@@ -2164,18 +2177,41 @@ td.action-cell,
   }
 
   .app-header {
+    padding: 10px 14px;
     flex-direction: column;
     align-items: stretch;
-    gap: 10px;
+    gap: 8px;
   }
 
-  .header-left, .header-right {
+  .header-left {
+    display: flex;
+    align-items: center;
     justify-content: space-between;
     width: 100%;
+    gap: 8px;
   }
 
-  .brand-title {
-    font-size: 1.25rem;
+  .header-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .office-selector-wrap {
+    width: 100%;
+    padding: 6px 10px;
+  }
+
+  .office-selector-wrap select {
+    width: 100%;
   }
 
   /* Ajustare butoane mari pentru utilizare ușoară cu degetul (touch targets min 44px) */
@@ -2232,14 +2268,10 @@ td.action-cell,
 
   .wizard-modal-card,
   .modal-card {
-    padding: 16px 12px;
+    padding: 0;
     border-radius: 14px;
     width: 98vw;
     max-width: 98vw;
-  }
-
-  .modal-overlay {
-    padding: 12px 6px 36px 6px !important;
   }
 
   .section-header {
@@ -2255,6 +2287,63 @@ td.action-cell,
   .aparate-grid,
   .tonere-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ----------------------------------------------------
+   ADAPTARE SPECIALĂ MOD PEISAJ / LANDSCAPE (DE-A LATUL)
+---------------------------------------------------- */
+@media (max-height: 650px) {
+  #auth-screen {
+    padding: 10px;
+    align-items: flex-start;
+    overflow-y: auto;
+  }
+
+  .auth-card {
+    padding: 16px 20px;
+    max-height: calc(100dvh - 16px);
+    overflow-y: auto;
+    margin: auto;
+  }
+
+  .brand-header {
+    margin-bottom: 10px;
+  }
+
+  .auth-tabs, .role-selector-tabs {
+    margin-bottom: 10px;
+  }
+
+  .keypad-grid {
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  .key-btn {
+    padding: 8px 4px;
+    font-size: 1.1rem;
+    border-radius: 8px;
+  }
+
+  .modal-card {
+    max-height: calc(100dvh - 16px);
+  }
+
+  .wizard-modal-card {
+    max-height: calc(100dvh - 16px);
+  }
+
+  .modal-header, .wizard-header {
+    padding: 10px 16px;
+  }
+
+  .modal-body, .wizard-body, .manage-body {
+    padding: 12px 16px;
+  }
+
+  .modal-footer, .wizard-footer {
+    padding: 8px 16px;
   }
 }
 
