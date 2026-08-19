@@ -103,14 +103,21 @@ body {
    ECRAN AUTENTIFICARE (LOGIN & PIN KEYPAD)
 ---------------------------------------------------- */
 #auth-screen {
-  justify-content: center;
-  align-items: center;
-  padding: 24px;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 24px 16px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .auth-container {
   width: 100%;
   max-width: 460px;
+  margin: auto !important;
 }
 
 .auth-card {
@@ -2373,16 +2380,17 @@ td.action-cell,
 ---------------------------------------------------- */
 @media (max-height: 650px) {
   #auth-screen {
-    padding: 10px;
-    align-items: flex-start;
+    padding: 12px 16px !important;
+    justify-content: center !important;
+    align-items: center !important;
     overflow-y: auto;
   }
 
   .auth-card {
-    padding: 16px 20px;
-    max-height: calc(100dvh - 16px);
+    padding: 18px 24px;
+    max-height: calc(100dvh - 24px);
     overflow-y: auto;
-    margin: auto;
+    margin: auto !important;
   }
 
   .brand-header {
