@@ -145,8 +145,8 @@
       </div>
 
       <div class="header-right">
-        <button class="btn btn-secondary btn-sm" onclick="toggleFullScreen()" title="Ecran Complet (Full Screen)" style="padding: 6px 12px; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 6px;">
-          <i class="fa-solid fa-expand"></i> <span class="hide-mobile">Full Screen</span>
+        <button class="btn btn-secondary btn-sm" id="btn-fullscreen-toggle" onclick="toggleFullScreen()" title="Ecran Complet (Full Screen)" style="padding: 8px 14px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-expand" id="icon-fullscreen"></i> <span id="text-fullscreen">Ecran Complet</span>
         </button>
 
         <div class="user-badge">
@@ -170,9 +170,6 @@
         </button>
         <button class="nav-btn" id="nav-tonere-btn" onclick="switchSection('tonere')">
           <i class="fa-solid fa-boxes-stacked"></i> Stoc Tonere
-        </button>
-        <button class="nav-btn" id="nav-istoric-btn" onclick="switchSection('istoric')">
-          <i class="fa-solid fa-clock-rotate-left"></i> Istoric Schimbări
         </button>
         
         <!-- OPȚIUNI EXCLUSIVE PENTRU ADMIN -->

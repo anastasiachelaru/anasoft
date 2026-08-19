@@ -2226,29 +2226,51 @@ async function toggleAparatActiveStatus(idAparat, targetStatus) {
 // NATIVE FULLSCREEN TOGGLE DEGET & ECRAM TABLETE
 // ----------------------------------------------------
 function toggleFullScreen() {
-  if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
-    const docEl = document.documentElement;
-    if (docEl.requestFullscreen) {
-      docEl.requestFullscreen();
-    } else if (docEl.msRequestFullscreen) {
-      docEl.msRequestFullscreen();
-    } else if (docEl.mozRequestFullScreen) {
-      docEl.mozRequestFullScreen();
-    } else if (docEl.webkitRequestFullscreen) {
-      docEl.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+  try {
+    const doc = window.document;
+    const docEl = doc.documentElement;
+
+    const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.webkitRequestFullScreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+    const cancelFS = doc.exitFullscreen || doc.webkitExitFullscreen || doc.webkitCancelFullScreen || doc.mozCancelFullScreen || doc.msExitFullscreen;
+
+    const isFS = doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement;
+
+    if (!isFS) {
+      if (requestFS) {
+        const promise = requestFS.call(docEl);
+        if (promise && promise.catch) {
+          promise.catch(err => {
+            console.warn("Fullscreen request error:", err);
+          });
+        }
+      } else {
+        window.scrollTo(0, 1);
+        alert("Pentru Fullscreen pe iPad / iPhone Safari, folosiți meniul Safari ('Adaugă pe ecranul de pornire') pentru deschidere fără bare de browser.");
+      }
+    } else {
+      if (cancelFS) {
+        cancelFS.call(doc);
+      }
     }
-  } else {
-    if (document.exitFullscreen) {
-      document.exitFullscreen();
-    } else if (document.msExitFullscreen) {
-      document.msExitFullscreen();
-    } else if (document.mozCancelFullScreen) {
-      document.mozCancelFullScreen();
-    } else if (document.webkitExitFullscreen) {
-      document.webkitExitFullscreen();
-    }
+  } catch (err) {
+    console.error("Fullscreen error:", err);
   }
 }
+
+// Ascultător global pentru modificarea stării Fullscreen
+['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(evtName => {
+  document.addEventListener(evtName, () => {
+    const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+    const icon = document.getElementById("icon-fullscreen");
+    const text = document.getElementById("text-fullscreen");
+    if (icon) {
+      icon.className = isFS ? "fa-solid fa-compress" : "fa-solid fa-expand";
+    }
+    if (text) {
+      text.textContent = isFS ? "Ieșire Fullscreen" : "Ecran Complet";
+    }
+  });
+});
 
 
 
