@@ -1993,14 +1993,19 @@ td.action-cell,
 ---------------------------------------------------- */
 .form-grid-2col {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
 
 .form-grid-3col {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
+}
+
+#modal-new-user .modal-card,
+#modal-edit-user .modal-card {
+  max-width: 740px !important;
 }
 
 .full-span {

@@ -6,6 +6,11 @@
   <meta name="description" content="PIM Iași - Sistem de Gestiune și Evidență Tonere și Consumabile Imprimante.">
   <title>PIM Iași - Toner Management System</title>
   
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PIM Toner">
+  
   <!-- Google Fonts: Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -140,6 +145,10 @@
       </div>
 
       <div class="header-right">
+        <button class="btn btn-secondary btn-sm" onclick="toggleFullScreen()" title="Ecran Complet (Full Screen)" style="padding: 6px 12px; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-expand"></i> <span class="hide-mobile">Full Screen</span>
+        </button>
+
         <div class="user-badge">
           <span class="user-role-tag" id="user-role-badge">Angajat</span>
           <span class="user-name" id="user-name-display">Operator</span>
