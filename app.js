@@ -2272,5 +2272,29 @@ function toggleFullScreen() {
   });
 });
 
+// ----------------------------------------------------
+// TASTATURĂ NUMERICĂ INTEGRATĂ PENTRU MODAL WIZARD
+// ----------------------------------------------------
+function appendWizardDigit(digit) {
+  const input = document.getElementById("input-wizard-contor");
+  if (!input) return;
+  input.value = (input.value || "") + digit;
+  calculateWizardMetrics();
+}
+
+function clearWizardDigit() {
+  const input = document.getElementById("input-wizard-contor");
+  if (!input) return;
+  input.value = "";
+  calculateWizardMetrics();
+}
+
+function backspaceWizardDigit() {
+  const input = document.getElementById("input-wizard-contor");
+  if (!input) return;
+  input.value = input.value.slice(0, -1);
+  calculateWizardMetrics();
+}
+
 
 

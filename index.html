@@ -19,7 +19,7 @@
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=1.0.4">
 </head>
 <body class="dark-theme">
   
@@ -472,6 +472,25 @@
             <div class="form-group margin-top">
               <label for="input-wizard-contor"><i class="fa-solid fa-tachometer-alt"></i> Contor Nou Aparat *</label>
               <input type="number" id="input-wizard-contor" placeholder="Introdu contorul afișat de aparat..." oninput="calculateWizardMetrics()" required class="contor-input-lg">
+            </div>
+
+            <!-- TASTATURĂ NUMERICĂ INTEGRATĂ ÎN DESIGNUL SITE-ULUI -->
+            <div class="wizard-keypad-wrap">
+              <div class="wizard-keypad-title"><i class="fa-solid fa-calculator text-cyan"></i> Tastatură Cifre (Apasă pe cifre):</div>
+              <div class="wizard-keypad-grid">
+                <button type="button" class="wkey-btn" onclick="appendWizardDigit('1')">1</button>
+                <button type="button" class="wkey-btn" onclick="appendWizardDigit('2')">2</button>
+                <button type="button" class="wkey-btn" onclick="appendWizardDigit('3')">3</button>
+                <button type="button" class="wkey-btn" onclick="appendWizardDigit('4')">4</button>
+                <button type="button" class="wkey-btn" onclick="appendWizardDigit('5')">5</button>
+                <button type="button" class="wkey-btn" onclick="appendWizardDigit('6')">6</button>
+                <button type="button" class="wkey-btn" onclick="appendWizardDigit('7')">7</button>
+                <button type="button" class="wkey-btn" onclick="appendWizardDigit('8')">8</button>
+                <button type="button" class="wkey-btn" onclick="appendWizardDigit('9')">9</button>
+                <button type="button" class="wkey-btn action-danger" onclick="clearWizardDigit()"><i class="fa-solid fa-trash-can"></i> Șterge</button>
+                <button type="button" class="wkey-btn" onclick="appendWizardDigit('0')">0</button>
+                <button type="button" class="wkey-btn action-back" onclick="backspaceWizardDigit()"><i class="fa-solid fa-backspace"></i> &#9003;</button>
+              </div>
             </div>
 
             <!-- CARTOAȘE REZULTATE ÎN TIMP REAL -->
@@ -1023,6 +1042,6 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=1.0.4"></script>
 </body>
 </html>
