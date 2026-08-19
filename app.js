@@ -306,8 +306,16 @@ function handleLoginSuccess(user) {
   
   const authScr = document.getElementById("auth-screen");
   const appScr = document.getElementById("app-screen");
-  if (authScr) authScr.classList.remove("active");
-  if (appScr) appScr.classList.add("active");
+  if (authScr) {
+    authScr.classList.remove("active");
+    authScr.style.setProperty("display", "none", "important");
+  }
+  if (appScr) {
+    appScr.classList.add("active");
+    appScr.style.setProperty("display", "flex", "important");
+  }
+
+  window.scrollTo(0, 0);
   
   try {
     renderUserHeader();
@@ -324,7 +332,9 @@ function checkExistingSession() {
   if (saved) {
     try {
       const user = JSON.parse(saved);
-      handleLoginSuccess(user);
+      if (user && user.id_user) {
+        handleLoginSuccess(user);
+      }
     } catch (e) {
       localStorage.removeItem("pim_toner_user");
     }
@@ -336,8 +346,18 @@ function logout() {
   localStorage.removeItem("pim_toner_user");
   clearPinKey();
   
-  document.getElementById("app-screen").classList.remove("active");
-  document.getElementById("auth-screen").classList.add("active");
+  const authScr = document.getElementById("auth-screen");
+  const appScr = document.getElementById("app-screen");
+  if (appScr) {
+    appScr.classList.remove("active");
+    appScr.style.setProperty("display", "none", "important");
+  }
+  if (authScr) {
+    authScr.classList.add("active");
+    authScr.style.setProperty("display", "flex", "important");
+  }
+
+  window.scrollTo(0, 0);
 }
 
 // ----------------------------------------------------

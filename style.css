@@ -89,20 +89,21 @@ body {
 
 /* Screen Transitions */
 .screen-view {
-  display: none;
+  display: none !important;
   width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .screen-view.active {
-  display: flex;
+  display: flex !important;
   flex-direction: column;
 }
 
 /* ----------------------------------------------------
    ECRAN AUTENTIFICARE (LOGIN & PIN KEYPAD)
 ---------------------------------------------------- */
-#auth-screen {
+#auth-screen.active {
   display: flex !important;
   flex-direction: column !important;
   justify-content: center !important;
@@ -112,6 +113,10 @@ body {
   min-height: 100dvh;
   width: 100%;
   box-sizing: border-box;
+}
+
+#auth-screen:not(.active) {
+  display: none !important;
 }
 
 .auth-container {
@@ -2379,7 +2384,7 @@ td.action-cell,
    ADAPTARE SPECIALĂ MOD PEISAJ / LANDSCAPE (DE-A LATUL)
 ---------------------------------------------------- */
 @media (max-height: 650px) {
-  #auth-screen {
+  #auth-screen.active {
     padding: 12px 16px !important;
     justify-content: center !important;
     align-items: center !important;
