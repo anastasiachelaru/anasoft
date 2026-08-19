@@ -831,16 +831,20 @@ select option {
   top: 0;
   left: 0;
   width: 100vw;
+  width: 100%;
   height: 100vh;
+  height: 100dvh;
   background: rgba(9, 13, 22, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   z-index: 1000;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 20px;
-  overflow: hidden;
+  padding: 24px 16px 48px 16px;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 .modal-overlay.hidden {
@@ -853,8 +857,9 @@ select option {
   border-radius: 20px;
   width: 95vw;
   max-width: 1180px;
-  max-height: 90vh;
-  overflow-y: auto;
+  margin-top: auto;
+  margin-bottom: auto;
+  flex-shrink: 0;
   padding: 32px;
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 40px rgba(0, 242, 254, 0.08);
   display: flex;
@@ -1222,8 +1227,13 @@ select option {
   border-radius: var(--radius-md);
   width: 100%;
   max-width: 480px;
+  margin-top: auto;
+  margin-bottom: auto;
+  flex-shrink: 0;
   padding: 28px;
   box-shadow: var(--shadow-main);
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-header {
@@ -1926,6 +1936,275 @@ td.action-cell,
   color: #ffffff !important;
   box-shadow: 0 0 12px rgba(16, 185, 129, 0.25) !important;
 }
+
+/* ----------------------------------------------------
+   CLASE UTILITARE FORMULARE RESPONSIVE
+---------------------------------------------------- */
+.form-grid-2col {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.form-grid-3col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.full-span {
+  grid-column: 1 / -1;
+}
+
+/* Derulare Nativă Touch Fluidă pe iOS/Android */
+.table-card,
+.manage-card-box,
+.selected-chips-container,
+.compatibility-picker-grid,
+.wizard-modal-card,
+.modal-card,
+.modal-overlay,
+.app-nav {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Stilizare Scrollbar Personalizat Fin pentru Touch & Desktop */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.35);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.6);
+}
+
+/* ----------------------------------------------------
+   RESPONSIVITATE TABLETE (ANDROID & IOS)
+   Adaptare pentru 1024px, 768px, Portret și Peisaj
+---------------------------------------------------- */
+@media (max-width: 1024px) {
+  /* Modale pe Tabletă */
+  .modal-overlay {
+    padding: 16px 8px 48px 8px !important;
+  }
+  
+  .wizard-modal-card {
+    width: 98vw;
+    max-width: 98vw;
+    padding: 20px 16px;
+    gap: 16px;
+    margin-top: 0;
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+
+  .modal-card {
+    max-width: 96vw;
+    padding: 20px 16px;
+    margin-top: 0;
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+
+  .modal-footer, .wizard-footer {
+    padding-top: 12px;
+    padding-bottom: 8px;
+    position: sticky;
+    bottom: 0;
+    background: inherit;
+    z-index: 10;
+    box-shadow: 0 -10px 20px rgba(15, 23, 42, 0.9);
+  }
+
+  /* Header & Navigare */
+  .app-header {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .header-left {
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .header-title {
+    font-size: 1rem;
+  }
+
+  .office-selector-wrap {
+    padding: 4px 10px;
+  }
+
+  .app-nav {
+    padding: 10px 16px;
+    gap: 8px;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .nav-btn {
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+
+  /* Keypad Login PIN */
+  .auth-card {
+    padding: 28px 20px;
+  }
+
+  .key-btn {
+    padding: 14px 10px;
+    font-size: 1.3rem;
+  }
+
+  /* Tabele cu derulare orizontală pe touch */
+  .table-card {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+  }
+
+  table.custom-table {
+    min-width: 680px;
+  }
+
+  /* Wizard Pași Bară */
+  .wizard-steps-bar {
+    padding: 10px 14px;
+    gap: 8px;
+  }
+
+  .step-title {
+    font-size: 0.8rem;
+  }
+
+  .step-connector {
+    margin: 0 4px;
+  }
+
+  /* Gride Formular */
+  .form-grid-3col {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  /* Trecere formulare pe o singură coloană pe tablete în portret sau mobile */
+  .form-grid-2col,
+  .form-grid-3col {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+
+  .full-span {
+    grid-column: 1 !important;
+  }
+
+  .app-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .header-left, .header-right {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .brand-title {
+    font-size: 1.25rem;
+  }
+
+  /* Ajustare butoane mari pentru utilizare ușoară cu degetul (touch targets min 44px) */
+  .btn {
+    min-height: 44px;
+    padding: 10px 16px;
+  }
+
+  .form-group input,
+  .form-group select {
+    min-height: 44px;
+    font-size: 16px !important; /* Previne auto-zoom nesuferit pe iOS Safari */
+  }
+
+  .wizard-steps-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .step-connector {
+    display: none;
+  }
+
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .aparate-grid,
+  .tonere-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 20px 14px;
+    border-radius: 16px;
+  }
+
+  .brand-title {
+    font-size: 1.15rem;
+  }
+
+  .keypad-grid {
+    gap: 8px;
+  }
+
+  .key-btn {
+    padding: 12px 6px;
+    font-size: 1.15rem;
+    border-radius: 10px;
+  }
+
+  .wizard-modal-card,
+  .modal-card {
+    padding: 16px 12px;
+    border-radius: 14px;
+    width: 98vw;
+    max-width: 98vw;
+  }
+
+  .modal-overlay {
+    padding: 12px 6px 36px 6px !important;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .section-header button {
+    width: 100%;
+  }
+
+  .aparate-grid,
+  .tonere-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
 
 
 

@@ -85,7 +85,7 @@
           </div>
 
           <div class="demo-hint" id="demo-hint-box">
-            <i class="fa-solid fa-lightbulb text-cyan"></i> PIN Operator Demo: <code>123456</code> (6 cifre)
+            <i class="fa-solid fa-lightbulb text-cyan"></i> PIN Operator Demo: <code>111111</code> (6 cifre)
           </div>
         </div>
 
@@ -573,7 +573,7 @@
           DATE UTILIZATOR
         </h5>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div class="form-grid-2col">
           <div class="form-group">
             <label for="newuser-office">Sediu *</label>
             <select id="newuser-office" required>
@@ -609,7 +609,7 @@
           SETARE PAROLĂ & PIN
         </h5>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div class="form-grid-2col">
           <div class="form-group">
             <label for="newuser-password">Parolă *</label>
             <input type="password" id="newuser-password" required placeholder="••••••••">
@@ -620,9 +620,9 @@
             <input type="password" id="newuser-confirm-password" required placeholder="••••••••">
           </div>
 
-          <div class="form-group" style="grid-column: 1 / -1;">
+          <div class="form-group full-span">
             <label for="newuser-pin" id="newuser-pin-label">Cod PIN Operator (6 Cifre) * - <small style="color:#94a3b8;">(Se generează automat dacă e gol)</small></label>
-            <input type="text" id="newuser-pin" maxlength="6" placeholder="ex: 123456">
+            <input type="text" id="newuser-pin" maxlength="6" placeholder="ex: 111111">
           </div>
         </div>
 
@@ -657,7 +657,7 @@
           ACTUALIZARE DATE & PUNCT DE LUCRU
         </h5>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div class="form-grid-2col">
           <div class="form-group">
             <label for="edituser-office">Sediu *</label>
             <select id="edituser-office" required>
@@ -692,10 +692,10 @@
           SCHIMBARE PAROLĂ & PIN
         </h5>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div class="form-grid-2col">
           <div class="form-group">
             <label for="edituser-pin" id="edituser-pin-label">Cod PIN Operator (6 cifre) *</label>
-            <input type="text" id="edituser-pin" maxlength="12" placeholder="ex: 123456" required>
+            <input type="text" id="edituser-pin" maxlength="12" placeholder="ex: 111111" required>
           </div>
 
           <div class="form-group">
@@ -754,7 +754,7 @@
             </h4>
 
             <form onsubmit="handleCreateTonerTypeSubmit(event)">
-              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
+              <div class="form-grid-3col">
                 <div class="form-group">
                   <label for="newtoner-name" style="color: #38bdf8; font-weight: 700; font-size: 0.88rem; display: block; margin-bottom: 6px;">
                     <i class="fa-solid fa-tag"></i> Denumire & Model Toner *
@@ -869,7 +869,7 @@
             </h4>
 
             <form onsubmit="handleCreateAparatSubmit(event)">
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div class="form-grid-2col">
                 <div class="form-group">
                   <label for="newaparat-name" style="color: #f472b6; font-weight: 700; font-size: 0.88rem; display: block; margin-bottom: 6px;">
                     <i class="fa-solid fa-print"></i> Nume / Cod Aparat Nou *

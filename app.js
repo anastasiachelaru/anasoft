@@ -101,7 +101,7 @@ function switchLoginRole(role) {
       adminBtn.style.color = "var(--text-muted)";
     }
     if (instText) instText.innerText = "Introdu codul PIN din 6 cifre atribuit contului tău de Operator:";
-    if (demoHint) demoHint.innerHTML = '<i class="fa-solid fa-lightbulb text-cyan"></i> PIN Operator Demo: <code>123456</code> (6 cifre)';
+    if (demoHint) demoHint.innerHTML = '<i class="fa-solid fa-lightbulb text-cyan"></i> PIN Operator Demo: <code>111111</code> (6 cifre)';
   }
 
   renderPinDots();
@@ -220,7 +220,7 @@ async function submitPinLogin() {
         role: "admin",
         office: 2
       });
-    } else if (currentPin === "123456" || currentPin === "8122") {
+    } else if (currentPin === "111111" || currentPin === "8122") {
       handleLoginSuccess({
         id_user: 46,
         username: "operator",
@@ -230,7 +230,7 @@ async function submitPinLogin() {
         office: 2
       });
     } else {
-      showAuthError(currentLoginRole === "admin" ? "PIN Administrator incorect. Folosește 000000000000." : "PIN Operator incorect. Încearcă 123456.");
+      showAuthError(currentLoginRole === "admin" ? "PIN Administrator incorect. Folosește 000000000000." : "PIN Operator incorect. Încearcă 111111.");
       clearPinKey();
     }
   }
@@ -386,8 +386,8 @@ async function loadUsersData() {
     if (json.success) usersData = json.data;
   } catch (err) {
     usersData = [
-      { id_user: 1, username: 'admin', role: 'admin', office: 2, office_nume: 'Independenței', full_name: 'Admin PIM', cont_active: 1, pin_code: '000000', password: 'admin' },
-      { id_user: 46, username: 'operator', role: 'operator', office: 2, office_nume: 'Independenței', full_name: 'Operator Independenței', cont_active: 1, pin_code: '123456', password: 'operator' }
+      { id_user: 1, username: 'admin', role: 'admin', office: 2, office_nume: 'Independenței', full_name: 'Admin PIM', cont_active: 1, pin_code: '000000000000', password: 'admin' },
+      { id_user: 46, username: 'operator', role: 'operator', office: 2, office_nume: 'Independenței', full_name: 'Operator Independenței', cont_active: 1, pin_code: '111111', password: 'operator' }
     ];
   }
   
@@ -490,7 +490,7 @@ function openEditUserModal(userId) {
   }
 
   onEditUserSelectChange();
-  document.getElementById("modal-edit-user").classList.remove("hidden");
+  openModal("modal-edit-user");
 }
 
 function onUserModalRoleChange(formType) {
@@ -511,7 +511,7 @@ function onUserModalRoleChange(formType) {
   } else {
     if (pinInput) {
       pinInput.setAttribute('maxlength', '6');
-      pinInput.setAttribute('placeholder', 'ex: 123456');
+      pinInput.setAttribute('placeholder', 'ex: 111111');
     }
     if (pinLabel) {
       pinLabel.innerHTML = 'Cod PIN Operator (6 Cifre) *';
@@ -596,7 +596,7 @@ function openNewUserModal() {
   document.getElementById("newuser-pin").value = "";
   document.getElementById("newuser-role").value = "operator";
   onUserModalRoleChange('newuser');
-  document.getElementById("modal-new-user").classList.remove("hidden");
+  openModal("modal-new-user");
 }
 
 async function handleCreateUserSubmit(e) {
@@ -1076,7 +1076,7 @@ function openWizardModal() {
   
   renderWizardStep1Aparate();
   goToWizardStep(1);
-  document.getElementById("modal-wizard").classList.remove("hidden");
+  openModal("modal-wizard");
 }
 
 function closeWizardModal() {
@@ -1460,12 +1460,23 @@ function openAddStockModal() {
   }
   populateAddStockModalSelect();
   toggleStockOp('add');
-  document.getElementById("modal-add-stock").classList.remove("hidden");
+  openModal("modal-add-stock");
   updateStockModalPreview();
 }
 
+function openModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (!modal) return;
+  modal.classList.remove("hidden");
+  modal.scrollTop = 0;
+  const card = modal.querySelector(".modal-card, .wizard-modal-card");
+  if (card) card.scrollTop = 0;
+}
+
 function closeModal(modalId) {
-  document.getElementById(modalId).classList.add("hidden");
+  const modal = document.getElementById(modalId);
+  if (!modal) return;
+  modal.classList.add("hidden");
 }
 
 function populateAddStockModalSelect() {
@@ -1612,10 +1623,7 @@ let selectedAparateIdsForToner = new Set();
 let selectedTonereIdsForAparat = new Set();
 
 async function openManageTypesModal() {
-  const modal = document.getElementById("modal-manage-types");
-  if (!modal) return;
-
-  modal.classList.remove("hidden");
+  openModal("modal-manage-types");
   switchManageTab('tonere');
 
   const aparatSearch = document.getElementById("picker-aparat-search");
@@ -1945,7 +1953,7 @@ function openEditTonerModal(idTipToner, denumireTip, consumRef) {
   document.getElementById("edit-toner-id").value = idTipToner;
   document.getElementById("edit-toner-name").value = denumireTip;
   document.getElementById("edit-toner-consum").value = consumRef || 105000;
-  document.getElementById("edit-toner-modal").classList.remove("hidden");
+  openModal("edit-toner-modal");
 }
 
 function closeEditTonerModal() {
@@ -1996,7 +2004,7 @@ async function openEditAparatModal(idAparat, numeAparat) {
   
   const customIdx = aparateCustomIndexesMap[idAparat];
   document.getElementById("edit-aparat-index").value = (customIdx !== undefined) ? customIdx : "0";
-  document.getElementById("edit-aparat-modal").classList.remove("hidden");
+  openModal("edit-aparat-modal");
 
   try {
     const res = await fetch(`api/schimbari.php?action=get-last-index&id_aparat=${idAparat}&id_toner=1`);
