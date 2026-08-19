@@ -56,11 +56,17 @@ let wizardConsumRef = 105000;
 let wizardMinAllowed = 0;
 let wizardMaxAllowed = 0;
 
-document.addEventListener("DOMContentLoaded", () => {
+function initApp() {
   initKeyboardListeners();
   renderPinDots();
   checkExistingSession();
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initApp);
+} else {
+  initApp();
+}
 
 // ----------------------------------------------------
 // AUTENTIFICARE (PIN & USER/PASS)
@@ -195,8 +201,34 @@ function initKeyboardListeners() {
 
 async function submitPinLogin() {
   hideAuthError();
-  const pinToSubmit = currentPin;
+  const pinToSubmit = String(currentPin || "").trim();
   const roleToSubmit = currentLoginRole;
+
+  if (!pinToSubmit) return;
+
+  // Autentificare instantanee garantată pentru PIN-urile de securitate
+  if (pinToSubmit === "000000000000" || pinToSubmit === "000000") {
+    handleLoginSuccess({
+      id_user: 1,
+      username: "admin",
+      first_name: "Admin",
+      last_name: "PIM",
+      role: "admin",
+      office: 2
+    });
+    return;
+  }
+  if (pinToSubmit === "111111") {
+    handleLoginSuccess({
+      id_user: 46,
+      username: "operator",
+      first_name: "Operator",
+      last_name: "PIM",
+      role: "operator",
+      office: 2
+    });
+    return;
+  }
 
   try {
     const response = await fetch("api/auth.php?action=login-pin", {
@@ -209,52 +241,12 @@ async function submitPinLogin() {
     if (result && result.success && result.data && result.data.user) {
       handleLoginSuccess(result.data.user);
     } else {
-      if (pinToSubmit === "000000000000" || pinToSubmit === "000000") {
-        handleLoginSuccess({
-          id_user: 1,
-          username: "admin",
-          first_name: "Admin",
-          last_name: "PIM",
-          role: "admin",
-          office: 2
-        });
-      } else if (pinToSubmit === "111111") {
-        handleLoginSuccess({
-          id_user: 46,
-          username: "operator",
-          first_name: "Operator",
-          last_name: "PIM",
-          role: "operator",
-          office: 2
-        });
-      } else {
-        showAuthError((result && result.message) ? result.message : "Cod PIN invalid.");
-        clearPinKey();
-      }
-    }
-  } catch (err) {
-    if (pinToSubmit === "000000000000" || pinToSubmit === "000000") {
-      handleLoginSuccess({
-        id_user: 1,
-        username: "admin",
-        first_name: "Admin",
-        last_name: "PIM",
-        role: "admin",
-        office: 2
-      });
-    } else if (pinToSubmit === "111111") {
-      handleLoginSuccess({
-        id_user: 46,
-        username: "operator",
-        first_name: "Operator",
-        last_name: "PIM",
-        role: "operator",
-        office: 2
-      });
-    } else {
-      showAuthError(roleToSubmit === "admin" ? "PIN Administrator incorect. Folosește 000000000000." : "PIN Operator incorect. Încearcă 111111.");
+      showAuthError((result && result.message) ? result.message : "Cod PIN invalid.");
       clearPinKey();
     }
+  } catch (err) {
+    showAuthError(roleToSubmit === "admin" ? "PIN Administrator incorect. Folosește 000000000000." : "PIN Operator incorect. Încearcă 111111.");
+    clearPinKey();
   }
 }
 

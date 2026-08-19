@@ -7,9 +7,9 @@ $action = $input['action'] ?? $_GET['action'] ?? '';
 $db = getDBConnection();
 
 if ($action === 'login-pin') {
-    $pin = trim($input['pin'] ?? '');
+    $pin = trim((string)($input['pin'] ?? ''));
     
-    if (empty($pin)) {
+    if ($pin === '' || strlen($pin) === 0) {
         sendResponse(false, 'Te rugăm să introduci codul PIN.', null, 400);
     }
     
