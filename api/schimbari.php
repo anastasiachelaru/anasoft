@@ -23,7 +23,8 @@ if ($action === 'list') {
                            s.id_user, s.copii_realizate, s.consum_referinta, s.procent_realizat,
                            a.nume_aparat, a.office,
                            tt.denumire_tip,
-                           CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) AS nume_operator, u.username
+                           CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) AS nume_operator,
+                           u.username, u.first_name, u.last_name
                     FROM istoric_schimbari s
                     LEFT JOIN aparate a ON s.id_aparat = a.id_aparat
                     LEFT JOIN tonere t ON s.id_toner = t.id_toner
@@ -43,7 +44,8 @@ if ($action === 'list') {
             
             foreach ($schimbari as &$s) {
                 $s['office_nume'] = $officesMap[$s['office'] ?? 0] ?? 'PIM';
-                if (empty(trim($s['nume_operator'] ?? ''))) {
+                $s['nume_operator'] = trim($s['nume_operator'] ?? '');
+                if (empty($s['nume_operator'])) {
                     $s['nume_operator'] = !empty($s['username']) ? $s['username'] : 'operator';
                 }
             }

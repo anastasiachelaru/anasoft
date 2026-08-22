@@ -475,7 +475,7 @@
           <form id="wizard-form-step3" onsubmit="handleWizardSubmit(event)">
             <div class="form-group margin-top">
               <label for="input-wizard-contor"><i class="fa-solid fa-tachometer-alt"></i> Contor Nou Aparat *</label>
-              <input type="number" id="input-wizard-contor" placeholder="Introdu contorul afișat de aparat..." oninput="calculateWizardMetrics()" required class="contor-input-lg">
+              <input type="text" inputmode="numeric" id="input-wizard-contor" placeholder="ex: 1.000.000" oninput="formatContorInput(this); calculateWizardMetrics();" required class="contor-input-lg">
             </div>
 
             <!-- TASTATURĂ NUMERICĂ INTEGRATĂ ÎN DESIGNUL SITE-ULUI -->
@@ -1035,7 +1035,7 @@
           </div>
           <div class="form-group" style="margin-bottom: 14px;">
             <label style="color: #cbd5e1; font-weight: 600; font-size: 0.88rem; display: block; margin-bottom: 6px;">Index Curent Aparat (Număr Pagini Odometru) *</label>
-            <input type="number" id="edit-aparat-index" min="0" required class="search-input full-width" style="width:100%;">
+            <input type="text" inputmode="numeric" id="edit-aparat-index" placeholder="ex: 1.000.000" oninput="formatContorInput(this);" required class="search-input full-width" style="width:100%;">
           </div>
         </div>
         <div class="modal-footer">

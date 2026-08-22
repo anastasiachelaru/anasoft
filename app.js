@@ -37,6 +37,44 @@ function formatOfficeName(officeIdOrName) {
   return 'Inexistent';
 }
 
+// FORMATARE CUMPĂRĂTURI / CIFRE CU PUNCT LA MII / MILIOANE (ex: 1.000.000)
+function formatNumberWithDots(val) {
+  if (val === null || val === undefined || val === '') return '';
+  const digits = String(val).replace(/\D/g, '');
+  if (!digits) return '';
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+function parseDotsNumber(val) {
+  if (val === null || val === undefined || val === '') return 0;
+  const digits = String(val).replace(/\./g, '').replace(/\D/g, '');
+  return parseInt(digits, 10) || 0;
+}
+
+function formatContorInput(inputElem) {
+  if (!inputElem) return;
+  const cursorStart = inputElem.selectionStart;
+  const prevLen = inputElem.value.length;
+  const rawDigits = inputElem.value.replace(/\D/g, '');
+  
+  if (!rawDigits) {
+    inputElem.value = '';
+    return;
+  }
+  
+  const formatted = formatNumberWithDots(rawDigits);
+  inputElem.value = formatted;
+  
+  // Menținere poziție cursor tastare
+  if (cursorStart !== null) {
+    const diff = formatted.length - prevLen;
+    const newPos = Math.max(0, cursorStart + diff);
+    try {
+      inputElem.setSelectionRange(newPos, newPos);
+    } catch (e) {}
+  }
+}
+
 // Cache de date în memorie
 let tonersData = [];
 let aparateData = [];
@@ -807,7 +845,7 @@ function renderTonersTable() {
       <td><span class="office-badge">${formatOfficeName(t.office || t.office_nume)}</span></td>
       <td><span class="toner-color-text toner-color-${colorInfo.color}"><i class="fa-solid fa-droplet"></i> ${colorInfo.label}</span></td>
       <td><span class="badge ${badgeClass}">${t.stoc} buc</span></td>
-      <td>${(t.consum_referinta || 0).toLocaleString()} pagini</td>
+      <td>${formatNumberWithDots(t.consum_referinta || 0)} pagini</td>
       <td><small style="color:#94a3b8;">${aparateList}</small></td>
     `;
 
@@ -1031,14 +1069,34 @@ function renderHistoryTable() {
     const procentStr = h.procent_realizat ? `${parseFloat(h.procent_realizat).toFixed(2)}%` : '0.00%';
     const colorBadge = getColorBadge(h.denumire_tip || '');
     
+    let userAccountDisplay = '';
+    const nameStr = (h.nume_operator || '').trim();
+    const userStr = (h.username || '').trim();
+    
+    if (nameStr && nameStr.toLowerCase() !== 'operator') {
+      if (userStr && userStr.toLowerCase() !== 'operator') {
+        userAccountDisplay = `<i class="fa-solid fa-user text-cyan" style="margin-right:4px;"></i> <strong>${nameStr}</strong> <small style="color:#94a3b8;">(@${userStr})</small>`;
+      } else {
+        userAccountDisplay = `<i class="fa-solid fa-user text-cyan" style="margin-right:4px;"></i> <strong>${nameStr}</strong>`;
+      }
+    } else if (userStr && userStr.toLowerCase() !== 'operator') {
+      userAccountDisplay = `<i class="fa-solid fa-user text-cyan" style="margin-right:4px;"></i> <strong>@${userStr}</strong>`;
+    } else {
+      userAccountDisplay = `<i class="fa-solid fa-user text-cyan" style="margin-right:4px;"></i> <strong>Admin PIM</strong> <small style="color:#94a3b8;">(@admin)</small>`;
+    }
+
+    const contorFormatted = formatNumberWithDots(h.contor || 0);
+    const refFormatted = formatNumberWithDots(h.consum_referinta || 105000);
+    const copiiFormatted = formatNumberWithDots(h.copii_realizate || 0);
+
     tr.innerHTML = `
       <td><strong>${h.id_istoric_schimbare}</strong></td>
       <td><strong>${h.nume_aparat}</strong></td>
       <td>${colorBadge}</td>
       <td><span class="office-badge">${formatOfficeName(h.office || h.office_nume)}</span></td>
-      <td><i class="fa-solid fa-user"></i> ${h.nume_operator || h.username}</td>
-      <td><code>${(h.contor || 0).toLocaleString()}</code><br><small style="color:#94a3b8;">Ref: ${(h.consum_referinta || 105000).toLocaleString()}</small></td>
-      <td>${(h.copii_realizate || 0).toLocaleString()}</td>
+      <td>${userAccountDisplay}</td>
+      <td><code>${contorFormatted}</code><br><small style="color:#94a3b8;">Ref: ${refFormatted}</small></td>
+      <td>${copiiFormatted}</td>
       <td><strong>${procentStr}</strong></td>
       <td><small>${h.data_schimbare}</small></td>
     `;
@@ -1081,14 +1139,34 @@ function renderWizardRecentTable() {
     const procentStr = h.procent_realizat ? `${parseFloat(h.procent_realizat).toFixed(2)}%` : '0.00%';
     const colorBadge = getColorBadge(h.denumire_tip || '');
     
+    let userAccountDisplay = '';
+    const nameStr = (h.nume_operator || '').trim();
+    const userStr = (h.username || '').trim();
+    
+    if (nameStr && nameStr.toLowerCase() !== 'operator') {
+      if (userStr && userStr.toLowerCase() !== 'operator') {
+        userAccountDisplay = `<i class="fa-solid fa-user text-cyan" style="margin-right:4px;"></i> <strong>${nameStr}</strong> <small style="color:#94a3b8;">(@${userStr})</small>`;
+      } else {
+        userAccountDisplay = `<i class="fa-solid fa-user text-cyan" style="margin-right:4px;"></i> <strong>${nameStr}</strong>`;
+      }
+    } else if (userStr && userStr.toLowerCase() !== 'operator') {
+      userAccountDisplay = `<i class="fa-solid fa-user text-cyan" style="margin-right:4px;"></i> <strong>@${userStr}</strong>`;
+    } else {
+      userAccountDisplay = `<i class="fa-solid fa-user text-cyan" style="margin-right:4px;"></i> <strong>Admin PIM</strong> <small style="color:#94a3b8;">(@admin)</small>`;
+    }
+
+    const contorFormatted = formatNumberWithDots(h.contor || 0);
+    const refFormatted = formatNumberWithDots(h.consum_referinta || 105000);
+    const copiiFormatted = formatNumberWithDots(h.copii_realizate || 0);
+
     tr.innerHTML = `
       <td><strong>${h.id_istoric_schimbare}</strong></td>
       <td><strong>${h.nume_aparat}</strong></td>
       <td>${colorBadge}</td>
       <td><span class="office-badge">${formatOfficeName(h.office || h.office_nume)}</span></td>
-      <td>${h.nume_operator || h.username}</td>
-      <td><code>${(h.contor || 0).toLocaleString()}</code> / ${(h.consum_referinta || 105000).toLocaleString()}</td>
-      <td>${(h.copii_realizate || 0).toLocaleString()}</td>
+      <td>${userAccountDisplay}</td>
+      <td><code>${contorFormatted}</code> / ${refFormatted}</td>
+      <td>${copiiFormatted}</td>
       <td><strong>${procentStr}</strong></td>
       <td><small>${h.data_schimbare}</small></td>
     `;
@@ -1325,7 +1403,7 @@ function renderWizardStep2Tonere(tonersList) {
     card.innerHTML = `
       <div class="card-title">${colorInfo.badgeHtml}</div>
       <div class="card-subtitle" style="margin-top: 6px;">Stoc disponibil: ${stockBadge}</div>
-      <div class="card-subtitle">Consum Referință: ${(t.consum_referinta || 105000).toLocaleString('ro-RO')} pagini</div>
+      <div class="card-subtitle">Consum Referință: ${formatNumberWithDots(t.consum_referinta || 105000)} pagini</div>
     `;
     container.appendChild(card);
   });
@@ -1377,10 +1455,10 @@ async function initWizardStep3Data() {
     wizardMaxAllowed = wizardMinAllowed + (wizardConsumRef * 2);
   }
   
-  document.getElementById("display-index-vechi").innerText = wizardIndexVechi.toLocaleString('ro-RO');
-  document.getElementById("display-min-allowed").innerText = wizardMinAllowed.toLocaleString('ro-RO');
-  document.getElementById("display-max-allowed").innerText = wizardMaxAllowed.toLocaleString('ro-RO');
-  document.getElementById("display-consum-ref").innerText = wizardConsumRef.toLocaleString('ro-RO');
+  document.getElementById("display-index-vechi").innerText = formatNumberWithDots(wizardIndexVechi) || '0';
+  document.getElementById("display-min-allowed").innerText = formatNumberWithDots(wizardMinAllowed) || '0';
+  document.getElementById("display-max-allowed").innerText = formatNumberWithDots(wizardMaxAllowed) || '0';
+  document.getElementById("display-consum-ref").innerText = formatNumberWithDots(wizardConsumRef) || '0';
   
   document.getElementById("input-wizard-contor").value = "";
   calculateWizardMetrics();
@@ -1389,7 +1467,7 @@ async function initWizardStep3Data() {
 // CALCUL METRICE ÎN TIMP REAL ȘI VALIDARE
 function calculateWizardMetrics() {
   const contorInput = document.getElementById("input-wizard-contor");
-  const contorVal = parseInt(contorInput.value || 0);
+  const contorVal = parseDotsNumber(contorInput ? contorInput.value : 0);
   
   const alertDiv = document.getElementById("wizard-validation-alert");
   const alertText = document.getElementById("wizard-validation-text");
@@ -1406,16 +1484,16 @@ function calculateWizardMetrics() {
   const copiiRealizate = contorVal - wizardIndexVechi;
   const procentRealizat = (wizardConsumRef > 0 && copiiRealizate > 0) ? ((copiiRealizate / wizardConsumRef) * 100) : 0;
   
-  document.getElementById("display-copii-realizate").innerText = (copiiRealizate > 0 ? copiiRealizate : 0).toLocaleString('ro-RO');
+  document.getElementById("display-copii-realizate").innerText = formatNumberWithDots(copiiRealizate > 0 ? copiiRealizate : 0) || '0';
   document.getElementById("display-procent-realizat").innerText = `${procentRealizat.toFixed(2)}%`;
   
   // VALIDARE STRICTĂ CONFORM CERINȚEI (MINIM 1 copie, MAXIM 200% din referință)
   if (contorVal < wizardMinAllowed) {
-    alertText.innerText = `Contorul introdus (${contorVal.toLocaleString('ro-RO')}) este sub Minimul Permis (${wizardMinAllowed.toLocaleString('ro-RO')}). A fost efectuat cel puțin 1 copie?`;
+    alertText.innerText = `Contorul introdus (${formatNumberWithDots(contorVal)}) este sub Minimul Permis (${formatNumberWithDots(wizardMinAllowed)}). A fost efectuat cel puțin 1 copie?`;
     alertDiv.classList.remove("hidden");
     submitBtn.disabled = true;
   } else if (contorVal > wizardMaxAllowed) {
-    alertText.innerText = `Contorul introdus (${contorVal.toLocaleString('ro-RO')}) depășește Maximul Permis de 200% (${wizardMaxAllowed.toLocaleString('ro-RO')}). Procentul maxim admis este de 200%.`;
+    alertText.innerText = `Contorul introdus (${formatNumberWithDots(contorVal)}) depășește Maximul Permis de 200% (${formatNumberWithDots(wizardMaxAllowed)}). Procentul maxim admis este de 200%.`;
     alertDiv.classList.remove("hidden");
     submitBtn.disabled = true;
   } else {
@@ -1433,7 +1511,7 @@ async function handleWizardSubmit(e) {
     return;
   }
   
-  const contorVal = parseInt(document.getElementById("input-wizard-contor").value);
+  const contorVal = parseDotsNumber(document.getElementById("input-wizard-contor").value);
   if (!contorVal || contorVal < wizardMinAllowed || contorVal > wizardMaxAllowed) {
     alert("Te rugăm să introduci un contor valid în intervalul minim și maxim permis.");
     return;
@@ -1938,7 +2016,7 @@ function renderManageTonersView() {
       <tr>
         <td style="font-weight:600; color:#fff;">${colorInfo.badgeHtml}</td>
         <td>${formatOfficeName(t.office)}</td>
-        <td>${(t.consum_referinta || 105000).toLocaleString('ro-RO')} pag</td>
+        <td>${formatNumberWithDots(t.consum_referinta || 105000)} pag</td>
         <td><strong style="color: var(--cyan-accent);">${t.stoc || 0} buc</strong></td>
         <td>${stBadge}</td>
         <td class="action-cell">${btnEdit}${btnAction}</td>
@@ -2049,7 +2127,7 @@ async function openEditAparatModal(idAparat, numeAparat) {
   document.getElementById("edit-aparat-name").value = numeAparat;
   
   const customIdx = aparateCustomIndexesMap[idAparat];
-  document.getElementById("edit-aparat-index").value = (customIdx !== undefined) ? customIdx : "0";
+  document.getElementById("edit-aparat-index").value = formatNumberWithDots((customIdx !== undefined) ? customIdx : "0");
   openModal("edit-aparat-modal");
 
   try {
@@ -2057,10 +2135,10 @@ async function openEditAparatModal(idAparat, numeAparat) {
     const json = await res.json();
     if (json.success && json.data && json.data.index_vechi > 0) {
       aparateCustomIndexesMap[idAparat] = json.data.index_vechi;
-      document.getElementById("edit-aparat-index").value = json.data.index_vechi;
+      document.getElementById("edit-aparat-index").value = formatNumberWithDots(json.data.index_vechi);
     }
   } catch (e) {
-    if (customIdx !== undefined) document.getElementById("edit-aparat-index").value = customIdx;
+    if (customIdx !== undefined) document.getElementById("edit-aparat-index").value = formatNumberWithDots(customIdx);
   }
 }
 
@@ -2072,7 +2150,7 @@ async function handleEditAparatSubmit(e) {
   e.preventDefault();
   const idAparat = parseInt(document.getElementById("edit-aparat-id").value);
   const numeAparat = document.getElementById("edit-aparat-name").value.trim();
-  const contorVal = parseInt(document.getElementById("edit-aparat-index").value);
+  const contorVal = parseDotsNumber(document.getElementById("edit-aparat-index").value);
 
   if (!idAparat || isNaN(contorVal)) {
     alert("Te rugăm să introduci o valoare validă pentru contor.");
@@ -2324,7 +2402,9 @@ function toggleFullScreen() {
 function appendWizardDigit(digit) {
   const input = document.getElementById("input-wizard-contor");
   if (!input) return;
-  input.value = (input.value || "") + digit;
+  const rawCurrent = parseDotsNumber(input.value);
+  const rawStr = (rawCurrent > 0 ? String(rawCurrent) : "") + digit;
+  input.value = formatNumberWithDots(rawStr);
   calculateWizardMetrics();
 }
 
@@ -2338,7 +2418,12 @@ function clearWizardDigit() {
 function backspaceWizardDigit() {
   const input = document.getElementById("input-wizard-contor");
   if (!input) return;
-  input.value = input.value.slice(0, -1);
+  const rawStr = String(parseDotsNumber(input.value));
+  if (rawStr.length > 1) {
+    input.value = formatNumberWithDots(rawStr.slice(0, -1));
+  } else {
+    input.value = "";
+  }
   calculateWizardMetrics();
 }
 
