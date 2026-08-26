@@ -425,13 +425,51 @@ elseif ($action === 'save-aparat') {
 
             // Actualizare asocieri în `tonere_aparate`
             if (!empty($tonereCompatibile)) {
-                foreach ($tonereCompatibile as $tId) {
-                    $tId = (int)$tId;
+                foreach ($tonereCompatibile as $valId) {
+                    $valId = (int)$valId;
+                    if ($valId <= 0) continue;
+
+                    // 1. Identificăm id_tip_toner asociat
+                    $idTipToner = null;
+                    
+                    $stmtCheckTip = $db->prepare("SELECT id_tip_toner FROM tipuri_toner WHERE id_tip_toner = :id LIMIT 1");
+                    $stmtCheckTip->execute([':id' => $valId]);
+                    $rowTip = $stmtCheckTip->fetch();
+                    
+                    if ($rowTip) {
+                        $idTipToner = (int)$rowTip['id_tip_toner'];
+                    } else {
+                        $stmtCheckTon = $db->prepare("SELECT id_tip_toner FROM tonere WHERE id_toner = :id LIMIT 1");
+                        $stmtCheckTon->execute([':id' => $valId]);
+                        $rowTon = $stmtCheckTon->fetch();
+                        if ($rowTon) {
+                            $idTipToner = (int)$rowTon['id_tip_toner'];
+                        }
+                    }
+
+                    if (!$idTipToner) continue;
+
+                    // 2. Găsim sau creăm intrarea în tabela `tonere` pentru id_tip_toner la sediul aparatului ($officeId)
+                    $stmtGetToner = $db->prepare("SELECT id_toner FROM tonere WHERE id_tip_toner = :tip AND office = :off LIMIT 1");
+                    $stmtGetToner->execute([':tip' => $idTipToner, ':off' => $officeId]);
+                    $existingToner = $stmtGetToner->fetch();
+
+                    if ($existingToner) {
+                        $realTonerId = (int)$existingToner['id_toner'];
+                        $stmtReact = $db->prepare("UPDATE tonere SET toner_activ = 1 WHERE id_toner = :id");
+                        $stmtReact->execute([':id' => $realTonerId]);
+                    } else {
+                        $stmtInsToner = $db->prepare("INSERT INTO tonere (id_tip_toner, office, stoc, toner_activ) VALUES (:tip, :off, 0, 1)");
+                        $stmtInsToner->execute([':tip' => $idTipToner, ':off' => $officeId]);
+                        $realTonerId = (int)$db->lastInsertId();
+                    }
+
+                    // 3. Inserăm legătura în `tonere_aparate` între $realTonerId și $idAparat
                     $stmtCheckLeg = $db->prepare("SELECT COUNT(*) as cnt FROM tonere_aparate WHERE id_toner = :t AND id_aparat = :a");
-                    $stmtCheckLeg->execute([':t' => $tId, ':a' => $idAparat]);
+                    $stmtCheckLeg->execute([':t' => $realTonerId, ':a' => $idAparat]);
                     if ($stmtCheckLeg->fetch()['cnt'] == 0) {
                         $stmtInsLeg = $db->prepare("INSERT INTO tonere_aparate (id_toner, id_aparat) VALUES (:t, :a)");
-                        $stmtInsLeg->execute([':t' => $tId, ':a' => $idAparat]);
+                        $stmtInsLeg->execute([':t' => $realTonerId, ':a' => $idAparat]);
                     }
                 }
             }
