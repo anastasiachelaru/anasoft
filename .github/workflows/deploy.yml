@@ -1,14 +1,13 @@
-name: Deploy to dev.pim.ro
+name: Deploy to Chroot Hosting
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch:
 
 jobs:
   deploy:
-    name: Deploy via SFTP
+    name: Deploy via FTP
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -17,10 +16,8 @@ jobs:
       - name: Deploy via SFTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: dev.pim.ro
+          server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          port: 22
-          protocol: sftp
           local-dir: ./
           server-dir: /public_html/
