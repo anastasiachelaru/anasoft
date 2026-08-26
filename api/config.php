@@ -11,9 +11,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'anasoftr_tonere');
-define('DB_USER', 'anasoftr_anasoftr');
-define('DB_PASS', 'iT0*8IgO#66Hlm');
+define('DB_NAME', 'pimro1_devdb');
+define('DB_USER', 'pimro1_devuser');
+define('DB_PASS', 'TjYYa=94,VMw38P&');
 
 function getDBConnection() {
     try {
