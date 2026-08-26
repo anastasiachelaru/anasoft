@@ -1,4 +1,4 @@
-name: Deploy to dev.pim.ro # Trigger deploy
+name: Deploy to dev.pim.ro
 
 on:
   push:
@@ -16,7 +16,7 @@ jobs:
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: vip01.web-host.ro
+          server: dev.pim.ro
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./
