@@ -7,17 +7,19 @@ on:
 
 jobs:
   deploy:
-    name: Deploy via FTP
+    name: Deploy via SFTP
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Deploy via FTP
+      - name: Deploy via SFTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: dev.pim.ro
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
+          port: 22
+          protocol: sftp
           local-dir: ./
           server-dir: dev.pim.ro/
