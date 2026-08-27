@@ -25,7 +25,7 @@ if ($action === 'login-pin') {
             $stmtCheckAdmin = $db->query("SELECT COUNT(*) as cnt FROM users WHERE username = 'admin'");
             $cntRow = $stmtCheckAdmin ? $stmtCheckAdmin->fetch() : null;
             if (!$cntRow || (int)$cntRow['cnt'] === 0) {
-                $stmtIns = $db->prepare("INSERT INTO users (username, email, password, password_plain, role, office, first_name, last_name, cont_active, pin_code) VALUES ('admin', 'admin@pimcopy.ro', md5('admin123'), 'admin123', 'admin', 2, 'Admin', 'PIM', 1, '000000000000')");
+                $stmtIns = $db->prepare("INSERT INTO users (username, email, password, password_plain, role, office, first_name, last_name, cont_active, pin_code) VALUES ('admin', 'admin@dev.pim.ro', md5('admin123'), 'admin123', 'admin', 2, 'Admin', 'PIM', 1, '000000000000')");
                 $stmtIns->execute();
             }
         } catch (Throwable $e) {}
@@ -39,7 +39,7 @@ if ($action === 'login-pin') {
                 $adminUser = [
                     'id_user' => 1,
                     'username' => 'admin',
-                    'email' => 'admin@pimcopy.ro',
+                    'email' => 'admin@dev.pim.ro',
                     'role' => 'admin',
                     'office' => 2,
                     'first_name' => 'Admin',
@@ -93,7 +93,7 @@ if ($action === 'login-pin') {
                 'last_name' => $isAdmin ? 'PIM' : 'Chelaru',
                 'role' => $isAdmin ? 'admin' : 'operator',
                 'office' => 3, // Tudor
-                'email' => $isAdmin ? 'admin@pimcopy.ro' : 'anastasiakel@pimcopy.ro'
+                'email' => $isAdmin ? 'admin@dev.pim.ro' : 'anastasiakel@dev.pim.ro'
             ],
             'token' => 'demo_token_' . time()
         ]);
@@ -143,7 +143,7 @@ elseif ($action === 'login-password') {
                     'last_name' => 'PIM',
                     'role' => $isAdmin ? 'admin' : 'operator',
                     'office' => 2,
-                    'email' => $username . '@pimcopy.ro'
+                    'email' => $username . '@dev.pim.ro'
                 ],
                 'token' => 'demo_token_' . time()
             ]);

@@ -32,7 +32,7 @@ if ($action === 'list') {
             $stmtCheckAdmin = $db->query("SELECT COUNT(*) as cnt FROM users WHERE username = 'admin'");
             $cntRow = $stmtCheckAdmin ? $stmtCheckAdmin->fetch() : null;
             if (!$cntRow || (int)$cntRow['cnt'] === 0) {
-                $stmtIns = $db->prepare("INSERT INTO users (username, email, password, password_plain, role, office, first_name, last_name, cont_active, pin_code) VALUES ('admin', 'admin@pimcopy.ro', md5('admin123'), 'admin123', 'admin', 2, 'Admin', 'PIM', 1, '000000000000')");
+                $stmtIns = $db->prepare("INSERT INTO users (username, email, password, password_plain, role, office, first_name, last_name, cont_active, pin_code) VALUES ('admin', 'admin@dev.pim.ro', md5('admin123'), 'admin123', 'admin', 2, 'Admin', 'PIM', 1, '000000000000')");
                 $stmtIns->execute();
             }
 
@@ -103,7 +103,7 @@ elseif ($action === 'create') {
     $nameParts = explode(' ', $fullName, 2);
     $firstName = $nameParts[0] ?? $username;
     $lastName = $nameParts[1] ?? '';
-    $email = strtolower($username) . '@pimcopy.ro';
+    $email = strtolower($username) . '@dev.pim.ro';
 
     if ($db) {
         try {
