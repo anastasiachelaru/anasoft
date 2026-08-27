@@ -6,7 +6,7 @@ if (($_GET['secret'] ?? '') !== $secret) {
 }
 
 $repo_dir = '/home/pimro1/repositories/dev.pim.ro';
-$deploy_dir = '/home/pimro1/public_html/dev.pim.ro';
+$deploy_dir = '/home/pimro1/dev.pim.ro';
 
 $output = [];
 $cmd = "cd $repo_dir && git pull origin main 2>&1 && /bin/cp -R * $deploy_dir 2>&1";
