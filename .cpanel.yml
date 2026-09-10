@@ -1,6 +1,8 @@
 ---
 deployment:
   tasks:
+    - export BRANCH=$(git rev-parse --abbrev-ref HEAD)
     - export DEPLOYPATH=/home/pimro1/dev.pim.ro/
+    - if [ "$BRANCH" = "main" ]; then export DEPLOYPATH=/home/pimro1/portal.pim.ro/; fi
     - /bin/mkdir -p $DEPLOYPATH
     - /bin/cp -R * $DEPLOYPATH

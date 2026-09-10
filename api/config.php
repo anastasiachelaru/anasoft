@@ -10,10 +10,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'pimro1_devdb');
-define('DB_USER', 'pimro1_devuser');
-define('DB_PASS', 'TjYYa=94,VMw38P&');
+$host = $_SERVER['HTTP_HOST'] ?? '';
+
+if (stristr($host, 'portal.pim.ro') !== false) {
+    define('DB_HOST', 'localhost');
+    define('DB_NAME', 'pimro1_portaldb');
+    define('DB_USER', 'pimro1_portaluser');
+    define('DB_PASS', 'Bn)%~+#LTwi+J^2(');
+} else {
+    define('DB_HOST', 'localhost');
+    define('DB_NAME', 'pimro1_devdb');
+    define('DB_USER', 'pimro1_devuser');
+    define('DB_PASS', 'TjYYa=94,VMw38P&');
+}
 
 function getDBConnection() {
     try {

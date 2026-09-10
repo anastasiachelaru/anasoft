@@ -1,5 +1,7 @@
 RewriteEngine On
-RewriteCond %{HTTPS} off
+RewriteCond %{HTTPS} !on
+RewriteCond %{HTTP:X-Forwarded-Proto} !https
+RewriteCond %{SERVER_PORT} !^443$
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
 # BEGIN cPanel-generated php ini directives, do not edit
