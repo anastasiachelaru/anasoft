@@ -4,6 +4,10 @@ RewriteCond %{HTTP:X-Forwarded-Proto} !https
 RewriteCond %{SERVER_PORT} !^443$
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
+<IfModule mod_headers.c>
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+</IfModule>
+
 # BEGIN cPanel-generated php ini directives, do not edit
 <IfModule php7_module>
    php_value error_log "/home/pimro1/logs/php.error.log"
