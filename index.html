@@ -1,16 +1,17 @@
 <!DOCTYPE html>
 <html lang="ro">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="PIM Iași - Sistem de Gestiune și Evidență Tonere și Consumabile Imprimante.">
   <title>PIM Iași (Dev) - Toner Management System</title>
-  
+
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="PIM Toner">
-  
+
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -19,14 +20,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  
+
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
+
   <link rel="stylesheet" href="style.css?v=1.0.8">
 </head>
+
 <body class="dark-theme">
-  
+
   <!-- Fundal Dinamic CMYK Glow -->
   <div class="background-decor">
     <div class="glow glow-cyan"></div>
@@ -48,10 +50,12 @@
 
         <!-- SELECTOR ROL VIZITATOR (OPERATOR VS ADMINISTRATOR) -->
         <div class="role-selector-tabs" style="display: flex; gap: 10px; margin-bottom: 18px;">
-          <button id="role-operator-btn" class="role-tab-btn active" onclick="switchLoginRole('operator')" style="flex: 1; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(56, 189, 248, 0.4); background: rgba(2, 132, 199, 0.25); color: #fff; font-weight: 700; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
+          <button id="role-operator-btn" class="role-tab-btn active" onclick="switchLoginRole('operator')"
+            style="flex: 1; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(56, 189, 248, 0.4); background: rgba(2, 132, 199, 0.25); color: #fff; font-weight: 700; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
             Operator
           </button>
-          <button id="role-admin-btn" class="role-tab-btn" onclick="switchLoginRole('admin')" style="flex: 1; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(15, 23, 42, 0.6); color: var(--text-muted); font-weight: 600; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
+          <button id="role-admin-btn" class="role-tab-btn" onclick="switchLoginRole('admin')"
+            style="flex: 1; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(15, 23, 42, 0.6); color: var(--text-muted); font-weight: 600; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
             Administrator
           </button>
         </div>
@@ -67,8 +71,9 @@
 
         <!-- FORMULAR 1: AUTENTIFICARE PRIN PIN (KEYPAD) -->
         <div id="auth-pin-view" class="auth-subview active">
-          <p class="auth-instruction" id="pin-instruction-text">Introdu codul PIN din 6 cifre atribuit contului tău de Operator:</p>
-          
+          <p class="auth-instruction" id="pin-instruction-text">Introdu codul PIN din 6 cifre atribuit contului tău de
+            Operator:</p>
+
           <div class="pin-display" id="pin-dots-container">
             <span class="pin-dot" id="dot-0"></span>
             <span class="pin-dot" id="dot-1"></span>
@@ -90,7 +95,8 @@
             <button class="key-btn" onclick="pressPinKey('9')">9</button>
             <button class="key-btn action-key" onclick="clearPinKey()"><i class="fa-solid fa-trash-can"></i></button>
             <button class="key-btn" onclick="pressPinKey('0')">0</button>
-            <button class="key-btn action-key" onclick="backspacePinKey()"><i class="fa-solid fa-delete-left"></i></button>
+            <button class="key-btn action-key" onclick="backspacePinKey()"><i
+                class="fa-solid fa-delete-left"></i></button>
           </div>
 
           <div class="demo-hint" id="demo-hint-box">
@@ -105,7 +111,7 @@
               <label for="input-username"><i class="fa-solid fa-user"></i> Nume Utilizator (Username)</label>
               <input type="text" id="input-username" placeholder="ex: operator1 sau admin" required>
             </div>
-            
+
             <div class="form-group">
               <label for="input-password"><i class="fa-solid fa-key"></i> Parolă Acces</label>
               <input type="password" id="input-password" placeholder="Parolă..." required>
@@ -128,13 +134,13 @@
 
   <!-- APLICAȚIA PRINCIPALĂ (DASHBOARD ANGAJAȚI ȘI ADMINI) -->
   <section id="app-screen" class="screen-view">
-    
+
     <!-- BARĂ NAVIGARE (HEADER) -->
     <header class="app-header">
       <div class="header-left">
         <div class="brand-logo sm">PIM</div>
         <span class="header-title">PIM Iași (Dev) - Gestiune Tonere</span>
-        
+
         <div class="office-selector-wrap">
           <i class="fa-solid fa-building"></i>
           <select id="office-filter-select" onchange="changeOfficeFilter(this.value)">
@@ -149,7 +155,9 @@
       </div>
 
       <div class="header-right">
-        <button class="btn btn-secondary btn-sm" id="btn-fullscreen-toggle" onclick="toggleFullScreen()" title="Ecran Complet (Full Screen)" style="padding: 8px 14px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;">
+        <button class="btn btn-secondary btn-sm" id="btn-fullscreen-toggle" onclick="toggleFullScreen()"
+          title="Ecran Complet (Full Screen)"
+          style="padding: 8px 14px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;">
           <i class="fa-solid fa-expand" id="icon-fullscreen"></i> <span id="text-fullscreen">Ecran Complet</span>
         </button>
 
@@ -157,7 +165,7 @@
           <span class="user-role-tag" id="user-role-badge">Angajat</span>
           <span class="user-name" id="user-name-display">Operator</span>
         </div>
-        
+
         <button class="btn btn-icon-danger" onclick="logout()" title="Deconectare">
           <i class="fa-solid fa-power-off"></i>
         </button>
@@ -166,7 +174,7 @@
 
     <!-- CONTAINER CONȚINUT -->
     <div class="app-body">
-      
+
       <!-- NAVIGARE SECȚIUNI -->
       <nav class="app-nav">
         <button class="nav-btn active" id="nav-schimbare-btn" onclick="switchSection('schimbare')">
@@ -175,15 +183,15 @@
         <button class="nav-btn" id="nav-tonere-btn" onclick="switchSection('tonere')">
           <i class="fa-solid fa-boxes-stacked"></i> Stoc Tonere
         </button>
-        
+
         <!-- OPȚIUNI EXCLUSIVE PENTRU ADMIN -->
         <button class="nav-btn admin-only hidden" id="nav-utilizatori-btn" onclick="switchSection('utilizatori')">
-          <i class="fa-solid fa-users-gear"></i> Management Utilizatori
+          <i class="fa-solid fa-users-gear"></i> Management Users
         </button>
       </nav>
 
       <main class="main-content">
-        
+
         <!-- SECȚIUNEA 1: ÎNLOCUIRE TONER WIZARD -->
         <div id="section-schimbare" class="app-section active">
           <div class="section-header">
@@ -234,13 +242,15 @@
               <h3><i class="fa-solid fa-boxes-stacked text-cyan"></i> Stoc Curent Tonere PIM</h3>
               <p class="section-subtitle">Evidența tonerelor pe fiecare punct de lucru din Iași</p>
             </div>
-            
+
             <div class="action-buttons">
               <div class="search-box-wrap">
                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                <input type="text" id="search-toner-input" placeholder="Caută toner..." oninput="filterTonersTable()" class="search-input">
+                <input type="text" id="search-toner-input" placeholder="Caută toner..." oninput="filterTonersTable()"
+                  class="search-input">
               </div>
-              <button class="btn btn-warning admin-only hidden" id="btn-manage-types" onclick="openManageTypesModal()" style="display: inline-flex; align-items: center; gap: 8px;">
+              <button class="btn btn-warning admin-only hidden" id="btn-manage-types" onclick="openManageTypesModal()"
+                style="display: inline-flex; align-items: center; gap: 8px;">
                 <i class="fa-solid fa-sliders"></i> Gestiune Tipuri & Aparate
               </button>
               <button class="btn btn-success admin-only hidden" id="btn-manage-stock" onclick="openAddStockModal()">
@@ -333,8 +343,10 @@
         <div id="section-utilizatori" class="app-section">
           <div class="section-header">
             <div>
-              <h3><i class="fa-solid fa-users-gear text-cyan"></i> Administrare Utilizatori & Setare PIN (12 Cifre Admin / 6 Cifre Operator)</h3>
-              <p class="section-subtitle">Gestiunea conturilor angajaților PIM, rolurilor, parolelor și codurilor PIN</p>
+              <h3><i class="fa-solid fa-users-gear text-cyan"></i> Administrare Utilizatori & Setare PIN (12 Cifre Admin
+                / 6 Cifre Operator)</h3>
+              <p class="section-subtitle">Gestiunea conturilor angajaților PIM, rolurilor, parolelor și codurilor PIN
+              </p>
             </div>
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
               <button class="btn btn-secondary btn-lg" onclick="openEditUserModal()">
@@ -374,7 +386,7 @@
   ---------------------------------------------------- -->
   <div id="modal-wizard" class="modal-overlay hidden">
     <div class="wizard-modal-card">
-      
+
       <div class="wizard-header">
         <div class="wizard-title-wrap">
           <div class="wizard-icon-box"><i class="fa-solid fa-rotate"></i></div>
@@ -393,13 +405,13 @@
           <span class="step-title">Selectare Aparat</span>
         </div>
         <div class="step-connector" id="connector-1"></div>
-        
+
         <div class="wizard-step-item" id="step-indicator-2">
           <div class="step-num">2</div>
           <span class="step-title">Selectare Tip Toner</span>
         </div>
         <div class="step-connector" id="connector-2"></div>
-        
+
         <div class="wizard-step-item" id="step-indicator-3">
           <div class="step-num">3</div>
           <span class="step-title">Contor & Validare</span>
@@ -408,15 +420,17 @@
 
       <!-- CORPUL PASILOR WIZARD -->
       <div class="wizard-body">
-        
+
         <!-- PASUL 1: SELECTARE APARAT -->
         <div id="wizard-step-1" class="wizard-step-content active">
-          <h4 class="step-heading"><i class="fa-solid fa-print"></i> Pasul 1: Alege aparatul unde înlocuiești tonerul</h4>
+          <h4 class="step-heading"><i class="fa-solid fa-print"></i> Pasul 1: Alege aparatul unde înlocuiești tonerul
+          </h4>
           <p class="step-subheading">Sunt afișate doar aparatele din punctul tău de lucru:</p>
-          
+
           <div class="search-box-wrap full-width">
             <i class="fa-solid fa-magnifying-glass search-icon"></i>
-            <input type="text" id="wizard-aparat-search" placeholder="Filtrează aparatul..." oninput="filterWizardAparateList()" class="search-input full-width">
+            <input type="text" id="wizard-aparat-search" placeholder="Filtrează aparatul..."
+              oninput="filterWizardAparateList()" class="search-input full-width">
           </div>
 
           <div class="aparate-grid" id="wizard-aparate-container">
@@ -447,14 +461,15 @@
             <button class="btn btn-secondary btn-sm" id="step3-back-btn" onclick="handleStep3Back()">
               <i class="fa-solid fa-arrow-left"></i> <span id="step3-back-btn-text">Înlocuiește Aparatul</span>
             </button>
-            
+
             <div class="summary-badges-wrap">
               <span class="selected-summary-badge" id="summary-aparat-badge-final">Aparat: UMF-AN3</span>
               <span class="selected-summary-badge cyan" id="summary-toner-badge-final">Toner: TN14</span>
             </div>
           </div>
 
-          <h4 class="step-heading"><i class="fa-solid fa-gauge-high"></i> Pasul 3: Introdu contorul actual al aparatului</h4>
+          <h4 class="step-heading"><i class="fa-solid fa-gauge-high"></i> Pasul 3: Introdu contorul actual al aparatului
+          </h4>
 
           <div class="wizard-index-box">
             <div class="index-old-header">
@@ -467,7 +482,8 @@
                 <i class="fa-solid fa-arrow-down-short-wide"></i> MINIM Permis: <span id="display-min-allowed">0</span>
               </div>
               <div class="limit-tag max">
-                <i class="fa-solid fa-arrow-up-wide-short"></i> MAXIM Permis (200%): <span id="display-max-allowed">0</span>
+                <i class="fa-solid fa-arrow-up-wide-short"></i> MAXIM Permis (200%): <span
+                  id="display-max-allowed">0</span>
               </div>
             </div>
           </div>
@@ -475,12 +491,14 @@
           <form id="wizard-form-step3" onsubmit="handleWizardSubmit(event)">
             <div class="form-group margin-top">
               <label for="input-wizard-contor"><i class="fa-solid fa-tachometer-alt"></i> Contor Nou Aparat *</label>
-              <input type="text" inputmode="numeric" id="input-wizard-contor" placeholder="ex: 1.000.000" oninput="formatContorInput(this); calculateWizardMetrics();" required class="contor-input-lg">
+              <input type="text" inputmode="numeric" id="input-wizard-contor" placeholder="ex: 1.000.000"
+                oninput="formatContorInput(this); calculateWizardMetrics();" required class="contor-input-lg">
             </div>
 
             <!-- TASTATURĂ NUMERICĂ INTEGRATĂ ÎN DESIGNUL SITE-ULUI -->
             <div class="wizard-keypad-wrap">
-              <div class="wizard-keypad-title"><i class="fa-solid fa-calculator text-cyan"></i> Tastatură Cifre (Apasă pe cifre):</div>
+              <div class="wizard-keypad-title"><i class="fa-solid fa-calculator text-cyan"></i> Tastatură Cifre (Apasă
+                pe cifre):</div>
               <div class="wizard-keypad-grid">
                 <button type="button" class="wkey-btn" onclick="appendWizardDigit('1')">1</button>
                 <button type="button" class="wkey-btn" onclick="appendWizardDigit('2')">2</button>
@@ -491,9 +509,11 @@
                 <button type="button" class="wkey-btn" onclick="appendWizardDigit('7')">7</button>
                 <button type="button" class="wkey-btn" onclick="appendWizardDigit('8')">8</button>
                 <button type="button" class="wkey-btn" onclick="appendWizardDigit('9')">9</button>
-                <button type="button" class="wkey-btn action-danger" onclick="clearWizardDigit()"><i class="fa-solid fa-trash-can"></i> Șterge</button>
+                <button type="button" class="wkey-btn action-danger" onclick="clearWizardDigit()"><i
+                    class="fa-solid fa-trash-can"></i> Șterge</button>
                 <button type="button" class="wkey-btn" onclick="appendWizardDigit('0')">0</button>
-                <button type="button" class="wkey-btn action-back" onclick="backspaceWizardDigit()"><i class="fa-solid fa-backspace"></i> &#9003;</button>
+                <button type="button" class="wkey-btn action-back" onclick="backspaceWizardDigit()"><i
+                    class="fa-solid fa-backspace"></i> &#9003;</button>
               </div>
             </div>
 
@@ -514,7 +534,8 @@
             </div>
 
             <div id="wizard-validation-alert" class="alert alert-danger hidden">
-              <i class="fa-solid fa-triangle-exclamation"></i> <span id="wizard-validation-text">Contorul este în afara limitelor permise.</span>
+              <i class="fa-solid fa-triangle-exclamation"></i> <span id="wizard-validation-text">Contorul este în afara
+                limitelor permise.</span>
             </div>
 
             <div class="wizard-footer">
@@ -561,7 +582,8 @@
           </div>
 
           <div class="form-group">
-            <label for="stock-modal-qty" id="stock-modal-qty-label"><i class="fa-solid fa-calculator"></i> Cantitate (Bucăți) *</label>
+            <label for="stock-modal-qty" id="stock-modal-qty-label"><i class="fa-solid fa-calculator"></i> Cantitate
+              (Bucăți) *</label>
             <input type="number" id="stock-modal-qty" min="1" value="1" oninput="updateStockModalPreview()" required>
           </div>
 
@@ -601,7 +623,8 @@
       <form onsubmit="handleCreateUserSubmit(event)" class="modal-form">
         <div class="modal-body">
           <!-- SECȚIUNEA DATE UTILIZATOR -->
-          <h5 style="color: #22c55e; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px; border-bottom: 1px solid rgba(34, 197, 94, 0.3); padding-bottom: 6px;">
+          <h5
+            style="color: #22c55e; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px; border-bottom: 1px solid rgba(34, 197, 94, 0.3); padding-bottom: 6px;">
             DATE UTILIZATOR
           </h5>
 
@@ -637,7 +660,8 @@
           </div>
 
           <!-- SECȚIUNEA SETARE PAROLĂ -->
-          <h5 style="color: #22c55e; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 20px; margin-bottom: 12px; border-bottom: 1px solid rgba(34, 197, 94, 0.3); padding-bottom: 6px;">
+          <h5
+            style="color: #22c55e; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 20px; margin-bottom: 12px; border-bottom: 1px solid rgba(34, 197, 94, 0.3); padding-bottom: 6px;">
             SETARE PAROLĂ & PIN
           </h5>
 
@@ -653,7 +677,8 @@
             </div>
 
             <div class="form-group full-span">
-              <label for="newuser-pin" id="newuser-pin-label">Cod PIN Operator (6 Cifre) * - <small style="color:#94a3b8;">(Se generează automat dacă e gol)</small></label>
+              <label for="newuser-pin" id="newuser-pin-label">Cod PIN Operator (6 Cifre) * - <small
+                  style="color:#94a3b8;">(Se generează automat dacă e gol)</small></label>
               <input type="text" id="newuser-pin" maxlength="6" placeholder="ex: 111111">
             </div>
           </div>
@@ -681,13 +706,16 @@
         <div class="modal-body">
           <!-- SELECTARE UTILIZATOR -->
           <div class="form-group" style="margin-bottom: 20px;">
-            <label for="edituser-select" style="color: #60a5fa; font-weight: 700;">Selectează Angajat / Operator pentru Modificare *</label>
-            <select id="edituser-select" onchange="onEditUserSelectChange()" required style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(59, 130, 246, 0.4); color: #fff; padding: 10px; border-radius: 8px; width: 100%;">
+            <label for="edituser-select" style="color: #60a5fa; font-weight: 700;">Selectează Angajat / Operator pentru
+              Modificare *</label>
+            <select id="edituser-select" onchange="onEditUserSelectChange()" required
+              style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(59, 130, 246, 0.4); color: #fff; padding: 10px; border-radius: 8px; width: 100%;">
               <!-- Populat dinamic -->
             </select>
           </div>
 
-          <h5 style="color: #3b82f6; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px; border-bottom: 1px solid rgba(59, 130, 246, 0.3); padding-bottom: 6px;">
+          <h5
+            style="color: #3b82f6; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px; border-bottom: 1px solid rgba(59, 130, 246, 0.3); padding-bottom: 6px;">
             ACTUALIZARE DATE & PUNCT DE LUCRU
           </h5>
 
@@ -722,7 +750,8 @@
             </div>
           </div>
 
-          <h5 style="color: #3b82f6; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 20px; margin-bottom: 12px; border-bottom: 1px solid rgba(59, 130, 246, 0.3); padding-bottom: 6px;">
+          <h5
+            style="color: #3b82f6; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 20px; margin-bottom: 12px; border-bottom: 1px solid rgba(59, 130, 246, 0.3); padding-bottom: 6px;">
             SCHIMBARE PAROLĂ & PIN
           </h5>
 
@@ -752,7 +781,7 @@
   <!-- MODAL GESTIUNE TIPURI TONERE ȘI APARATE -->
   <div id="modal-manage-types" class="modal-overlay hidden">
     <div class="wizard-modal-card">
-      
+
       <div class="wizard-header">
         <div class="wizard-title-wrap">
           <div class="wizard-icon-box" style="background: linear-gradient(135deg, #d97706, #f59e0b);">
@@ -760,10 +789,12 @@
           </div>
           <div>
             <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff;">Gestionare Tipuri Tonere & Aparate</h3>
-            <span class="wizard-subtitle">Configurare echipamente noi, asociere compatibilități și dezactivare consumabile PIM</span>
+            <span class="wizard-subtitle">Configurare echipamente noi, asociere compatibilități și dezactivare
+              consumabile PIM</span>
           </div>
         </div>
-        <button type="button" class="modal-close-btn" onclick="closeModal('modal-manage-types')" title="Închide fereastra">&times;</button>
+        <button type="button" class="modal-close-btn" onclick="closeModal('modal-manage-types')"
+          title="Închide fereastra">&times;</button>
       </div>
 
       <!-- TAB-URI DE COMUTARE GESTIUNE (TONERE VS APARATE) -->
@@ -778,30 +809,35 @@
 
       <!-- CORPUL TAB-URILOR -->
       <div class="manage-body">
-        
+
         <!-- VEDEREA 1: GESTIUNE TONERE -->
         <div id="view-manage-tonere" class="manage-view active">
-          
+
           <!-- FORMULAR ADĂUGARE / ASOCIERE TONER NOU -->
           <div class="manage-card-box">
-            <h4 style="color: var(--cyan-accent); font-size: 0.95rem; font-weight: 700; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px;">
+            <h4
+              style="color: var(--cyan-accent); font-size: 0.95rem; font-weight: 700; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px;">
               <i class="fa-solid fa-plus-circle"></i> Creează Toner Nou & Asociază Aparate Compatibile
             </h4>
 
             <form onsubmit="handleCreateTonerTypeSubmit(event)">
               <div class="form-grid-3col">
                 <div class="form-group">
-                  <label for="newtoner-name" style="color: #38bdf8; font-weight: 700; font-size: 0.88rem; display: block; margin-bottom: 6px;">
+                  <label for="newtoner-name"
+                    style="color: #38bdf8; font-weight: 700; font-size: 0.88rem; display: block; margin-bottom: 6px;">
                     <i class="fa-solid fa-tag"></i> Denumire & Model Toner *
                   </label>
-                  <input type="text" id="newtoner-name" placeholder="ex: TN622C Cyan (Bizhub C1085)" required style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(56, 189, 248, 0.4); color: #fff; padding: 10px 14px; border-radius: 8px; width: 100%; font-size: 0.9rem;">
+                  <input type="text" id="newtoner-name" placeholder="ex: TN622C Cyan (Bizhub C1085)" required
+                    style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(56, 189, 248, 0.4); color: #fff; padding: 10px 14px; border-radius: 8px; width: 100%; font-size: 0.9rem;">
                 </div>
 
                 <div class="form-group">
-                  <label for="newtoner-color" style="color: #38bdf8; font-weight: 700; font-size: 0.88rem; display: block; margin-bottom: 6px;">
+                  <label for="newtoner-color"
+                    style="color: #38bdf8; font-weight: 700; font-size: 0.88rem; display: block; margin-bottom: 6px;">
                     <i class="fa-solid fa-palette"></i> Culoare Toner *
                   </label>
-                  <select id="newtoner-color" style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(56, 189, 248, 0.4); color: #fff; padding: 10px 14px; border-radius: 8px; width: 100%; font-size: 0.9rem;">
+                  <select id="newtoner-color"
+                    style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(56, 189, 248, 0.4); color: #fff; padding: 10px 14px; border-radius: 8px; width: 100%; font-size: 0.9rem;">
                     <option value="Black" selected>Black (Negru)</option>
                     <option value="Cyan">Cyan (Albastru)</option>
                     <option value="Magenta">Magenta (Roz / Roșu)</option>
@@ -810,20 +846,25 @@
                 </div>
 
                 <div class="form-group">
-                  <label for="newtoner-consum" style="color: #38bdf8; font-weight: 700; font-size: 0.88rem; display: block; margin-bottom: 6px;">
+                  <label for="newtoner-consum"
+                    style="color: #38bdf8; font-weight: 700; font-size: 0.88rem; display: block; margin-bottom: 6px;">
                     <i class="fa-solid fa-gauge-high"></i> Consum de Referință (Pagini) *
                   </label>
-                  <input type="number" id="newtoner-consum" min="1000" step="1000" value="95000" required style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(56, 189, 248, 0.4); color: #fff; padding: 10px 14px; border-radius: 8px; width: 100%; font-size: 0.9rem;">
+                  <input type="number" id="newtoner-consum" min="1000" step="1000" value="95000" required
+                    style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(56, 189, 248, 0.4); color: #fff; padding: 10px 14px; border-radius: 8px; width: 100%; font-size: 0.9rem;">
                 </div>
               </div>
 
               <!-- SEDII UNDE SE DISTRIBUIE TONERUL -->
               <div class="form-group" style="margin-top: 14px;">
-                <label for="newtoner-office-select" style="color: #38bdf8; font-weight: 700; font-size: 0.88rem; display: block; margin-bottom: 6px;">
+                <label for="newtoner-office-select"
+                  style="color: #38bdf8; font-weight: 700; font-size: 0.88rem; display: block; margin-bottom: 6px;">
                   <i class="fa-solid fa-building"></i> Selectează Sediu PIM unde va fi adăugat Tonerul *
                 </label>
-                <select id="newtoner-office-select" onchange="onTonerOfficeSelectChange(this.value)" style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(56, 189, 248, 0.4); color: #fff; padding: 10px 14px; border-radius: 8px; width: 100%; font-size: 0.9rem;">
-                  <option value="all" selected>Toate Sediile PIM Iași (Independenței, Tudor, Tipografie, Smârdan, UMF 2)</option>
+                <select id="newtoner-office-select" onchange="onTonerOfficeSelectChange(this.value)"
+                  style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(56, 189, 248, 0.4); color: #fff; padding: 10px 14px; border-radius: 8px; width: 100%; font-size: 0.9rem;">
+                  <option value="all" selected>Toate Sediile PIM Iași (Independenței, Tudor, Tipografie, Smârdan, UMF 2)
+                  </option>
                   <option value="2">Sediu Independenței</option>
                   <option value="3">Sediu Tudor</option>
                   <option value="4">Sediu Tipografie</option>
@@ -834,21 +875,26 @@
 
               <!-- APARATE COMPATIBILE CU BARA DE CAUTARE SI SALVARE SELECȚIE -->
               <div class="form-group" style="margin-top: 18px;">
-                <label style="color: #38bdf8; font-weight: 700; font-size: 0.88rem; display: block; margin-bottom: 6px;">
+                <label
+                  style="color: #38bdf8; font-weight: 700; font-size: 0.88rem; display: block; margin-bottom: 6px;">
                   <i class="fa-solid fa-print"></i> Aparate Compatibile (Căutare & Bifare Multiple):
                 </label>
-                
+
                 <div class="search-box-wrap full-width" style="margin-bottom: 10px;">
                   <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                  <input type="text" id="picker-aparat-search" placeholder="Caută aparat după nume (ex: UMF-AN3, C1100, TUDOR)..." oninput="onAparatPickerSearch(this.value)" class="search-input full-width">
+                  <input type="text" id="picker-aparat-search"
+                    placeholder="Caută aparat după nume (ex: UMF-AN3, C1100, TUDOR)..."
+                    oninput="onAparatPickerSearch(this.value)" class="search-input full-width">
                 </div>
 
                 <div style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 6px;">
-                  Aparate Bifate / Selectate până acum (<strong id="picker-aparate-count" style="color: #38bdf8;">0</strong>):
+                  Aparate Bifate / Selectate până acum (<strong id="picker-aparate-count"
+                    style="color: #38bdf8;">0</strong>):
                 </div>
-                
+
                 <div id="selected-aparate-chips" class="selected-chips-container">
-                  <span style="color: #64748b; font-size: 0.8rem; padding: 4px;">Niciun aparat selectat încă. Caută în caseta de mai sus și bifează aparatele dorite.</span>
+                  <span style="color: #64748b; font-size: 0.8rem; padding: 4px;">Niciun aparat selectat încă. Caută în
+                    caseta de mai sus și bifează aparatele dorite.</span>
                 </div>
 
                 <div class="compatibility-picker-grid" id="newtoner-aparate-checkboxes">
@@ -867,10 +913,13 @@
           <!-- LISTA SI DEZACTIVAREA TONERELOR -->
           <div class="manage-card-box" style="margin-top: 24px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-              <h4 style="color: #f8fafc; font-size: 0.95rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px;">
+              <h4
+                style="color: #f8fafc; font-size: 0.95rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px;">
                 <i class="fa-solid fa-boxes-stacked"></i> Lista Tonere Existente (Active & Inactive)
               </h4>
-              <input type="text" id="manage-toner-search" placeholder="Filtrează lista..." oninput="filterManageTonersList()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: rgba(15,23,42,0.8); color: #fff; font-size: 0.85rem;">
+              <input type="text" id="manage-toner-search" placeholder="Filtrează lista..."
+                oninput="filterManageTonersList()"
+                style="padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: rgba(15,23,42,0.8); color: #fff; font-size: 0.85rem;">
             </div>
 
             <div class="table-card" style="max-height: 320px; overflow-y: auto;">
@@ -896,27 +945,32 @@
 
         <!-- VEDEREA 2: GESTIUNE APARATE -->
         <div id="view-manage-aparate" class="manage-view hidden">
-          
+
           <!-- FORMULAR ADĂUGARE / ASOCIERE APARAT NOU -->
           <div class="manage-card-box">
-            <h4 style="color: var(--magenta-accent); font-size: 0.95rem; font-weight: 700; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px;">
+            <h4
+              style="color: var(--magenta-accent); font-size: 0.95rem; font-weight: 700; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px;">
               <i class="fa-solid fa-plus-circle"></i> Creează Aparat Nou & Asociază Tonere Compatibile
             </h4>
 
             <form onsubmit="handleCreateAparatSubmit(event)">
               <div class="form-grid-2col">
                 <div class="form-group">
-                  <label for="newaparat-name" style="color: #f472b6; font-weight: 700; font-size: 0.88rem; display: block; margin-bottom: 6px;">
+                  <label for="newaparat-name"
+                    style="color: #f472b6; font-weight: 700; font-size: 0.88rem; display: block; margin-bottom: 6px;">
                     <i class="fa-solid fa-print"></i> Nume / Cod Aparat Nou *
                   </label>
-                  <input type="text" id="newaparat-name" placeholder="ex: UMF-C1100-3 sau TUDOR-T4" required style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(244, 114, 182, 0.4); color: #fff; padding: 10px 14px; border-radius: 8px; width: 100%; font-size: 0.9rem;">
+                  <input type="text" id="newaparat-name" placeholder="ex: UMF-C1100-3 sau TUDOR-T4" required
+                    style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(244, 114, 182, 0.4); color: #fff; padding: 10px 14px; border-radius: 8px; width: 100%; font-size: 0.9rem;">
                 </div>
 
                 <div class="form-group">
-                  <label for="newaparat-office" style="color: #f472b6; font-weight: 700; font-size: 0.88rem; display: block; margin-bottom: 6px;">
+                  <label for="newaparat-office"
+                    style="color: #f472b6; font-weight: 700; font-size: 0.88rem; display: block; margin-bottom: 6px;">
                     <i class="fa-solid fa-building"></i> Sediu Amplasare Echipament *
                   </label>
-                  <select id="newaparat-office" required style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(244, 114, 182, 0.4); color: #fff; padding: 10px 14px; border-radius: 8px; width: 100%; font-size: 0.9rem;">
+                  <select id="newaparat-office" required
+                    style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(244, 114, 182, 0.4); color: #fff; padding: 10px 14px; border-radius: 8px; width: 100%; font-size: 0.9rem;">
                     <option value="2">Sediu Independenței</option>
                     <option value="3">Sediu Tudor</option>
                     <option value="4">Sediu Tipografie</option>
@@ -928,21 +982,26 @@
 
               <!-- TONERE COMPATIBILE CU BARA DE CAUTARE SI SALVARE SELECȚIE -->
               <div class="form-group" style="margin-top: 18px;">
-                <label style="color: #f472b6; font-weight: 700; font-size: 0.88rem; display: block; margin-bottom: 6px;">
+                <label
+                  style="color: #f472b6; font-weight: 700; font-size: 0.88rem; display: block; margin-bottom: 6px;">
                   <i class="fa-solid fa-fill-drip"></i> Tonere Compatibile (Căutare & Bifare Multiple):
                 </label>
-                
+
                 <div class="search-box-wrap full-width" style="margin-bottom: 10px;">
                   <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                  <input type="text" id="picker-toner-search" placeholder="Caută toner după nume (ex: TN622, TN14, TN321)..." oninput="onTonerPickerSearch(this.value)" class="search-input full-width">
+                  <input type="text" id="picker-toner-search"
+                    placeholder="Caută toner după nume (ex: TN622, TN14, TN321)..."
+                    oninput="onTonerPickerSearch(this.value)" class="search-input full-width">
                 </div>
 
                 <div style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 6px;">
-                  Tonere Bifate / Selectate până acum (<strong id="picker-tonere-count" style="color: #f472b6;">0</strong>):
+                  Tonere Bifate / Selectate până acum (<strong id="picker-tonere-count"
+                    style="color: #f472b6;">0</strong>):
                 </div>
 
                 <div id="selected-tonere-chips" class="selected-chips-container">
-                  <span style="color: #64748b; font-size: 0.8rem; padding: 4px;">Niciun toner selectat încă. Caută în caseta de mai sus și bifează tonerele dorite.</span>
+                  <span style="color: #64748b; font-size: 0.8rem; padding: 4px;">Niciun toner selectat încă. Caută în
+                    caseta de mai sus și bifează tonerele dorite.</span>
                 </div>
 
                 <div class="compatibility-picker-grid" id="newaparat-tonere-checkboxes">
@@ -962,10 +1021,13 @@
           <!-- LISTA SI DEZACTIVAREA APARATELOR -->
           <div class="manage-card-box" style="margin-top: 24px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-              <h4 style="color: #f8fafc; font-size: 0.95rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px;">
+              <h4
+                style="color: #f8fafc; font-size: 0.95rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px;">
                 <i class="fa-solid fa-print"></i> Lista Echipamente Existente (Active & Inactive)
               </h4>
-              <input type="text" id="manage-aparat-search" placeholder="Filtrează aparate..." oninput="filterManageAparateList()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: rgba(15,23,42,0.8); color: #fff; font-size: 0.85rem;">
+              <input type="text" id="manage-aparat-search" placeholder="Filtrează aparate..."
+                oninput="filterManageAparateList()"
+                style="padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: rgba(15,23,42,0.8); color: #fff; font-size: 0.85rem;">
             </div>
 
             <div class="table-card" style="max-height: 320px; overflow-y: auto;">
@@ -1003,17 +1065,23 @@
         <div class="modal-body">
           <input type="hidden" id="edit-toner-id">
           <div class="form-group" style="margin-bottom: 14px;">
-            <label style="color: #cbd5e1; font-weight: 600; font-size: 0.88rem; display: block; margin-bottom: 6px;">Denumire / Model Toner *</label>
+            <label
+              style="color: #cbd5e1; font-weight: 600; font-size: 0.88rem; display: block; margin-bottom: 6px;">Denumire
+              / Model Toner *</label>
             <input type="text" id="edit-toner-name" required class="search-input full-width" style="width:100%;">
           </div>
           <div class="form-group" style="margin-bottom: 14px;">
-            <label style="color: #cbd5e1; font-weight: 600; font-size: 0.88rem; display: block; margin-bottom: 6px;">Consum de Referință (Pagini Standard) *</label>
-            <input type="number" id="edit-toner-consum" min="1000" max="500000" required class="search-input full-width" style="width:100%;">
+            <label
+              style="color: #cbd5e1; font-weight: 600; font-size: 0.88rem; display: block; margin-bottom: 6px;">Consum
+              de Referință (Pagini Standard) *</label>
+            <input type="number" id="edit-toner-consum" min="1000" max="500000" required class="search-input full-width"
+              style="width:100%;">
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" onclick="closeEditTonerModal()">Renunță</button>
-          <button type="submit" class="btn btn-success"><i class="fa-solid fa-floppy-disk"></i> Salvează Modificarea</button>
+          <button type="submit" class="btn btn-success"><i class="fa-solid fa-floppy-disk"></i> Salvează
+            Modificarea</button>
         </div>
       </form>
     </div>
@@ -1030,17 +1098,23 @@
         <div class="modal-body">
           <input type="hidden" id="edit-aparat-id">
           <div class="form-group" style="margin-bottom: 14px;">
-            <label style="color: #cbd5e1; font-weight: 600; font-size: 0.88rem; display: block; margin-bottom: 6px;">Nume / Cod Aparat *</label>
+            <label
+              style="color: #cbd5e1; font-weight: 600; font-size: 0.88rem; display: block; margin-bottom: 6px;">Nume /
+              Cod Aparat *</label>
             <input type="text" id="edit-aparat-name" required class="search-input full-width" style="width:100%;">
           </div>
           <div class="form-group" style="margin-bottom: 14px;">
-            <label style="color: #cbd5e1; font-weight: 600; font-size: 0.88rem; display: block; margin-bottom: 6px;">Index Curent Aparat (Număr Pagini Odometru) *</label>
-            <input type="text" inputmode="numeric" id="edit-aparat-index" placeholder="ex: 1.000.000" oninput="formatContorInput(this);" required class="search-input full-width" style="width:100%;">
+            <label
+              style="color: #cbd5e1; font-weight: 600; font-size: 0.88rem; display: block; margin-bottom: 6px;">Index
+              Curent Aparat (Număr Pagini Odometru) *</label>
+            <input type="text" inputmode="numeric" id="edit-aparat-index" placeholder="ex: 1.000.000"
+              oninput="formatContorInput(this);" required class="search-input full-width" style="width:100%;">
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" onclick="closeEditAparatModal()">Renunță</button>
-          <button type="submit" class="btn btn-success"><i class="fa-solid fa-floppy-disk"></i> Salvează Noul Index</button>
+          <button type="submit" class="btn btn-success"><i class="fa-solid fa-floppy-disk"></i> Salvează Noul
+            Index</button>
         </div>
       </form>
     </div>
@@ -1048,4 +1122,5 @@
 
   <script src="app.js?v=1.0.8"></script>
 </body>
+
 </html>
