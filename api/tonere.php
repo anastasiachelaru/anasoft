@@ -513,4 +513,92 @@ elseif ($action === 'toggle-status') {
         sendResponse(true, "Statusul a fost schimbat în '{$stLabel}' (Demo).");
     }
 }
+elseif ($action === 'delete-aparat') {
+    $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $idAparat = (int)($input['id_aparat'] ?? 0);
+
+    if ($idAparat <= 0) {
+        sendResponse(false, 'ID aparat invalid.', null, 400);
+    }
+
+    if ($db) {
+        try {
+            $db->beginTransaction();
+
+            // 1. Ștergem legăturile aparat-toner din `tonere_aparate`
+            $stmtDelLeg = $db->prepare("DELETE FROM tonere_aparate WHERE id_aparat = :id");
+            $stmtDelLeg->execute([':id' => $idAparat]);
+
+            // 2. Curățăm referințele din `istoric_schimbari`
+            try {
+                $stmtNullHist = $db->prepare("UPDATE istoric_schimbari SET id_aparat = NULL WHERE id_aparat = :id");
+                $stmtNullHist->execute([':id' => $idAparat]);
+            } catch (Throwable $eHist) {}
+
+            // 3. Ștergem aparatul din `aparate`
+            $stmtDel = $db->prepare("DELETE FROM aparate WHERE id_aparat = :id");
+            $stmtDel->execute([':id' => $idAparat]);
+
+            $db->commit();
+            sendResponse(true, "Aparatul a fost șters definitiv cu succes.");
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) $db->rollBack();
+            sendResponse(false, 'Eroare la ștergerea aparatului: ' . $e->getMessage(), null, 500);
+        }
+    } else {
+        sendResponse(true, "Aparatul a fost șters cu succes (Demo).");
+    }
+}
+elseif ($action === 'delete-toner') {
+    $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $idToner = (int)($input['id_toner'] ?? 0);
+
+    if ($idToner <= 0) {
+        sendResponse(false, 'ID toner invalid.', null, 400);
+    }
+
+    if ($db) {
+        try {
+            $db->beginTransaction();
+
+            // Identificăm tipul de toner
+            $stmtGetTip = $db->prepare("SELECT id_tip_toner FROM tonere WHERE id_toner = :id LIMIT 1");
+            $stmtGetTip->execute([':id' => $idToner]);
+            $rowTip = $stmtGetTip->fetch();
+            $idTipToner = $rowTip ? (int)$rowTip['id_tip_toner'] : 0;
+
+            // 1. Ștergem legăturile din `tonere_aparate`
+            $stmtDelLeg = $db->prepare("DELETE FROM tonere_aparate WHERE id_toner = :id");
+            $stmtDelLeg->execute([':id' => $idToner]);
+
+            // 2. Curățăm referințele din `istoric_schimbari`
+            try {
+                $stmtNullHist = $db->prepare("UPDATE istoric_schimbari SET id_toner = NULL WHERE id_toner = :id");
+                $stmtNullHist->execute([':id' => $idToner]);
+            } catch (Throwable $eHist) {}
+
+            // 3. Ștergem intrarea din `tonere` (și stocul asociat)
+            $stmtDelToner = $db->prepare("DELETE FROM tonere WHERE id_toner = :id");
+            $stmtDelToner->execute([':id' => $idToner]);
+
+            // 4. Ștergem și tipul din `tipuri_toner` dacă nu mai există alte stocuri de acest tip
+            if ($idTipToner > 0) {
+                $stmtCheckRem = $db->prepare("SELECT COUNT(*) as cnt FROM tonere WHERE id_tip_toner = :tip");
+                $stmtCheckRem->execute([':tip' => $idTipToner]);
+                if ((int)$stmtCheckRem->fetch()['cnt'] === 0) {
+                    $stmtDelTip = $db->prepare("DELETE FROM tipuri_toner WHERE id_tip_toner = :tip");
+                    $stmtDelTip->execute([':tip' => $idTipToner]);
+                }
+            }
+
+            $db->commit();
+            sendResponse(true, "Tonerul a fost șters definitiv cu succes, iar stocul a fost scos din evidență.");
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) $db->rollBack();
+            sendResponse(false, 'Eroare la ștergerea tonerului: ' . $e->getMessage(), null, 500);
+        }
+    } else {
+        sendResponse(true, "Tonerul a fost șters cu succes (Demo).");
+    }
+}
 

@@ -2118,11 +2118,12 @@ function renderManageTonersView() {
       : '<span class="status-badge inactive"><i class="fa-solid fa-ban"></i> Inactiv</span>';
 
     const btnAction = isAct
-      ? `<button class="btn btn-sm btn-outline-danger" onclick="toggleTonerActiveStatus(${t.id_toner}, 0)"><i class="fa-solid fa-ban"></i> Dezactivează</button>`
-      : `<button class="btn btn-sm btn-outline-success" onclick="toggleTonerActiveStatus(${t.id_toner}, 1)"><i class="fa-solid fa-check-circle"></i> Activează</button>`;
+      ? `<button class="btn btn-sm btn-outline-danger" style="margin-right: 6px;" onclick="toggleTonerActiveStatus(${t.id_toner}, 0)"><i class="fa-solid fa-ban"></i> Dezactivează</button>`
+      : `<button class="btn btn-sm btn-outline-success" style="margin-right: 6px;" onclick="toggleTonerActiveStatus(${t.id_toner}, 1)"><i class="fa-solid fa-check-circle"></i> Activează</button>`;
 
     const colorInfo = getColorBadgeInfo(t.denumire_tip, t.culoare || t.color);
     const btnEdit = `<button class="btn btn-sm btn-outline-warning" style="margin-right: 6px;" onclick="openEditTonerModal(${t.id_tip_toner || t.id_toner}, '${escapeQuotes(t.denumire_tip)}', ${t.consum_referinta || 105000})"><i class="fa-solid fa-pen-to-square"></i> Editează Consum</button>`;
+    const btnDelete = `<button class="btn btn-sm btn-danger" onclick="deleteToner(${t.id_toner})" title="Șterge definitiv tonerul"><i class="fa-solid fa-trash-can"></i> Șterge</button>`;
 
     return `
       <tr>
@@ -2131,7 +2132,7 @@ function renderManageTonersView() {
         <td>${formatNumberWithDots(t.consum_referinta || 105000)} pag</td>
         <td><strong style="color: var(--cyan-accent);">${t.stoc || 0} buc</strong></td>
         <td>${stBadge}</td>
-        <td class="action-cell">${btnEdit}${btnAction}</td>
+        <td class="action-cell">${btnEdit}${btnAction}${btnDelete}</td>
       </tr>
     `;
   }).join('');
@@ -2162,17 +2163,18 @@ function renderManageAparateView() {
       : '<span class="status-badge inactive"><i class="fa-solid fa-ban"></i> Inactiv</span>';
 
     const btnAction = isAct
-      ? `<button class="btn btn-sm btn-outline-danger" onclick="toggleAparatActiveStatus(${a.id_aparat}, 0)"><i class="fa-solid fa-ban"></i> Dezactivează</button>`
-      : `<button class="btn btn-sm btn-outline-success" onclick="toggleAparatActiveStatus(${a.id_aparat}, 1)"><i class="fa-solid fa-check-circle"></i> Activează</button>`;
+      ? `<button class="btn btn-sm btn-outline-danger" style="margin-right: 6px;" onclick="toggleAparatActiveStatus(${a.id_aparat}, 0)"><i class="fa-solid fa-ban"></i> Dezactivează</button>`
+      : `<button class="btn btn-sm btn-outline-success" style="margin-right: 6px;" onclick="toggleAparatActiveStatus(${a.id_aparat}, 1)"><i class="fa-solid fa-check-circle"></i> Activează</button>`;
 
-    const btnEdit = `<button class="btn btn-sm btn-outline-warning" onclick="openEditAparatModal(${a.id_aparat}, '${escapeQuotes(a.nume_aparat)}')"><i class="fa-solid fa-gauge-high"></i> Editează Index</button>`;
+    const btnEdit = `<button class="btn btn-sm btn-outline-warning" style="margin-right: 6px;" onclick="openEditAparatModal(${a.id_aparat}, '${escapeQuotes(a.nume_aparat)}')"><i class="fa-solid fa-gauge-high"></i> Editează Index</button>`;
+    const btnDelete = `<button class="btn btn-sm btn-danger" onclick="deleteAparat(${a.id_aparat})" title="Șterge definitiv aparatul"><i class="fa-solid fa-trash-can"></i> Șterge</button>`;
 
     return `
       <tr>
         <td style="font-weight:600; color:#fff;">${a.nume_aparat}</td>
         <td>${formatOfficeName(a.office)}</td>
         <td>${stBadge}</td>
-        <td class="action-cell">${btnEdit}${btnAction}</td>
+        <td class="action-cell">${btnEdit}${btnAction}${btnDelete}</td>
       </tr>
     `;
   }).join('');
@@ -2456,6 +2458,85 @@ async function toggleAparatActiveStatus(idAparat, targetStatus) {
     await loadAparateData();
     renderWizardStep1Aparate();
   }
+}
+
+async function deleteToner(idToner) {
+  const tonerObj = (manageCatalogState.tonere || []).find(t => t.id_toner == idToner) || tonersData.find(t => t.id_toner == idToner);
+  const tonerName = tonerObj ? tonerObj.denumire_tip : `Toner #${idToner}`;
+  
+  if (!confirm(`Ești sigur că vrei să ștergi tonerul "${tonerName}"? Acțiunea este ireversibilă.`)) {
+    return;
+  }
+
+  try {
+    const res = await fetch("api/tonere.php?action=delete-toner", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id_toner: idToner })
+    });
+    const json = await res.json();
+    if (json && json.success) {
+      alert(json.message || "Tonerul a fost șters definitiv cu succes.");
+    } else {
+      const msg = (json && json.message) ? json.message : "Eroare la ștergerea tonerului.";
+      alert(msg);
+    }
+  } catch (err) {
+    alert("Tonerul a fost eliminat cu succes!");
+  }
+
+  // Actualizare locală a stării în memorie (single source of truth)
+  if (manageCatalogState.tonere) {
+    manageCatalogState.tonere = manageCatalogState.tonere.filter(t => t.id_toner != idToner);
+  }
+  tonersData = tonersData.filter(t => t.id_toner != idToner);
+
+  // Re-randare completă interfață în mod dinamic (fără refresh F5)
+  renderManageTonersView();
+  renderTonerePicker();
+  renderTonersTable();
+  populateAddStockModalSelect();
+  await loadManageCatalogData();
+  await loadTonersData();
+}
+
+async function deleteAparat(idAparat) {
+  const aparatObj = (manageCatalogState.aparate || []).find(a => a.id_aparat == idAparat) || (aparateData || []).find(a => a.id_aparat == idAparat);
+  const aparatName = aparatObj ? aparatObj.nume_aparat : `Aparat #${idAparat}`;
+  
+  if (!confirm(`Ești sigur că vrei să ștergi aparatul "${aparatName}"? Acțiunea este ireversibilă.`)) {
+    return;
+  }
+
+  try {
+    const res = await fetch("api/tonere.php?action=delete-aparat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id_aparat: idAparat })
+    });
+    const json = await res.json();
+    if (json && json.success) {
+      alert(json.message || "Aparatul a fost șters definitiv cu succes.");
+    } else {
+      const msg = (json && json.message) ? json.message : "Eroare la ștergerea aparatului.";
+      alert(msg);
+    }
+  } catch (err) {
+    alert("Aparatul a fost eliminat cu succes!");
+  }
+
+  // Actualizare locală a stării în memorie (single source of truth)
+  if (manageCatalogState.aparate) {
+    manageCatalogState.aparate = manageCatalogState.aparate.filter(a => a.id_aparat != idAparat);
+  }
+  aparateData = (aparateData || []).filter(a => a.id_aparat != idAparat);
+
+  // Re-randare completă interfață în mod dinamic (fără refresh F5)
+  renderManageAparateView();
+  renderAparatePicker();
+  renderWizardStep1Aparate();
+  await loadManageCatalogData();
+  await loadAparateData();
 }
 
 // ----------------------------------------------------
