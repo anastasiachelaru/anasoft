@@ -1091,12 +1091,7 @@ function renderHistoryTable() {
     
     let displayName = fullCompStr;
     if (!displayName || fullLower === 'operator' || fullLower === 'operator operator') {
-      if (h.username && h.username.toLowerCase() !== 'operator') {
-        displayName = h.username;
-      } else {
-        const offName = formatOfficeName(h.office || h.office_nume);
-        displayName = (offName && offName !== 'PIM') ? `Operator ${offName}` : 'Operator PIM';
-      }
+      displayName = (h.username && h.username.toLowerCase() !== 'operator') ? h.username : 'Admin PIM';
     }
     userAccountDisplay = `<i class="fa-solid fa-user text-cyan" style="margin-right:4px;"></i> <strong>${displayName}</strong>`;
 
@@ -1163,12 +1158,7 @@ function renderWizardRecentTable() {
     
     let displayName = fullCompStr;
     if (!displayName || fullLower === 'operator' || fullLower === 'operator operator') {
-      if (h.username && h.username.toLowerCase() !== 'operator') {
-        displayName = h.username;
-      } else {
-        const offName = formatOfficeName(h.office || h.office_nume);
-        displayName = (offName && offName !== 'PIM') ? `Operator ${offName}` : 'Operator PIM';
-      }
+      displayName = (h.username && h.username.toLowerCase() !== 'operator') ? h.username : 'Admin PIM';
     }
     userAccountDisplay = `<i class="fa-solid fa-user text-cyan" style="margin-right:4px;"></i> <strong>${displayName}</strong>`;
 
