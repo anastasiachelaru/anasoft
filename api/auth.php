@@ -30,27 +30,20 @@ if ($action === 'login-pin') {
             }
         } catch (Throwable $e) {}
 
-        // Tratare dedicată pentru PIN-ul de administrator 000000000000 sau 000000
-        if ($pin === '000000000000' || $pin === '000000') {
+        // Tratare dedicată pentru PIN-ul de administrator 000000000000 (12 cifre)
+        if ($pin === '000000000000') {
             $stmtAdmin = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active FROM users WHERE (username = 'admin' OR role = 'admin' OR id_user = 1) LIMIT 1");
             $stmtAdmin->execute();
             $adminUser = $stmtAdmin->fetch();
-            if (!$adminUser) {
-                $adminUser = [
-                    'id_user' => 1,
-                    'username' => 'admin',
-                    'email' => 'admin@dev.pim.ro',
-                    'role' => 'admin',
-                    'office' => 2,
-                    'first_name' => 'Admin',
-                    'last_name' => 'PIM',
-                    'cont_active' => 1
-                ];
+            if ($adminUser) {
+                if ((int)$adminUser['cont_active'] === 0 || $adminUser['cont_active'] === '0') {
+                    sendResponse(false, 'Contul de administrator este dezactivat.', null, 403);
+                }
+                sendResponse(true, 'Autentificare reușită ca Administrator!', [
+                    'user' => $adminUser,
+                    'token' => bin2hex(random_bytes(16))
+                ]);
             }
-            sendResponse(true, 'Autentificare reușită ca Administrator!', [
-                'user' => $adminUser,
-                'token' => bin2hex(random_bytes(16))
-            ]);
         }
 
         // Căutare utilizator după PIN (toți utilizatorii pentru a verifica și statusul contului)
@@ -84,19 +77,22 @@ if ($action === 'login-pin') {
         }
     } else {
         // Mock fallback pentru demo când DB nu este activă local
-        $isAdmin = ($pin === '000000000000' || $pin === '000000');
-        sendResponse(true, 'Autentificare Demo reușită!', [
-            'user' => [
-                'id_user' => $isAdmin ? 1 : 46,
-                'username' => $isAdmin ? 'admin' : 'anastasiakel',
-                'first_name' => $isAdmin ? 'Admin' : 'Anastasia-Irina',
-                'last_name' => $isAdmin ? 'PIM' : 'Chelaru',
-                'role' => $isAdmin ? 'admin' : 'operator',
-                'office' => 3, // Tudor
-                'email' => $isAdmin ? 'admin@dev.pim.ro' : 'anastasiakel@dev.pim.ro'
-            ],
-            'token' => 'demo_token_' . time()
-        ]);
+        if ($pin === '000000000000') {
+            sendResponse(true, 'Autentificare Demo reușită!', [
+                'user' => [
+                    'id_user' => 1,
+                    'username' => 'admin',
+                    'first_name' => 'Admin',
+                    'last_name' => 'PIM',
+                    'role' => 'admin',
+                    'office' => 2,
+                    'email' => 'admin@dev.pim.ro'
+                ],
+                'token' => 'demo_token_' . time()
+            ]);
+        } else {
+            sendResponse(false, 'Cod PIN incorect.', null, 401);
+        }
     }
 } 
 elseif ($action === 'login-password') {

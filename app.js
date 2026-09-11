@@ -259,15 +259,8 @@ async function submitPinLogin() {
       clearPinKey();
     }
   } catch (err) {
-    const isAdmin = (pinToSubmit === "000000000000" || pinToSubmit === "000000");
-    handleLoginSuccess({
-      id_user: isAdmin ? 1 : 178,
-      username: isAdmin ? "admin" : "anastasiakel",
-      first_name: isAdmin ? "Admin" : "Anastasia-Irina",
-      last_name: isAdmin ? "PIM" : "Chelaru",
-      role: isAdmin ? "admin" : "operator",
-      office: 4
-    });
+    showAuthError("Eroare de conectare la server sau PIN invalid.");
+    clearPinKey();
   }
 }
 
@@ -472,6 +465,24 @@ async function loadUsersData() {
   }
   
   renderUsersTable();
+  populateEditUserSelect();
+}
+
+function populateEditUserSelect() {
+  const select = document.getElementById("edituser-select");
+  if (!select) return;
+  const currentVal = select.value;
+  select.innerHTML = "";
+  if (!usersData || usersData.length === 0) return;
+  usersData.forEach(u => {
+    const opt = document.createElement("option");
+    opt.value = u.id_user;
+    opt.innerText = `${u.full_name || u.username} (@${u.username}) - ${formatOfficeName(u.office || u.office_nume)}`;
+    select.appendChild(opt);
+  });
+  if (currentVal && usersData.some(u => u.id_user == currentVal)) {
+    select.value = currentVal;
+  }
 }
 
 function renderUsersTable() {
@@ -551,19 +562,13 @@ function renderUsersTable() {
 function openEditUserModal(userId) {
   const select = document.getElementById("edituser-select");
   if (!select) return;
-  select.innerHTML = "";
 
   if (!usersData || usersData.length === 0) {
     alert("Nu există utilizatori încărcați.");
     return;
   }
 
-  usersData.forEach(u => {
-    const opt = document.createElement("option");
-    opt.value = u.id_user;
-    opt.innerText = `${u.full_name || u.username} (@${u.username}) - ${formatOfficeName(u.office || u.office_nume)}`;
-    select.appendChild(opt);
-  });
+  populateEditUserSelect();
 
   if (userId) {
     select.value = userId;
