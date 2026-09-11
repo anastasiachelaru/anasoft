@@ -128,9 +128,26 @@ elseif ($action === 'create') {
                 $db->exec("ALTER TABLE users MODIFY COLUMN pin_code VARCHAR(32) DEFAULT NULL");
             } catch (Throwable $e) {}
 
-            $hashedPass = md5($password);
+            // Verificăm dacă PIN-ul introdus aparține deja altui utilizator
+            if (!empty($pin)) {
+                $stmtCheckPin = $db->prepare("SELECT id_user FROM users WHERE pin_code = :pin AND username != :u");
+                $stmtCheckPin->execute([':pin' => $pin, ':u' => $username]);
+                if ($stmtCheckPin->fetch()) {
+                    sendResponse(false, "Acest PIN este deja folosit de un alt utilizator, te rugăm să alegi altul.", null, 200);
+                }
+            }
 
-            // Verificăm dacă utilizatorul există deja (Dacă există, îl actualizăm - UPSERT)
+            // Verificăm dacă parola introdusă aparține deja altui utilizator
+            if (!empty($password)) {
+                $hashedPass = md5($password);
+                $stmtCheckPass = $db->prepare("SELECT id_user FROM users WHERE (password_plain = :p OR password = :h OR password = :p) AND username != :u");
+                $stmtCheckPass->execute([':p' => $password, ':h' => $hashedPass, ':u' => $username]);
+                if ($stmtCheckPass->fetch()) {
+                    sendResponse(false, "Această parolă este deja folosită de un alt utilizator, te rugăm să alegi alta.", null, 200);
+                }
+            }
+
+            // Verificăm dacă numele de utilizator există deja
             $stmtCheck = $db->prepare("SELECT id_user FROM users WHERE username = :u");
             $stmtCheck->execute([':u' => $username]);
             $existingUser = $stmtCheck->fetch();
@@ -140,7 +157,7 @@ elseif ($action === 'create') {
                 $stmt = $db->prepare($sql);
                 $stmt->execute([
                     ':email' => $email,
-                    ':password' => $hashedPass,
+                    ':password' => md5($password),
                     ':password_plain' => $password,
                     ':role' => $role,
                     ':office' => $office,
@@ -157,7 +174,7 @@ elseif ($action === 'create') {
                 $stmt->execute([
                     ':username' => $username,
                     ':email' => $email,
-                    ':password' => $hashedPass,
+                    ':password' => md5($password),
                     ':password_plain' => $password,
                     ':role' => $role,
                     ':office' => $office,
@@ -220,7 +237,26 @@ elseif ($action === 'update') {
             $stmtCheck = $db->prepare("SELECT id_user FROM users WHERE username = :u AND id_user != :id");
             $stmtCheck->execute([':u' => $username, ':id' => $idUser]);
             if ($stmtCheck->fetch()) {
-                sendResponse(false, "Numele de utilizator '{$username}' este deja utilizat de alt cont.", null, 400);
+                sendResponse(false, "Numele de utilizator '{$username}' este deja utilizat de un alt cont.", null, 200);
+            }
+
+            // Verificăm dacă PIN-ul introdus este deja utilizat de un alt cont
+            if (!empty($pin)) {
+                $stmtCheckPin = $db->prepare("SELECT id_user FROM users WHERE pin_code = :pin AND id_user != :id");
+                $stmtCheckPin->execute([':pin' => $pin, ':id' => $idUser]);
+                if ($stmtCheckPin->fetch()) {
+                    sendResponse(false, "Acest PIN este deja folosit de un alt utilizator, te rugăm să alegi altul.", null, 200);
+                }
+            }
+
+            // Verificăm dacă parola introdusă este deja utilizată de un alt cont
+            if (!empty($password)) {
+                $hashedPass = md5($password);
+                $stmtCheckPass = $db->prepare("SELECT id_user FROM users WHERE (password_plain = :p OR password = :h OR password = :p) AND id_user != :id");
+                $stmtCheckPass->execute([':p' => $password, ':h' => $hashedPass, ':id' => $idUser]);
+                if ($stmtCheckPass->fetch()) {
+                    sendResponse(false, "Această parolă este deja folosită de un alt utilizator, te rugăm să alegi alta.", null, 200);
+                }
             }
 
             if (!empty($password)) {

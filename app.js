@@ -654,29 +654,37 @@ async function handleEditUserSubmit(e) {
     try { json = JSON.parse(text); } catch (parseErr) {}
 
     if (json && json.success) {
+      hideUserModalError("edituser");
       alert(json.message || "Datele utilizatorului au fost actualizate cu succes!");
       closeModal("modal-edit-user");
       await loadUsersData();
     } else {
-      alert("Eroare actualizare: " + (json ? json.message : text));
+      const msg = (json && json.message) ? json.message : text;
+      showUserModalError("edituser", msg);
+      alert(msg);
     }
   } catch (err) {
-    const target = usersData.find(u => u.id_user == userId);
-    if (target) {
-      target.office = parseInt(office);
-      target.office_nume = formatOfficeName(office);
-      target.username = username;
-      target.role = role;
-      target.full_name = fullName;
-      target.pin_code = pin;
-    }
-    renderUsersTable();
-    closeModal("modal-edit-user");
-    alert("Date utilizator actualizate local.");
+    showUserModalError("edituser", "Eroare de conectare: " + err.message);
+    alert("Eroare conectare: " + err.message);
   }
 }
 
+function showUserModalError(type, msg) {
+  const alertElem = document.getElementById(`${type}-error-alert`);
+  const textElem = document.getElementById(`${type}-error-text`);
+  if (alertElem && textElem) {
+    textElem.innerText = msg;
+    alertElem.classList.remove("hidden");
+  }
+}
+
+function hideUserModalError(type) {
+  const alertElem = document.getElementById(`${type}-error-alert`);
+  if (alertElem) alertElem.classList.add("hidden");
+}
+
 function openNewUserModal() {
+  hideUserModalError("newuser");
   document.getElementById("newuser-username").value = "";
   document.getElementById("newuser-fullname").value = "";
   document.getElementById("newuser-password").value = "";
@@ -699,6 +707,7 @@ async function handleCreateUserSubmit(e) {
   const pin = document.getElementById("newuser-pin").value.trim();
   
   if (password !== confirmPassword) {
+    showUserModalError("newuser", "Parolele introduse nu se potrivesc!");
     alert("Parolele introduse nu se potrivesc!");
     return;
   }
@@ -724,19 +733,24 @@ async function handleCreateUserSubmit(e) {
       json = JSON.parse(text);
     } catch (parseErr) {
       console.error("Server raw response:", text);
+      showUserModalError("newuser", "Eroare răspuns server nevalid.");
       alert("Eroare răspuns server (non-JSON):\n" + text.substring(0, 300));
       return;
     }
     
     if (json && json.success) {
+      hideUserModalError("newuser");
       alert(`Contul utilizatorului @${username} a fost creat cu succes!\n\nCod PIN atribuit pentru autentificare: ${json.data.pin_code}`);
       closeModal("modal-new-user");
       await loadUsersData();
     } else {
-      alert("Eroare creare cont: " + (json ? json.message : "Răspuns server nevalid."));
+      const msg = (json && json.message) ? json.message : "Răspuns server nevalid.";
+      showUserModalError("newuser", msg);
+      alert(msg);
     }
   } catch (err) {
     console.error("Eroare conectare la crearea contului:", err);
+    showUserModalError("newuser", "Eroare de conexiune la crearea contului: " + err.message);
     alert("Eroare de conexiune la crearea contului: " + err.message);
   }
 }

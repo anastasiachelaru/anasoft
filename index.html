@@ -622,6 +622,10 @@
 
       <form onsubmit="handleCreateUserSubmit(event)" class="modal-form">
         <div class="modal-body">
+          <div id="newuser-error-alert" class="alert alert-danger hidden" style="margin-bottom: 16px;">
+            <i class="fa-solid fa-triangle-exclamation"></i> <span id="newuser-error-text"></span>
+          </div>
+
           <!-- SECȚIUNEA DATE UTILIZATOR -->
           <h5
             style="color: #22c55e; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px; border-bottom: 1px solid rgba(34, 197, 94, 0.3); padding-bottom: 6px;">
@@ -704,6 +708,10 @@
 
       <form onsubmit="handleEditUserSubmit(event)" class="modal-form">
         <div class="modal-body">
+          <div id="edituser-error-alert" class="alert alert-danger hidden" style="margin-bottom: 16px;">
+            <i class="fa-solid fa-triangle-exclamation"></i> <span id="edituser-error-text"></span>
+          </div>
+
           <!-- SELECTARE UTILIZATOR -->
           <div class="form-group" style="margin-bottom: 20px;">
             <label for="edituser-select" style="color: #60a5fa; font-weight: 700;">Selectează Angajat / Operator pentru
