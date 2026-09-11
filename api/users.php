@@ -146,8 +146,8 @@ elseif ($action === 'create') {
             // Verificăm dacă parola introdusă aparține deja altui utilizator
             if (!empty($password)) {
                 $hashedPass = md5($password);
-                $stmtCheckPass = $db->prepare("SELECT id_user FROM users WHERE (password_plain = :p OR password = :h OR password = :p) AND username != :u");
-                $stmtCheckPass->execute([':p' => $password, ':h' => $hashedPass, ':u' => $username]);
+                $stmtCheckPass = $db->prepare("SELECT id_user FROM users WHERE (password_plain = :p1 OR password = :h OR password = :p2) AND username != :u");
+                $stmtCheckPass->execute([':p1' => $password, ':h' => $hashedPass, ':p2' => $password, ':u' => $username]);
                 if ($stmtCheckPass->fetch()) {
                     sendResponse(false, "Această parolă este deja folosită de un alt utilizator, te rugăm să alegi alta.", null, 200);
                 }
@@ -258,8 +258,8 @@ elseif ($action === 'update') {
             // Verificăm dacă parola introdusă este deja utilizată de un alt cont
             if (!empty($password)) {
                 $hashedPass = md5($password);
-                $stmtCheckPass = $db->prepare("SELECT id_user FROM users WHERE (password_plain = :p OR password = :h OR password = :p) AND id_user != :id");
-                $stmtCheckPass->execute([':p' => $password, ':h' => $hashedPass, ':id' => $idUser]);
+                $stmtCheckPass = $db->prepare("SELECT id_user FROM users WHERE (password_plain = :p1 OR password = :h OR password = :p2) AND id_user != :id");
+                $stmtCheckPass->execute([':p1' => $password, ':h' => $hashedPass, ':p2' => $password, ':id' => $idUser]);
                 if ($stmtCheckPass->fetch()) {
                     sendResponse(false, "Această parolă este deja folosită de un alt utilizator, te rugăm să alegi alta.", null, 200);
                 }
