@@ -14,17 +14,33 @@ $officesMap = [
     6 => 'UMF 2'
 ];
 
+function ensureUsersSchema($db) {
+    if (!$db) return;
+    $queries = [
+        "ALTER TABLE users ADD COLUMN password_plain VARCHAR(255) DEFAULT NULL",
+        "ALTER TABLE users ADD COLUMN pin_code VARCHAR(32) DEFAULT NULL",
+        "ALTER TABLE users MODIFY COLUMN pin_code VARCHAR(32) DEFAULT NULL",
+        "ALTER TABLE users ADD COLUMN email VARCHAR(255) DEFAULT NULL",
+        "ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'operator'",
+        "ALTER TABLE users ADD COLUMN office INT DEFAULT 4",
+        "ALTER TABLE users ADD COLUMN first_name VARCHAR(100) DEFAULT NULL",
+        "ALTER TABLE users ADD COLUMN last_name VARCHAR(100) DEFAULT NULL",
+        "ALTER TABLE users ADD COLUMN cont_active TINYINT DEFAULT 1"
+    ];
+    foreach ($queries as $q) {
+        try {
+            $db->exec($q);
+        } catch (Throwable $e) {}
+    }
+}
+
+if ($db) {
+    ensureUsersSchema($db);
+}
+
 if ($action === 'list') {
     if ($db) {
         try {
-            // Asigurăm că tabela users conține coloana password_plain și că pin_code suportă 32 caractere (pentru PIN 12 cifre)
-            try {
-                $db->exec("ALTER TABLE users ADD COLUMN password_plain VARCHAR(255) DEFAULT NULL");
-            } catch (Throwable $e) {}
-            try {
-                $db->exec("ALTER TABLE users MODIFY COLUMN pin_code VARCHAR(32) DEFAULT NULL");
-            } catch (Throwable $e) {}
-
             // Setăm PIN-ul de 12 cifre de zero (000000000000) pentru Admin PIM
             $db->exec("UPDATE users SET pin_code = '000000000000', role = 'admin', password = md5('admin123'), password_plain = 'admin123' WHERE username = 'admin' OR id_user = 1");
 
@@ -160,7 +176,7 @@ elseif ($action === 'create') {
                 'pin_code' => $pin
             ]);
         } catch (Throwable $e) {
-            sendResponse(false, 'Eroare salvare utilizator: ' . $e->getMessage(), null, 500);
+            sendResponse(false, 'Eroare salvare utilizator: ' . $e->getMessage(), null, 200);
         }
     } else {
         sendResponse(true, "Cont creat (Demo)! PIN: {$pin}", [
@@ -239,7 +255,7 @@ elseif ($action === 'update') {
 
             sendResponse(true, "Datele utilizatorului '@{$username}' au fost actualizate cu succes.");
         } catch (Throwable $e) {
-            sendResponse(false, 'Eroare modificare utilizator: ' . $e->getMessage(), null, 500);
+            sendResponse(false, 'Eroare modificare utilizator: ' . $e->getMessage(), null, 200);
         }
     } else {
         sendResponse(true, "Date utilizator modificate (Demo).");
@@ -263,7 +279,7 @@ elseif ($action === 'toggle-status') {
             $stmt->execute([':id' => $idUser]);
             sendResponse(true, 'Statusul contului a fost schimbat.');
         } catch (Throwable $e) {
-            sendResponse(false, 'Eroare modificare status: ' . $e->getMessage(), null, 500);
+            sendResponse(false, 'Eroare modificare status: ' . $e->getMessage(), null, 200);
         }
     } else {
         sendResponse(true, 'Status modificat (Demo).');
@@ -287,7 +303,7 @@ elseif ($action === 'delete') {
             $stmt->execute([':id' => $idUser]);
             sendResponse(true, 'Contul de utilizator a fost șters definitiv din sistem.');
         } catch (Throwable $e) {
-            sendResponse(false, 'Eroare ștergere utilizator: ' . $e->getMessage(), null, 500);
+            sendResponse(false, 'Eroare ștergere utilizator: ' . $e->getMessage(), null, 200);
         }
     } else {
         sendResponse(true, 'Utilizator șters (Demo).');

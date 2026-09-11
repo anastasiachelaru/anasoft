@@ -644,13 +644,16 @@ async function handleEditUserSubmit(e) {
       })
     });
 
-    const json = await res.json();
-    if (json.success) {
+    const text = await res.text();
+    let json;
+    try { json = JSON.parse(text); } catch (parseErr) {}
+
+    if (json && json.success) {
       alert(json.message || "Datele utilizatorului au fost actualizate cu succes!");
       closeModal("modal-edit-user");
       await loadUsersData();
     } else {
-      alert("Eroare actualizare: " + json.message);
+      alert("Eroare actualizare: " + (json ? json.message : text));
     }
   } catch (err) {
     const target = usersData.find(u => u.id_user == userId);
@@ -664,7 +667,7 @@ async function handleEditUserSubmit(e) {
     }
     renderUsersTable();
     closeModal("modal-edit-user");
-    alert("Date utilizator actualizate!");
+    alert("Date utilizator actualizate local.");
   }
 }
 
@@ -710,16 +713,26 @@ async function handleCreateUserSubmit(e) {
       })
     });
     
-    const json = await res.json();
-    if (json.success) {
+    const text = await res.text();
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch (parseErr) {
+      console.error("Server raw response:", text);
+      alert("Eroare răspuns server (non-JSON):\n" + text.substring(0, 300));
+      return;
+    }
+    
+    if (json && json.success) {
       alert(`Contul utilizatorului @${username} a fost creat cu succes!\n\nCod PIN atribuit pentru autentificare: ${json.data.pin_code}`);
       closeModal("modal-new-user");
       await loadUsersData();
     } else {
-      alert("Eroare creare cont: " + json.message);
+      alert("Eroare creare cont: " + (json ? json.message : "Răspuns server nevalid."));
     }
   } catch (err) {
-    alert("Eroare de rețea la crearea contului.");
+    console.error("Eroare conectare la crearea contului:", err);
+    alert("Eroare de conexiune la crearea contului: " + err.message);
   }
 }
 
@@ -736,14 +749,16 @@ async function toggleUserStatus(idUser) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id_user: idUser })
     });
-    const json = await res.json();
-    if (json.success) {
+    const text = await res.text();
+    let json;
+    try { json = JSON.parse(text); } catch (e) {}
+    if (json && json.success) {
       await loadUsersData();
     } else {
-      alert("Eroare status: " + json.message);
+      alert("Eroare status: " + (json ? json.message : text));
     }
   } catch (err) {
-    alert("Eroare conectare server.");
+    alert("Eroare conectare server: " + err.message);
   }
 }
 
@@ -764,15 +779,17 @@ async function deleteUser(idUser, username) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id_user: idUser })
     });
-    const json = await res.json();
-    if (json.success) {
+    const text = await res.text();
+    let json;
+    try { json = JSON.parse(text); } catch (e) {}
+    if (json && json.success) {
       alert(json.message || "Contul a fost șters.");
       await loadUsersData();
     } else {
-      alert("Eroare ștergere: " + json.message);
+      alert("Eroare ștergere: " + (json ? json.message : text));
     }
   } catch (err) {
-    alert("Eroare conectare server.");
+    alert("Eroare conectare server: " + err.message);
   }
 }
 
