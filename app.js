@@ -97,6 +97,7 @@ let wizardMaxAllowed = 0;
 function initApp() {
   initKeyboardListeners();
   renderPinDots();
+  switchLoginRole("operator");
   checkExistingSession();
 }
 
@@ -119,6 +120,7 @@ function switchLoginRole(role) {
   const adminBtn = document.getElementById("role-admin-btn");
   const instText = document.getElementById("pin-instruction-text");
   const demoHint = document.getElementById("demo-hint-box");
+  const authTabs = document.querySelector(".auth-tabs");
 
   if (role === "admin") {
     if (adminBtn) {
@@ -131,7 +133,8 @@ function switchLoginRole(role) {
       opBtn.style.borderColor = "rgba(255, 255, 255, 0.1)";
       opBtn.style.color = "var(--text-muted)";
     }
-    if (instText) instText.innerText = "Introdu codul PIN de Securitate Administrator (12 cifre):";
+    if (authTabs) authTabs.style.display = "flex";
+    if (instText) instText.innerText = "Introdu codul PIN de Securitate Administrator (12 cifre) sau folosește User & Parolă:";
     if (demoHint) demoHint.innerHTML = '<i class="fa-solid fa-lightbulb text-yellow"></i> PIN Administrator Test: <code>000000000000</code> (12 cifre de zero)';
   } else {
     if (opBtn) {
@@ -144,8 +147,10 @@ function switchLoginRole(role) {
       adminBtn.style.borderColor = "rgba(255, 255, 255, 0.1)";
       adminBtn.style.color = "var(--text-muted)";
     }
+    if (authTabs) authTabs.style.display = "none";
+    switchAuthTab('pin');
     if (instText) instText.innerText = "Introdu codul PIN din 6 cifre atribuit contului tău de Operator:";
-    if (demoHint) demoHint.innerHTML = '<i class="fa-solid fa-lightbulb text-cyan"></i> PIN Operator Demo: <code>111111</code> (6 cifre)';
+    if (demoHint) demoHint.innerHTML = '<i class="fa-solid fa-lightbulb text-cyan"></i> Autentificare Operator prin PIN (6 cifre)';
   }
 
   renderPinDots();
@@ -578,6 +583,29 @@ function openEditUserModal(userId) {
   openModal("modal-edit-user");
 }
 
+function generateRandomUserPin(formType) {
+  const roleSelect = document.getElementById(`${formType}-role`);
+  const role = roleSelect ? roleSelect.value : 'operator';
+  const targetLen = (role === 'admin') ? 12 : 6;
+
+  const existingPins = Array.isArray(usersData) ? usersData.map(u => String(u.pin_code || '').trim()) : [];
+
+  let newPin = '';
+  let attempts = 0;
+  do {
+    newPin = '';
+    for (let i = 0; i < targetLen; i++) {
+      newPin += Math.floor(Math.random() * 10).toString();
+    }
+    attempts++;
+  } while (existingPins.includes(newPin) && attempts < 100);
+
+  const pinInput = document.getElementById(`${formType}-pin`);
+  if (pinInput) {
+    pinInput.value = newPin;
+  }
+}
+
 function onUserModalRoleChange(formType) {
   const roleSelect = document.getElementById(`${formType}-role`);
   const pinInput = document.getElementById(`${formType}-pin`);
@@ -585,21 +613,61 @@ function onUserModalRoleChange(formType) {
 
   const role = roleSelect ? roleSelect.value : 'operator';
 
-  if (role === 'admin') {
-    if (pinInput) {
-      pinInput.setAttribute('maxlength', '12');
-      pinInput.setAttribute('placeholder', 'ex: 000000000000');
+  if (formType === 'newuser') {
+    const passSection = document.getElementById('newuser-password-section');
+    const passTitle = document.getElementById('newuser-password-title');
+    const passInput = document.getElementById('newuser-password');
+    const confirmInput = document.getElementById('newuser-confirm-password');
+
+    if (role === 'admin') {
+      if (passSection) passSection.style.display = 'grid';
+      if (passTitle) passTitle.innerText = 'SETARE PAROLĂ & PIN ADMINISTRATOR';
+      if (passInput) passInput.required = true;
+      if (confirmInput) confirmInput.required = true;
+      if (pinInput) {
+        pinInput.setAttribute('maxlength', '12');
+        pinInput.setAttribute('placeholder', 'ex: 000000000000');
+      }
+      if (pinLabel) pinLabel.innerHTML = 'Cod PIN Administrator (12 Cifre) *';
+    } else {
+      if (passSection) passSection.style.display = 'none';
+      if (passTitle) passTitle.innerText = 'SETARE COD PIN OPERATOR';
+      if (passInput) {
+        passInput.required = false;
+        passInput.value = '';
+      }
+      if (confirmInput) {
+        confirmInput.required = false;
+        confirmInput.value = '';
+      }
+      if (pinInput) {
+        pinInput.setAttribute('maxlength', '6');
+        pinInput.setAttribute('placeholder', 'ex: 111111');
+      }
+      if (pinLabel) pinLabel.innerHTML = 'Cod PIN Operator (6 Cifre) *';
     }
-    if (pinLabel) {
-      pinLabel.innerHTML = 'Cod PIN Administrator (12 Cifre) *';
-    }
-  } else {
-    if (pinInput) {
-      pinInput.setAttribute('maxlength', '6');
-      pinInput.setAttribute('placeholder', 'ex: 111111');
-    }
-    if (pinLabel) {
-      pinLabel.innerHTML = 'Cod PIN Operator (6 Cifre) *';
+  } else if (formType === 'edituser') {
+    const passGroup = document.getElementById('edituser-password-group');
+    const passTitle = document.getElementById('edituser-password-title');
+    const passInput = document.getElementById('edituser-password');
+
+    if (role === 'admin') {
+      if (passGroup) passGroup.style.display = 'block';
+      if (passTitle) passTitle.innerText = 'SCHIMBARE PAROLĂ & PIN ADMINISTRATOR';
+      if (pinInput) {
+        pinInput.setAttribute('maxlength', '12');
+        pinInput.setAttribute('placeholder', 'ex: 000000000000');
+      }
+      if (pinLabel) pinLabel.innerHTML = 'Cod PIN Administrator (12 cifre) *';
+    } else {
+      if (passGroup) passGroup.style.display = 'none';
+      if (passTitle) passTitle.innerText = 'SCHIMBARE COD PIN OPERATOR';
+      if (passInput) passInput.value = '';
+      if (pinInput) {
+        pinInput.setAttribute('maxlength', '6');
+        pinInput.setAttribute('placeholder', 'ex: 111111');
+      }
+      if (pinLabel) pinLabel.innerHTML = 'Cod PIN Operator (6 cifre) *';
     }
   }
 }
@@ -706,10 +774,28 @@ async function handleCreateUserSubmit(e) {
   const confirmPassword = document.getElementById("newuser-confirm-password").value;
   const pin = document.getElementById("newuser-pin").value.trim();
   
-  if (password !== confirmPassword) {
-    showUserModalError("newuser", "Parolele introduse nu se potrivesc!");
-    alert("Parolele introduse nu se potrivesc!");
-    return;
+  if (role === 'admin') {
+    if (!password) {
+      showUserModalError("newuser", "Parola este obligatorie pentru Administrator!");
+      alert("Parola este obligatorie pentru Administrator!");
+      return;
+    }
+    if (password !== confirmPassword) {
+      showUserModalError("newuser", "Parolele introduse nu se potrivesc!");
+      alert("Parolele introduse nu se potrivesc!");
+      return;
+    }
+  } else {
+    if (!pin) {
+      showUserModalError("newuser", "Te rugăm să introduci sau să generezi un cod PIN din 6 cifre!");
+      alert("Te rugăm să introduci sau să generezi un cod PIN din 6 cifre!");
+      return;
+    }
+    if (pin.length !== 6) {
+      showUserModalError("newuser", "Codul PIN pentru Operator trebuie să aibă exact 6 cifre!");
+      alert("Codul PIN pentru Operator trebuie să aibă exact 6 cifre!");
+      return;
+    }
   }
   
   try {
@@ -721,8 +807,8 @@ async function handleCreateUserSubmit(e) {
         username,
         role,
         full_name: fullName,
-        password,
-        confirm_password: confirmPassword,
+        password: role === 'admin' ? password : '',
+        confirm_password: role === 'admin' ? confirmPassword : '',
         pin
       })
     });

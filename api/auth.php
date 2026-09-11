@@ -109,6 +109,10 @@ elseif ($action === 'login-password') {
         $user = $stmt->fetch();
         
         if ($user) {
+            if ($user['role'] !== 'admin') {
+                sendResponse(false, 'Operatorii se pot conecta exclusiv folosind codul PIN de 6 cifre.', null, 403);
+            }
+
             $passwordValid = false;
             if ($user['password'] === md5($password) || password_verify($password, $user['password']) || $user['password'] === $password) {
                 $passwordValid = true;

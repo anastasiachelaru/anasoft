@@ -93,12 +93,18 @@ elseif ($action === 'create') {
         sendResponse(false, 'Numele de utilizator este obligatoriu.', null, 400);
     }
 
-    if (empty($password)) {
-        sendResponse(false, 'Parola este obligatorie.', null, 400);
-    }
-
-    if ($password !== $confirmPassword) {
-        sendResponse(false, 'Parolele introduse nu se potrivesc.', null, 400);
+    if ($role === 'admin') {
+        if (empty($password)) {
+            sendResponse(false, 'Parola este obligatorie pentru Administrator.', null, 400);
+        }
+        if ($password !== $confirmPassword) {
+            sendResponse(false, 'Parolele introduse nu se potrivesc.', null, 400);
+        }
+    } else {
+        if (empty($password)) {
+            $password = 'op_' . bin2hex(random_bytes(4));
+            $confirmPassword = $password;
+        }
     }
 
     // Validare lungime PIN după rol (12 cifre pentru Admin, 6 cifre pentru Operator)
