@@ -44,9 +44,16 @@ if ($action === 'list') {
             
             foreach ($schimbari as &$s) {
                 $s['office_nume'] = $officesMap[$s['office'] ?? 0] ?? 'PIM';
-                $s['nume_operator'] = trim($s['nume_operator'] ?? '');
-                if (empty($s['nume_operator'])) {
-                    $s['nume_operator'] = !empty($s['username']) ? $s['username'] : 'operator';
+                $opName = trim($s['nume_operator'] ?? '');
+                $opLower = strtolower($opName);
+                if (empty($opName) || $opLower === 'operator' || $opLower === 'operator operator') {
+                    if (!empty($s['username']) && strtolower($s['username']) !== 'operator') {
+                        $s['nume_operator'] = $s['username'];
+                    } else {
+                        $s['nume_operator'] = ($s['office_nume'] !== 'PIM') ? 'Operator ' . $s['office_nume'] : 'Operator PIM';
+                    }
+                } else {
+                    $s['nume_operator'] = $opName;
                 }
             }
             

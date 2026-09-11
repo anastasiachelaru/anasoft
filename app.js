@@ -1087,14 +1087,18 @@ function renderHistoryTable() {
     const lastStr = (h.last_name || '').trim();
     const nameStr = (h.nume_operator || '').trim();
     const fullCompStr = (firstStr || lastStr) ? `${firstStr} ${lastStr}`.trim() : nameStr;
+    const fullLower = fullCompStr.toLowerCase();
     
-    if (fullCompStr && fullCompStr.toLowerCase() !== 'operator') {
-      userAccountDisplay = `<i class="fa-solid fa-user text-cyan" style="margin-right:4px;"></i> <strong>${fullCompStr}</strong>`;
-    } else if (h.username && h.username.toLowerCase() !== 'operator') {
-      userAccountDisplay = `<i class="fa-solid fa-user text-cyan" style="margin-right:4px;"></i> <strong>${h.username}</strong>`;
-    } else {
-      userAccountDisplay = `<i class="fa-solid fa-user text-cyan" style="margin-right:4px;"></i> <strong>Operator</strong>`;
+    let displayName = fullCompStr;
+    if (!displayName || fullLower === 'operator' || fullLower === 'operator operator') {
+      if (h.username && h.username.toLowerCase() !== 'operator') {
+        displayName = h.username;
+      } else {
+        const offName = formatOfficeName(h.office || h.office_nume);
+        displayName = (offName && offName !== 'PIM') ? `Operator ${offName}` : 'Operator PIM';
+      }
     }
+    userAccountDisplay = `<i class="fa-solid fa-user text-cyan" style="margin-right:4px;"></i> <strong>${displayName}</strong>`;
 
     const contorFormatted = formatNumberWithDots(h.contor || 0);
     const refFormatted = formatNumberWithDots(h.consum_referinta || 105000);
@@ -1155,14 +1159,18 @@ function renderWizardRecentTable() {
     const lastStr = (h.last_name || '').trim();
     const nameStr = (h.nume_operator || '').trim();
     const fullCompStr = (firstStr || lastStr) ? `${firstStr} ${lastStr}`.trim() : nameStr;
+    const fullLower = fullCompStr.toLowerCase();
     
-    if (fullCompStr && fullCompStr.toLowerCase() !== 'operator') {
-      userAccountDisplay = `<i class="fa-solid fa-user text-cyan" style="margin-right:4px;"></i> <strong>${fullCompStr}</strong>`;
-    } else if (h.username && h.username.toLowerCase() !== 'operator') {
-      userAccountDisplay = `<i class="fa-solid fa-user text-cyan" style="margin-right:4px;"></i> <strong>${h.username}</strong>`;
-    } else {
-      userAccountDisplay = `<i class="fa-solid fa-user text-cyan" style="margin-right:4px;"></i> <strong>Operator</strong>`;
+    let displayName = fullCompStr;
+    if (!displayName || fullLower === 'operator' || fullLower === 'operator operator') {
+      if (h.username && h.username.toLowerCase() !== 'operator') {
+        displayName = h.username;
+      } else {
+        const offName = formatOfficeName(h.office || h.office_nume);
+        displayName = (offName && offName !== 'PIM') ? `Operator ${offName}` : 'Operator PIM';
+      }
     }
+    userAccountDisplay = `<i class="fa-solid fa-user text-cyan" style="margin-right:4px;"></i> <strong>${displayName}</strong>`;
 
     const contorFormatted = formatNumberWithDots(h.contor || 0);
     const refFormatted = formatNumberWithDots(h.consum_referinta || 105000);

@@ -52,6 +52,32 @@ if ($action === 'list') {
                 $stmtIns->execute();
             }
 
+            // Garantăm existența conturilor de operator pentru fiecare sediu
+            $defaultOffices = [
+                2 => ['username' => 'op_independentei', 'first' => 'Operator', 'last' => 'Independenței', 'pin' => '222222'],
+                3 => ['username' => 'op_tudor', 'first' => 'Operator', 'last' => 'Tudor', 'pin' => '333333'],
+                4 => ['username' => 'op_tipografie', 'first' => 'Operator', 'last' => 'Tipografie', 'pin' => '444444'],
+                5 => ['username' => 'op_smardan', 'first' => 'Operator', 'last' => 'Smârdan', 'pin' => '555555'],
+                6 => ['username' => 'op_umf2', 'first' => 'Operator', 'last' => 'UMF 2', 'pin' => '666666']
+            ];
+
+            foreach ($defaultOffices as $offId => $opData) {
+                $chk = $db->prepare("SELECT COUNT(*) as cnt FROM users WHERE username = :u");
+                $chk->execute([':u' => $opData['username']]);
+                $r = $chk->fetch();
+                if (!$r || (int)$r['cnt'] === 0) {
+                    $ins = $db->prepare("INSERT INTO users (username, email, password, password_plain, role, office, first_name, last_name, cont_active, pin_code) VALUES (:u, :email, md5('operator123'), 'operator123', 'operator', :off, :first, :last, 1, :pin)");
+                    $ins->execute([
+                        ':u' => $opData['username'],
+                        ':email' => $opData['username'] . '@dev.pim.ro',
+                        ':off' => $offId,
+                        ':first' => $opData['first'],
+                        ':last' => $opData['last'],
+                        ':pin' => $opData['pin']
+                    ]);
+                }
+            }
+
             $stmt = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active, pin_code, password, password_plain FROM users ORDER BY id_user DESC");
             $stmt->execute();
             $users = $stmt->fetchAll();
