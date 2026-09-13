@@ -507,7 +507,7 @@ function renderUsersTable() {
   tbody.innerHTML = "";
 
   if (!usersData || usersData.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:28px; color:#94a3b8;"><i class="fa-solid fa-users-slash" style="font-size:1.5rem; margin-bottom:8px; display:block;"></i>Nu au fost găsiți utilizatori în baza de date.<br>Apasă pe butonul <strong style="color:#38bdf8;">"+ Utilizator Nou"</strong> pentru a crea un cont.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:28px; color:#94a3b8;"><i class="fa-solid fa-users-slash" style="font-size:1.5rem; margin-bottom:8px; display:block;"></i>Nu au fost găsiți utilizatori în baza de date.<br>Apasă pe butonul <strong style="color:#38bdf8;">"+ Utilizator Nou"</strong> pentru a crea un cont.</td></tr>`;
     return;
   }
   
@@ -527,10 +527,6 @@ function renderUsersTable() {
       (currentUser.id_user && parseInt(currentUser.id_user) === parseInt(u.id_user)) || 
       (currentUser.username && u.username && currentUser.username.toLowerCase() === u.username.toLowerCase())
     );
-    
-    const pinDisplay = u.pin_code 
-      ? `<code style="color:${isAdmin ? '#fbbf24' : '#00f2fe'}; font-weight:700;"><i class="fa-solid fa-key"></i> PIN: ${u.pin_code}</code>` 
-      : '<small style="color:#94a3b8;">Fără PIN</small>';
 
     let actionsHtml = "";
     if (isSuperAdmin) {
@@ -559,7 +555,6 @@ function renderUsersTable() {
       </td>
       <td><span class="badge ${roleBadgeClass}">${roleLabel}</span></td>
       <td><span class="office-badge">${formatOfficeName(u.office || u.office_nume)}</span></td>
-      <td>${pinDisplay}</td>
       <td>${statusBadge}</td>
       <td>${actionsHtml}</td>
     `;
@@ -687,10 +682,9 @@ function onUserModalRoleChange(formType) {
     const passTitle = document.getElementById('edituser-password-title');
     const passInput = document.getElementById('edituser-password');
 
-    if (passGroup) passGroup.style.display = 'block';
-    if (passInput) passInput.value = '';
-
     if (role === 'admin') {
+      if (passGroup) passGroup.style.display = 'block';
+      if (passInput) passInput.value = '';
       if (passTitle) passTitle.innerText = 'SCHIMBARE PAROLĂ & PIN ADMINISTRATOR';
       if (pinInput) {
         pinInput.setAttribute('maxlength', '12');
@@ -698,7 +692,9 @@ function onUserModalRoleChange(formType) {
       }
       if (pinLabel) pinLabel.innerHTML = 'Cod PIN Administrator (12 cifre) *';
     } else {
-      if (passTitle) passTitle.innerText = 'SCHIMBARE COD PIN & PAROLĂ OPERATOR';
+      if (passGroup) passGroup.style.display = 'none';
+      if (passInput) passInput.value = '';
+      if (passTitle) passTitle.innerText = 'SCHIMBARE COD PIN OPERATOR';
       if (pinInput) {
         pinInput.setAttribute('maxlength', '6');
         pinInput.setAttribute('placeholder', 'ex: 111111');
