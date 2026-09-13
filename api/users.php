@@ -277,6 +277,9 @@ elseif ($action === 'update') {
         sendResponse(false, 'Numele de utilizator este obligatoriu.', null, 400);
     }
 
+    if ($role === 'admin' && !empty($pin) && strlen($pin) !== 12) {
+        sendResponse(false, 'Codul PIN pentru Administrator trebuie să conțină exact 12 cifre.', null, 400);
+    }
     if ($role === 'operator' && !empty($pin) && strlen($pin) !== 6) {
         sendResponse(false, 'Codul PIN pentru Operator trebuie să conțină exact 6 cifre.', null, 400);
     }
