@@ -529,24 +529,14 @@ function renderUsersTable() {
     );
     
     const pinDisplay = u.pin_code 
-      ? `<code style="color:${isAdmin ? '#fbbf24' : '#00f2fe'}; font-weight:700;">PIN: ${u.pin_code}</code>` 
+      ? `<code style="color:${isAdmin ? '#fbbf24' : '#00f2fe'}; font-weight:700;"><i class="fa-solid fa-key"></i> PIN: ${u.pin_code}</code>` 
       : '<small style="color:#94a3b8;">Fără PIN</small>';
-
-    let passDisplay = "";
-    if (isAdmin && !isCurrentLoggedInUser) {
-      // Parolă protejată pentru alți administratori
-      passDisplay = `<span class="badge" style="background:rgba(239, 68, 68, 0.15); color:#fca5a5; border:1px solid rgba(239, 68, 68, 0.3); font-size:0.75rem;"><i class="fa-solid fa-lock"></i> Parolă Protejată</span>`;
-    } else {
-      // Afișăm parola pentru Operatori și pentru Contul Propriu de Admin
-      const passVal = u.password_plain || (u.password && !u.password.includes('[Protejată]') ? u.password : (isAdmin ? 'admin123' : 'operator123'));
-      passDisplay = `<code style="color:#a7f3d0; font-weight:600;"><i class="fa-solid fa-key"></i> Parolă: ${passVal}</code>`;
-    }
-
-    const pinPassCombined = `<div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start;">${pinDisplay}${passDisplay}</div>`;
 
     let actionsHtml = "";
     if (isSuperAdmin) {
-      actionsHtml = `<span class="badge" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); padding: 6px 10px; font-size: 0.78rem;" title="Contul principal de administrator este protejat și nu poate fi șters"><i class="fa-solid fa-shield-halved"></i> Protejat</span>`;
+      const editBtn = `<button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="openEditUserModal(${u.id_user})"><i class="fa-solid fa-user-pen"></i> Editează</button>`;
+      const protBadge = `<span class="badge" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); padding: 6px 10px; font-size: 0.78rem;" title="Contul principal de administrator este protejat și nu poate fi șters"><i class="fa-solid fa-shield-halved"></i> Protejat</span>`;
+      actionsHtml = `<div style="display:flex; gap:6px; align-items:center;">${editBtn}${protBadge}</div>`;
     } else {
       const editBtn = `<button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="openEditUserModal(${u.id_user})"><i class="fa-solid fa-user-pen"></i> Editează</button>`;
       const toggleBtn = `<button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="toggleUserStatus(${u.id_user})">${isActive ? 'Dezactivează' : 'Activează'}</button>`;
@@ -569,7 +559,7 @@ function renderUsersTable() {
       </td>
       <td><span class="badge ${roleBadgeClass}">${roleLabel}</span></td>
       <td><span class="office-badge">${formatOfficeName(u.office || u.office_nume)}</span></td>
-      <td>${pinPassCombined}</td>
+      <td>${pinDisplay}</td>
       <td>${statusBadge}</td>
       <td>${actionsHtml}</td>
     `;
@@ -616,6 +606,19 @@ function generateRandomUserPin(formType) {
   const pinInput = document.getElementById(`${formType}-pin`);
   if (pinInput) {
     pinInput.value = newPin;
+  }
+}
+
+function togglePasswordVisibility(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const icon = btn ? btn.querySelector('i') : null;
+  if (input.type === 'password') {
+    input.type = 'text';
+    if (icon) icon.className = 'fa-solid fa-eye-slash';
+  } else {
+    input.type = 'password';
+    if (icon) icon.className = 'fa-solid fa-eye';
   }
 }
 
@@ -684,8 +687,10 @@ function onUserModalRoleChange(formType) {
     const passTitle = document.getElementById('edituser-password-title');
     const passInput = document.getElementById('edituser-password');
 
+    if (passGroup) passGroup.style.display = 'block';
+    if (passInput) passInput.value = '';
+
     if (role === 'admin') {
-      if (passGroup) passGroup.style.display = 'block';
       if (passTitle) passTitle.innerText = 'SCHIMBARE PAROLĂ & PIN ADMINISTRATOR';
       if (pinInput) {
         pinInput.setAttribute('maxlength', '12');
@@ -693,9 +698,7 @@ function onUserModalRoleChange(formType) {
       }
       if (pinLabel) pinLabel.innerHTML = 'Cod PIN Administrator (12 cifre) *';
     } else {
-      if (passGroup) passGroup.style.display = 'none';
-      if (passTitle) passTitle.innerText = 'SCHIMBARE COD PIN OPERATOR';
-      if (passInput) passInput.value = '';
+      if (passTitle) passTitle.innerText = 'SCHIMBARE COD PIN & PAROLĂ OPERATOR';
       if (pinInput) {
         pinInput.setAttribute('maxlength', '6');
         pinInput.setAttribute('placeholder', 'ex: 111111');

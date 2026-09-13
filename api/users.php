@@ -242,6 +242,9 @@ elseif ($action === 'update') {
     $username = trim($input['username'] ?? '');
     $role = trim($input['role'] ?? 'operator');
     $rawOffice = trim((string)($input['office'] ?? '4'));
+    if ($idUser === 1 || strtolower($username) === 'admin') {
+        $role = 'admin';
+    }
     if ($role === 'admin') {
         if ($rawOffice === 'ALL' || $rawOffice === 'all' || $rawOffice === '0' || $rawOffice === 'toate' || empty($rawOffice)) {
             $office = 'ALL';

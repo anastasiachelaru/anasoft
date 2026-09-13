@@ -365,7 +365,7 @@
                   <th>Nume Complet & Username</th>
                   <th>Rol Acces</th>
                   <th>Sediu</th>
-                  <th>Cod PIN / Parolă</th>
+                  <th>Cod PIN Acces</th>
                   <th>Status Cont</th>
                   <th>Acțiuni</th>
                 </tr>
@@ -673,12 +673,22 @@
           <div class="form-grid-2col" id="newuser-password-section" style="display: none;">
             <div class="form-group">
               <label for="newuser-password">Parolă *</label>
-              <input type="password" id="newuser-password" placeholder="••••••••">
+              <div style="position: relative;">
+                <input type="password" id="newuser-password" placeholder="••••••••" style="padding-right: 38px; width: 100%;">
+                <button type="button" onclick="togglePasswordVisibility('newuser-password', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px; font-size: 0.9rem;" title="Arată / Ascunde Parola">
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+              </div>
             </div>
 
             <div class="form-group">
               <label for="newuser-confirm-password">Reintrodu parola *</label>
-              <input type="password" id="newuser-confirm-password" placeholder="••••••••">
+              <div style="position: relative;">
+                <input type="password" id="newuser-confirm-password" placeholder="••••••••" style="padding-right: 38px; width: 100%;">
+                <button type="button" onclick="togglePasswordVisibility('newuser-confirm-password', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px; font-size: 0.9rem;" title="Arată / Ascunde Parola">
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -781,8 +791,13 @@
             </div>
 
             <div class="form-group" id="edituser-password-group" style="display: none; grid-column: span 2;">
-              <label for="edituser-password">Parolă Nouă (opțional pentru Admin)</label>
-              <input type="password" id="edituser-password" placeholder="••••••••">
+              <label for="edituser-password">Parolă Nouă (opțional - lasă gol pentru a păstra parola actuală)</label>
+              <div style="position: relative;">
+                <input type="password" id="edituser-password" placeholder="•••••••• (opțional)" style="padding-right: 38px; width: 100%;">
+                <button type="button" onclick="togglePasswordVisibility('edituser-password', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px; font-size: 0.9rem;" title="Arată / Ascunde Parola">
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+              </div>
             </div>
           </div>
         </div>
