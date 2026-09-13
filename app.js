@@ -15,6 +15,9 @@ const OFFICE_NAMES = {
 };
 
 function formatOfficeName(officeIdOrName) {
+  if (officeIdOrName === 'ALL' || officeIdOrName === 'all' || officeIdOrName === 'toate' || officeIdOrName === 'TOATE' || officeIdOrName === 'Toate sediile' || officeIdOrName === 'Toate sediile PIM') {
+    return 'Toate sediile PIM';
+  }
   if (officeIdOrName === 0 || officeIdOrName === '0' || officeIdOrName === null || officeIdOrName === undefined) {
     return 'Inexistent';
   }
@@ -415,6 +418,14 @@ function renderUserHeader() {
     document.getElementById("nav-istoric-btn")?.classList.remove("hidden");
     if (selectElem) {
       selectElem.disabled = false;
+      const off = currentUser ? currentUser.office : null;
+      if (!off || off === 'ALL' || off === 'all' || off === 'toate' || off === '0' || off === 0) {
+        currentOfficeFilter = "all";
+        selectElem.value = "all";
+      } else {
+        currentOfficeFilter = String(off);
+        selectElem.value = String(off);
+      }
     }
     loadUsersData();
   } else {
@@ -608,10 +619,27 @@ function generateRandomUserPin(formType) {
 
 function onUserModalRoleChange(formType) {
   const roleSelect = document.getElementById(`${formType}-role`);
+  const officeSelect = document.getElementById(`${formType}-office`);
+  const officeAllOption = document.getElementById(`${formType}-office-all`);
   const pinInput = document.getElementById(`${formType}-pin`);
   const pinLabel = document.getElementById(`${formType}-pin-label`);
 
   const role = roleSelect ? roleSelect.value : 'operator';
+
+  if (role === 'admin') {
+    if (officeAllOption) {
+      officeAllOption.style.display = '';
+      officeAllOption.disabled = false;
+    }
+  } else {
+    if (officeAllOption) {
+      officeAllOption.style.display = 'none';
+      officeAllOption.disabled = true;
+    }
+    if (officeSelect && officeSelect.value === 'ALL') {
+      officeSelect.value = '4';
+    }
+  }
 
   if (formType === 'newuser') {
     const passSection = document.getElementById('newuser-password-section');
@@ -620,6 +648,9 @@ function onUserModalRoleChange(formType) {
     const confirmInput = document.getElementById('newuser-confirm-password');
 
     if (role === 'admin') {
+      if (officeSelect && (!officeSelect.value || officeSelect.value === '4')) {
+        officeSelect.value = 'ALL';
+      }
       if (passSection) passSection.style.display = 'grid';
       if (passTitle) passTitle.innerText = 'SETARE PAROLĂ & PIN ADMINISTRATOR';
       if (passInput) passInput.required = true;
@@ -679,14 +710,26 @@ function onEditUserSelectChange() {
   const user = usersData.find(u => u.id_user == userId);
   if (!user) return;
 
-  document.getElementById("edituser-office").value = user.office || 4;
+  const role = user.role || "operator";
+  const roleSelect = document.getElementById("edituser-role");
+  if (roleSelect) roleSelect.value = role;
+
+  onUserModalRoleChange('edituser');
+
+  const off = user.office;
+  const officeSelect = document.getElementById("edituser-office");
+  if (officeSelect) {
+    if (!off || off === 'ALL' || off === 'all' || off === 'toate' || off === '0' || off === 0) {
+      officeSelect.value = (role === 'admin') ? 'ALL' : '4';
+    } else {
+      officeSelect.value = String(off);
+    }
+  }
+
   document.getElementById("edituser-username").value = user.username || "";
-  document.getElementById("edituser-role").value = user.role || "operator";
   document.getElementById("edituser-fullname").value = user.full_name || "";
   document.getElementById("edituser-pin").value = user.pin_code || "";
   document.getElementById("edituser-password").value = "";
-
-  onUserModalRoleChange('edituser');
 }
 
 async function handleEditUserSubmit(e) {
@@ -759,6 +802,7 @@ function openNewUserModal() {
   document.getElementById("newuser-confirm-password").value = "";
   document.getElementById("newuser-pin").value = "";
   document.getElementById("newuser-role").value = "operator";
+  document.getElementById("newuser-office").value = "4";
   onUserModalRoleChange('newuser');
   openModal("modal-new-user");
 }

@@ -19,13 +19,13 @@ if ($action === 'login-pin') {
                 $db->exec("ALTER TABLE users MODIFY COLUMN pin_code VARCHAR(32) DEFAULT NULL");
             } catch (Throwable $e) {}
 
-            // Garantăm că în DB contul admin are PIN-ul de 12 cifre '000000000000' și cont_active = 1
-            $db->exec("UPDATE users SET pin_code = '000000000000', role = 'admin', cont_active = 1 WHERE username = 'admin' OR id_user = 1");
+            // Garantăm că în DB contul admin are PIN-ul de 12 cifre '000000000000', rolul admin, sediul 'ALL' și cont_active = 1
+            $db->exec("UPDATE users SET pin_code = '000000000000', role = 'admin', office = 'ALL', cont_active = 1 WHERE username = 'admin' OR id_user = 1");
             
             $stmtCheckAdmin = $db->query("SELECT COUNT(*) as cnt FROM users WHERE username = 'admin'");
             $cntRow = $stmtCheckAdmin ? $stmtCheckAdmin->fetch() : null;
             if (!$cntRow || (int)$cntRow['cnt'] === 0) {
-                $stmtIns = $db->prepare("INSERT INTO users (username, email, password, password_plain, role, office, first_name, last_name, cont_active, pin_code) VALUES ('admin', 'admin@dev.pim.ro', md5('admin123'), 'admin123', 'admin', 2, 'Admin', 'PIM', 1, '000000000000')");
+                $stmtIns = $db->prepare("INSERT INTO users (username, email, password, password_plain, role, office, first_name, last_name, cont_active, pin_code) VALUES ('admin', 'admin@dev.pim.ro', md5('admin123'), 'admin123', 'admin', 'ALL', 'Admin', 'PIM', 1, '000000000000')");
                 $stmtIns->execute();
             }
         } catch (Throwable $e) {}
@@ -38,6 +38,9 @@ if ($action === 'login-pin') {
             if ($adminUser) {
                 if ((int)$adminUser['cont_active'] === 0 || $adminUser['cont_active'] === '0') {
                     sendResponse(false, 'Contul de administrator este dezactivat.', null, 403);
+                }
+                if (empty($adminUser['office']) || $adminUser['office'] === '0' || $adminUser['office'] === 0) {
+                    $adminUser['office'] = 'ALL';
                 }
                 sendResponse(true, 'Autentificare reușită ca Administrator!', [
                     'user' => $adminUser,
@@ -66,6 +69,10 @@ if ($action === 'login-pin') {
                 sendResponse(false, 'Contul tău a fost dezactivat de către un administrator. Nu te poți conecta până nu este reactivat.', null, 403);
             }
 
+            if ($matchedUser['role'] === 'admin' && (empty($matchedUser['office']) || $matchedUser['office'] === '0' || $matchedUser['office'] === 0)) {
+                $matchedUser['office'] = 'ALL';
+            }
+
             unset($matchedUser['password']);
             unset($matchedUser['pin_code']);
             sendResponse(true, 'Autentificare reușită cu PIN!', [
@@ -85,7 +92,7 @@ if ($action === 'login-pin') {
                     'first_name' => 'Admin',
                     'last_name' => 'PIM',
                     'role' => 'admin',
-                    'office' => 2,
+                    'office' => 'ALL',
                     'email' => 'admin@dev.pim.ro'
                 ],
                 'token' => 'demo_token_' . time()
@@ -123,6 +130,10 @@ elseif ($action === 'login-password') {
                     sendResponse(false, 'Contul tău a fost dezactivat de către un administrator. Nu te poți conecta până nu este reactivat.', null, 403);
                 }
 
+                if ($user['role'] === 'admin' && (empty($user['office']) || $user['office'] === '0' || $user['office'] === 0)) {
+                    $user['office'] = 'ALL';
+                }
+
                 unset($user['password']);
                 sendResponse(true, 'Autentificare reușită!', [
                     'user' => $user,
@@ -142,7 +153,7 @@ elseif ($action === 'login-password') {
                     'first_name' => $isAdmin ? 'Andrei' : 'Operator',
                     'last_name' => 'PIM',
                     'role' => $isAdmin ? 'admin' : 'operator',
-                    'office' => 2,
+                    'office' => $isAdmin ? 'ALL' : 2,
                     'email' => $username . '@dev.pim.ro'
                 ],
                 'token' => 'demo_token_' . time()

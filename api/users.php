@@ -7,6 +7,7 @@ $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 $action = $input['action'] ?? $_GET['action'] ?? 'list';
 
 $officesMap = [
+    'ALL' => 'Toate sediile PIM',
     2 => 'Independenței',
     3 => 'Tudor',
     4 => 'Tipografie',
@@ -22,7 +23,8 @@ function ensureUsersSchema($db) {
         "ALTER TABLE users MODIFY COLUMN pin_code VARCHAR(32) DEFAULT NULL",
         "ALTER TABLE users ADD COLUMN email VARCHAR(255) DEFAULT NULL",
         "ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'operator'",
-        "ALTER TABLE users ADD COLUMN office INT DEFAULT 4",
+        "ALTER TABLE users ADD COLUMN office VARCHAR(50) DEFAULT '4'",
+        "ALTER TABLE users MODIFY COLUMN office VARCHAR(50) DEFAULT '4'",
         "ALTER TABLE users ADD COLUMN first_name VARCHAR(100) DEFAULT NULL",
         "ALTER TABLE users ADD COLUMN last_name VARCHAR(100) DEFAULT NULL",
         "ALTER TABLE users ADD COLUMN cont_active TINYINT DEFAULT 1"
@@ -41,14 +43,14 @@ if ($db) {
 if ($action === 'list') {
     if ($db) {
         try {
-            // Setăm PIN-ul de 12 cifre de zero (000000000000) pentru Admin PIM
-            $db->exec("UPDATE users SET pin_code = '000000000000', role = 'admin', password = md5('admin123'), password_plain = 'admin123' WHERE username = 'admin' OR id_user = 1");
+            // Setăm PIN-ul de 12 cifre de zero (000000000000) și sediul 'ALL' pentru Admin PIM
+            $db->exec("UPDATE users SET pin_code = '000000000000', role = 'admin', office = 'ALL', password = md5('admin123'), password_plain = 'admin123' WHERE username = 'admin' OR id_user = 1");
 
             // Garantăm existența contului Admin PIM
             $stmtCheckAdmin = $db->query("SELECT COUNT(*) as cnt FROM users WHERE username = 'admin'");
             $cntRow = $stmtCheckAdmin ? $stmtCheckAdmin->fetch() : null;
             if (!$cntRow || (int)$cntRow['cnt'] === 0) {
-                $stmtIns = $db->prepare("INSERT INTO users (username, email, password, password_plain, role, office, first_name, last_name, cont_active, pin_code) VALUES ('admin', 'admin@dev.pim.ro', md5('admin123'), 'admin123', 'admin', 2, 'Admin', 'PIM', 1, '000000000000')");
+                $stmtIns = $db->prepare("INSERT INTO users (username, email, password, password_plain, role, office, first_name, last_name, cont_active, pin_code) VALUES ('admin', 'admin@dev.pim.ro', md5('admin123'), 'admin123', 'admin', 'ALL', 'Admin', 'PIM', 1, '000000000000')");
                 $stmtIns->execute();
             }
 
@@ -57,7 +59,19 @@ if ($action === 'list') {
             $users = $stmt->fetchAll();
             
             foreach ($users as &$u) {
-                $u['office_nume'] = $officesMap[$u['office'] ?? 2] ?? 'Independenței';
+                $offVal = $u['office'] ?? null;
+                if ($offVal === 'ALL' || $offVal === 'all' || $offVal === 'toate' || $offVal === '0' || $offVal === 0 || empty($offVal)) {
+                    if ($u['role'] === 'admin') {
+                        $u['office'] = 'ALL';
+                        $u['office_nume'] = 'Toate sediile PIM';
+                    } else {
+                        $u['office'] = 4;
+                        $u['office_nume'] = 'Tipografie';
+                    }
+                } else {
+                    $u['office_nume'] = $officesMap[$u['office']] ?? ($officesMap[(int)$u['office']] ?? 'Independenței');
+                }
+
                 if (empty($u['first_name']) && empty($u['last_name'])) {
                     $u['full_name'] = $u['username'];
                 } else {
@@ -76,14 +90,26 @@ if ($action === 'list') {
     } else {
         // Mock data cu singurul admin de test (PIN 12 de 0)
         sendResponse(true, 'Mock utilizatori.', [
-            ['id_user' => 1, 'username' => 'admin', 'role' => 'admin', 'office' => 2, 'office_nume' => 'Independenței', 'full_name' => 'Admin PIM', 'cont_active' => 1, 'pin_code' => '000000000000', 'password_plain' => 'admin123']
+            ['id_user' => 1, 'username' => 'admin', 'role' => 'admin', 'office' => 'ALL', 'office_nume' => 'Toate sediile PIM', 'full_name' => 'Admin PIM', 'cont_active' => 1, 'pin_code' => '000000000000', 'password_plain' => 'admin123']
         ]);
     }
 }
 elseif ($action === 'create') {
     $username = trim($input['username'] ?? '');
     $role = trim($input['role'] ?? 'operator');
-    $office = (int)($input['office'] ?? 4);
+    $rawOffice = trim((string)($input['office'] ?? '4'));
+    if ($role === 'admin') {
+        if ($rawOffice === 'ALL' || $rawOffice === 'all' || $rawOffice === '0' || $rawOffice === 'toate' || empty($rawOffice)) {
+            $office = 'ALL';
+        } else {
+            $office = $rawOffice;
+        }
+    } else {
+        if ($rawOffice === 'ALL' || $rawOffice === 'all' || $rawOffice === '0' || $rawOffice === 'toate' || empty($rawOffice)) {
+            sendResponse(false, 'Pentru Operatori este obligatorie alegerea unui singur sediu fizic.', null, 400);
+        }
+        $office = $rawOffice;
+    }
     $password = trim($input['password'] ?? '');
     $confirmPassword = trim($input['confirm_password'] ?? '');
     $fullName = trim($input['full_name'] ?? '');
@@ -215,7 +241,19 @@ elseif ($action === 'update') {
     $idUser = (int)($input['id_user'] ?? 0);
     $username = trim($input['username'] ?? '');
     $role = trim($input['role'] ?? 'operator');
-    $office = (int)($input['office'] ?? 4);
+    $rawOffice = trim((string)($input['office'] ?? '4'));
+    if ($role === 'admin') {
+        if ($rawOffice === 'ALL' || $rawOffice === 'all' || $rawOffice === '0' || $rawOffice === 'toate' || empty($rawOffice)) {
+            $office = 'ALL';
+        } else {
+            $office = $rawOffice;
+        }
+    } else {
+        if ($rawOffice === 'ALL' || $rawOffice === 'all' || $rawOffice === '0' || $rawOffice === 'toate' || empty($rawOffice)) {
+            sendResponse(false, 'Pentru Operatori este obligatorie alegerea unui singur sediu fizic.', null, 400);
+        }
+        $office = $rawOffice;
+    }
     $password = trim($input['password'] ?? '');
     $fullName = trim($input['full_name'] ?? '');
     $pin = trim($input['pin'] ?? '');
