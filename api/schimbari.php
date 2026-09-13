@@ -19,9 +19,24 @@ if ($action === 'list') {
     
     if ($db) {
         try {
+            // Auto-migrare coloană nume_operator în istoric_schimbari dacă nu există pe serverul de producție
+            try {
+                $db->exec("ALTER TABLE istoric_schimbari ADD COLUMN nume_operator VARCHAR(255) DEFAULT NULL");
+            } catch (Throwable $e) {}
+
+            $hasNumeOp = false;
+            try {
+                $checkCol = $db->query("SHOW COLUMNS FROM istoric_schimbari LIKE 'nume_operator'");
+                if ($checkCol && $checkCol->fetch()) {
+                    $hasNumeOp = true;
+                }
+            } catch (Throwable $e) {}
+
+            $numeOpSelect = $hasNumeOp ? "s.nume_operator AS istoric_nume_operator," : "'' AS istoric_nume_operator,";
+
             $sql = "SELECT s.id_istoric_schimbare, s.id_aparat, s.id_toner, s.contor, s.data_schimbare, 
                            s.id_user, s.copii_realizate, s.consum_referinta, s.procent_realizat,
-                           s.nume_operator AS istoric_nume_operator,
+                           {$numeOpSelect}
                            a.nume_aparat, a.office,
                            tt.denumire_tip,
                            CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) AS user_full_name,
