@@ -513,6 +513,7 @@ function renderUsersTable() {
   
   usersData.forEach(u => {
     const tr = document.createElement("tr");
+    const isSuperAdmin = (u.id_user && parseInt(u.id_user) === 1) || (u.username && u.username.toLowerCase() === "admin");
     const isAdmin = u.role === "admin" || (u.username && u.username.toLowerCase().includes("admin"));
     const roleBadgeClass = isAdmin ? "badge-primary" : "badge-secondary";
     const roleLabel = isAdmin ? "Administrator" : "Operator (Angajat)";
@@ -543,14 +544,22 @@ function renderUsersTable() {
 
     const pinPassCombined = `<div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start;">${pinDisplay}${passDisplay}</div>`;
 
-    const statusActionBtn = isAdmin
-      ? `<span class="badge" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); padding: 5px 10px; font-size: 0.78rem;" title="Conturile de administrator nu pot fi dezactivate sau șterse"><i class="fa-solid fa-shield-halved"></i> Protejat</span>`
-      : `
-        <div style="display:flex; gap:6px; align-items:center;">
-          <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="toggleUserStatus(${u.id_user})">${isActive ? 'Dezactivează' : 'Activează'}</button>
-          <button class="btn btn-outline-danger" style="padding: 4px 8px; font-size: 0.8rem;" onclick="deleteUser(${u.id_user}, '${u.username}')" title="Șterge definitiv contul"><i class="fa-solid fa-trash"></i> Șterge</button>
-        </div>
-      `;
+    let actionsHtml = "";
+    if (isSuperAdmin) {
+      actionsHtml = `<span class="badge" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); padding: 6px 10px; font-size: 0.78rem;" title="Contul principal de administrator este protejat și nu poate fi șters"><i class="fa-solid fa-shield-halved"></i> Protejat</span>`;
+    } else {
+      const editBtn = `<button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="openEditUserModal(${u.id_user})"><i class="fa-solid fa-user-pen"></i> Editează</button>`;
+      const toggleBtn = `<button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="toggleUserStatus(${u.id_user})">${isActive ? 'Dezactivează' : 'Activează'}</button>`;
+      
+      let deleteBtn = "";
+      if (isCurrentLoggedInUser) {
+        deleteBtn = `<span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 5px 10px; font-size: 0.75rem;" title="Nu îți poți șterge propriul cont pe care ești conectat"><i class="fa-solid fa-user-check"></i> Cont Conectat</span>`;
+      } else {
+        deleteBtn = `<button class="btn btn-outline-danger" style="padding: 4px 10px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px;" onclick="deleteUser(${u.id_user}, '${u.username}')" title="Șterge definitiv contul"><i class="fa-solid fa-trash-can"></i> Șterge</button>`;
+      }
+      
+      actionsHtml = `<div style="display:flex; gap:6px; align-items:center;">${editBtn}${toggleBtn}${deleteBtn}</div>`;
+    }
 
     tr.innerHTML = `
       <td>
@@ -562,14 +571,7 @@ function renderUsersTable() {
       <td><span class="office-badge">${formatOfficeName(u.office || u.office_nume)}</span></td>
       <td>${pinPassCombined}</td>
       <td>${statusBadge}</td>
-      <td>
-        <div style="display:flex; gap:6px; align-items:center;">
-          <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="openEditUserModal(${u.id_user})">
-            <i class="fa-solid fa-user-pen"></i> Editează
-          </button>
-          ${statusActionBtn}
-        </div>
-      </td>
+      <td>${actionsHtml}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -887,8 +889,9 @@ async function handleCreateUserSubmit(e) {
 
 async function toggleUserStatus(idUser) {
   const target = usersData.find(u => u.id_user == idUser);
-  if (target && (target.role === 'admin' || target.username.toLowerCase().includes('admin'))) {
-    alert("Contul de administrator nu poate fi dezactivat!");
+  const isSuperAdmin = target && (target.id_user == 1 || (target.username && target.username.toLowerCase() === 'admin'));
+  if (isSuperAdmin) {
+    alert("Contul principal de administrator este protejat și nu poate fi dezactivat.");
     return;
   }
 
@@ -913,12 +916,18 @@ async function toggleUserStatus(idUser) {
 
 async function deleteUser(idUser, username) {
   const target = usersData.find(u => u.id_user == idUser);
-  if (target && (target.role === 'admin' || (target.username && target.username.toLowerCase().includes('admin')))) {
-    alert("Conturile de administrator nu pot fi șterse!");
+  const isSuperAdmin = target && (target.id_user == 1 || (target.username && target.username.toLowerCase() === 'admin'));
+  if (isSuperAdmin) {
+    alert("Contul principal de administrator este protejat și nu poate fi șters.");
     return;
   }
 
-  if (!confirm(`Ești sigur că vrei să ștergi definitiv contul de operator @${username || idUser}? Această acțiune este ireversibilă.`)) {
+  if (currentUser && ((currentUser.id_user && currentUser.id_user == idUser) || (currentUser.username && username && currentUser.username.toLowerCase() === username.toLowerCase()))) {
+    alert("Nu îți poți șterge propriul cont pe care ești conectat în prezent.");
+    return;
+  }
+
+  if (!confirm("Ești sigur că vrei să ștergi acest utilizator? Acțiunea este ireversibilă.")) {
     return;
   }
 
@@ -926,16 +935,26 @@ async function deleteUser(idUser, username) {
     const res = await fetch("api/users.php?action=delete", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id_user: idUser })
+      body: JSON.stringify({
+        id_user: idUser,
+        logged_user_id: currentUser ? currentUser.id_user : 0,
+        logged_username: currentUser ? currentUser.username : ''
+      })
     });
     const text = await res.text();
     let json;
     try { json = JSON.parse(text); } catch (e) {}
     if (json && json.success) {
-      alert(json.message || "Contul a fost șters.");
+      // Scoatem din usersData local imediat și actualizăm interfața dinamic (fără F5)
+      usersData = usersData.filter(u => u.id_user != idUser);
+      renderUsersTable();
+      populateEditUserSelect();
+      
+      // Re-încărcare în fundal
       await loadUsersData();
     } else {
-      alert("Eroare ștergere: " + (json ? json.message : text));
+      const msg = (json && json.message) ? json.message : text;
+      alert(msg || "Eroare la ștergerea utilizatorului.");
     }
   } catch (err) {
     alert("Eroare conectare server: " + err.message);

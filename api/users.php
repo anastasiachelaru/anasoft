@@ -347,12 +347,12 @@ elseif ($action === 'toggle-status') {
     
     if ($db) {
         try {
-            $stmtCheck = $db->prepare("SELECT role, username FROM users WHERE id_user = :id");
+            $stmtCheck = $db->prepare("SELECT id_user, role, username FROM users WHERE id_user = :id");
             $stmtCheck->execute([':id' => $idUser]);
             $userRow = $stmtCheck->fetch();
 
-            if ($userRow && ($userRow['role'] === 'admin' || strtolower($userRow['username']) === 'admin')) {
-                sendResponse(false, 'Conturile de administrator nu pot fi dezactivate.', null, 400);
+            if ($userRow && ((int)$userRow['id_user'] === 1 || strtolower($userRow['username']) === 'admin')) {
+                sendResponse(false, 'Contul principal de administrator este protejat și nu poate fi dezactivat.', null, 400);
             }
 
             $stmt = $db->prepare("UPDATE users SET cont_active = IF(cont_active=1, 0, 1) WHERE id_user = :id");
@@ -367,23 +367,56 @@ elseif ($action === 'toggle-status') {
 }
 elseif ($action === 'delete') {
     $idUser = (int)($input['id_user'] ?? 0);
-    if ($idUser <= 0) sendResponse(false, 'ID utilizator invalid.', null, 400);
+    $loggedUserId = (int)($input['logged_user_id'] ?? 0);
+    $loggedUsername = trim(strtolower($input['logged_username'] ?? ''));
+
+    if ($idUser <= 0) {
+        sendResponse(false, 'ID utilizator invalid.', null, 400);
+    }
     
     if ($db) {
         try {
-            $stmtCheck = $db->prepare("SELECT role, username FROM users WHERE id_user = :id");
+            $stmtCheck = $db->prepare("SELECT id_user, role, username, first_name, last_name FROM users WHERE id_user = :id");
             $stmtCheck->execute([':id' => $idUser]);
             $userRow = $stmtCheck->fetch();
 
-            if ($userRow && ($userRow['role'] === 'admin' || strtolower($userRow['username']) === 'admin')) {
-                sendResponse(false, 'Conturile de administrator nu pot fi șterse.', null, 400);
+            if (!$userRow) {
+                sendResponse(false, 'Utilizatorul nu a fost găsit în baza de date.', null, 404);
             }
 
+            // 1. Protejarea contului principal de Administrator (Super Admin - ID 1 sau username 'admin')
+            if ((int)$userRow['id_user'] === 1 || strtolower($userRow['username']) === 'admin') {
+                sendResponse(false, 'Contul principal de administrator este protejat și nu poate fi șters.', null, 400);
+            }
+
+            // 2. Administratorul conectat nu își poate șterge propriul cont
+            if (($loggedUserId > 0 && (int)$userRow['id_user'] === $loggedUserId) || 
+                (!empty($loggedUsername) && strtolower($userRow['username']) === $loggedUsername)) {
+                sendResponse(false, 'Nu îți poți șterge propriul cont pe care ești conectat în prezent.', null, 400);
+            }
+
+            // 3. Integritate bazei de date: Salvăm numele operatorului în istoric_schimbari și setăm id_user = NULL pentru a preveni erorile de FK
+            try {
+                $db->exec("ALTER TABLE istoric_schimbari ADD COLUMN nume_operator VARCHAR(255) DEFAULT NULL");
+            } catch (Throwable $e) {}
+
+            $firstName = trim($userRow['first_name'] ?? '');
+            $lastName = trim($userRow['last_name'] ?? '');
+            $fullName = trim($firstName . ' ' . $lastName);
+            if (empty($fullName)) {
+                $fullName = $userRow['username'];
+            }
+
+            $stmtHist = $db->prepare("UPDATE istoric_schimbari SET nume_operator = :name, id_user = NULL WHERE id_user = :id");
+            $stmtHist->execute([':name' => $fullName, ':id' => $idUser]);
+
+            // 4. Ștergerea din tabela users
             $stmt = $db->prepare("DELETE FROM users WHERE id_user = :id");
             $stmt->execute([':id' => $idUser]);
-            sendResponse(true, 'Contul de utilizator a fost șters definitiv din sistem.');
+
+            sendResponse(true, "Contul de utilizator '@{$userRow['username']}' a fost șters cu succes.");
         } catch (Throwable $e) {
-            sendResponse(false, 'Eroare ștergere utilizator: ' . $e->getMessage(), null, 200);
+            sendResponse(false, 'Eroare ștergere utilizator: ' . $e->getMessage(), null, 500);
         }
     } else {
         sendResponse(true, 'Utilizator șters (Demo).');

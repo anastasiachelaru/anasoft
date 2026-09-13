@@ -21,9 +21,10 @@ if ($action === 'list') {
         try {
             $sql = "SELECT s.id_istoric_schimbare, s.id_aparat, s.id_toner, s.contor, s.data_schimbare, 
                            s.id_user, s.copii_realizate, s.consum_referinta, s.procent_realizat,
+                           s.nume_operator AS istoric_nume_operator,
                            a.nume_aparat, a.office,
                            tt.denumire_tip,
-                           CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) AS nume_operator,
+                           CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) AS user_full_name,
                            u.username, u.first_name, u.last_name
                     FROM istoric_schimbari s
                     LEFT JOIN aparate a ON s.id_aparat = a.id_aparat
@@ -50,11 +51,15 @@ if ($action === 'list') {
                 $fullName = trim($firstName . ' ' . $lastName);
                 
                 if (empty($fullName)) {
-                    $fullName = trim($s['nume_operator'] ?? '');
+                    $fullName = trim($s['username'] ?? '');
+                }
+
+                if (empty($fullName)) {
+                    $fullName = trim($s['istoric_nume_operator'] ?? '');
                 }
                 
                 if (empty($fullName) || strtolower($fullName) === 'operator' || strtolower($fullName) === 'operator operator') {
-                    $fullName = (!empty($s['username']) && strtolower($s['username']) !== 'operator') ? $s['username'] : 'Admin PIM';
+                    $fullName = (!empty($s['username']) && strtolower($s['username']) !== 'operator') ? $s['username'] : (!empty($s['istoric_nume_operator']) ? $s['istoric_nume_operator'] : 'Admin PIM');
                 }
                 
                 $s['nume_operator'] = $fullName;
