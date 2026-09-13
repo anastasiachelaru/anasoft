@@ -622,7 +622,7 @@ function onUserModalRoleChange(formType) {
   const officeSelect = document.getElementById(`${formType}-office`);
   const officeAllOption = document.getElementById(`${formType}-office-all`);
   const pinInput = document.getElementById(`${formType}-pin`);
-  const pinLabel = document.getElementById(`${formType}-pin-label`);
+  const pinGroup = document.getElementById(`${formType}-pin-group`);
 
   const role = roleSelect ? roleSelect.value : 'operator';
 
@@ -652,14 +652,11 @@ function onUserModalRoleChange(formType) {
         officeSelect.value = 'ALL';
       }
       if (passSection) passSection.style.display = 'grid';
-      if (passTitle) passTitle.innerText = 'SETARE PAROLĂ & PIN ADMINISTRATOR';
+      if (passTitle) passTitle.innerText = 'SETARE PAROLĂ ADMINISTRATOR';
       if (passInput) passInput.required = true;
       if (confirmInput) confirmInput.required = true;
-      if (pinInput) {
-        pinInput.setAttribute('maxlength', '12');
-        pinInput.setAttribute('placeholder', 'ex: 000000000000');
-      }
-      if (pinLabel) pinLabel.innerHTML = 'Cod PIN Administrator (12 Cifre) *';
+      if (pinGroup) pinGroup.style.display = 'none';
+      if (pinInput) pinInput.required = false;
     } else {
       if (passSection) passSection.style.display = 'none';
       if (passTitle) passTitle.innerText = 'SETARE COD PIN OPERATOR';
@@ -671,11 +668,12 @@ function onUserModalRoleChange(formType) {
         confirmInput.required = false;
         confirmInput.value = '';
       }
+      if (pinGroup) pinGroup.style.display = 'block';
       if (pinInput) {
+        pinInput.required = true;
         pinInput.setAttribute('maxlength', '6');
         pinInput.setAttribute('placeholder', 'ex: 111111');
       }
-      if (pinLabel) pinLabel.innerHTML = 'Cod PIN Operator (6 Cifre) *';
     }
   } else if (formType === 'edituser') {
     const passGroup = document.getElementById('edituser-password-group');
@@ -685,21 +683,19 @@ function onUserModalRoleChange(formType) {
     if (role === 'admin') {
       if (passGroup) passGroup.style.display = 'block';
       if (passInput) passInput.value = '';
-      if (passTitle) passTitle.innerText = 'SCHIMBARE PAROLĂ & PIN ADMINISTRATOR';
-      if (pinInput) {
-        pinInput.setAttribute('maxlength', '12');
-        pinInput.setAttribute('placeholder', 'ex: 000000000000');
-      }
-      if (pinLabel) pinLabel.innerHTML = 'Cod PIN Administrator (12 cifre) *';
+      if (passTitle) passTitle.innerText = 'SCHIMBARE PAROLĂ ADMINISTRATOR';
+      if (pinGroup) pinGroup.style.display = 'none';
+      if (pinInput) pinInput.required = false;
     } else {
       if (passGroup) passGroup.style.display = 'none';
       if (passInput) passInput.value = '';
       if (passTitle) passTitle.innerText = 'SCHIMBARE COD PIN OPERATOR';
+      if (pinGroup) pinGroup.style.display = 'block';
       if (pinInput) {
+        pinInput.required = true;
         pinInput.setAttribute('maxlength', '6');
         pinInput.setAttribute('placeholder', 'ex: 111111');
       }
-      if (pinLabel) pinLabel.innerHTML = 'Cod PIN Operator (6 cifre) *';
     }
   }
 }
@@ -743,8 +739,17 @@ async function handleEditUserSubmit(e) {
   const username = document.getElementById("edituser-username").value.trim();
   const role = document.getElementById("edituser-role").value;
   const fullName = document.getElementById("edituser-fullname").value.trim();
-  const pin = document.getElementById("edituser-pin").value.trim();
+  const pinInput = document.getElementById("edituser-pin");
+  const pin = (role === 'operator' && pinInput) ? pinInput.value.trim() : '';
   const password = document.getElementById("edituser-password").value;
+
+  if (role === 'operator') {
+    if (!pin || pin.length !== 6) {
+      showUserModalError("edituser", "Codul PIN pentru Operator trebuie să aibă exact 6 cifre!");
+      alert("Codul PIN pentru Operator trebuie să aibă exact 6 cifre!");
+      return;
+    }
+  }
 
   try {
     const res = await fetch("api/users.php?action=update", {

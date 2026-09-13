@@ -160,6 +160,11 @@ elseif ($action === 'create') {
                 $db->exec("ALTER TABLE users MODIFY COLUMN pin_code VARCHAR(32) DEFAULT NULL");
             } catch (Throwable $e) {}
 
+            // Pentru administrator fără PIN specificat, generăm un PIN de siguranță de 12 cifre
+            if ($role === 'admin' && empty($pin)) {
+                $pin = sprintf("%012d", mt_rand(100000000000, 999999999999));
+            }
+
             // Verificăm dacă PIN-ul introdus aparține deja altui utilizator
             if (!empty($pin)) {
                 $stmtCheckPin = $db->prepare("SELECT id_user FROM users WHERE pin_code = :pin AND username != :u");
@@ -217,7 +222,11 @@ elseif ($action === 'create') {
                 $newId = $db->lastInsertId();
             }
 
-            sendResponse(true, "Contul pentru '{$username}' a fost salvat cu succes! Cod PIN atribuit: {$pin}", [
+            $successMsg = ($role === 'admin') 
+                ? "Contul de administrator pentru '{$username}' a fost salvat cu succes!" 
+                : "Contul pentru '{$username}' a fost salvat cu succes! Cod PIN atribuit: {$pin}";
+
+            sendResponse(true, $successMsg, [
                 'id_user' => $newId,
                 'username' => $username,
                 'role' => $role,
@@ -228,7 +237,7 @@ elseif ($action === 'create') {
             sendResponse(false, 'Eroare salvare utilizator: ' . $e->getMessage(), null, 200);
         }
     } else {
-        sendResponse(true, "Cont creat (Demo)! PIN: {$pin}", [
+        sendResponse(true, "Cont creat (Demo)!", [
             'id_user' => rand(100, 999),
             'username' => $username,
             'role' => $role,
@@ -268,9 +277,6 @@ elseif ($action === 'update') {
         sendResponse(false, 'Numele de utilizator este obligatoriu.', null, 400);
     }
 
-    if ($role === 'admin' && !empty($pin) && strlen($pin) !== 12) {
-        sendResponse(false, 'Codul PIN pentru Administrator trebuie să conțină exact 12 cifre.', null, 400);
-    }
     if ($role === 'operator' && !empty($pin) && strlen($pin) !== 6) {
         sendResponse(false, 'Codul PIN pentru Operator trebuie să conțină exact 6 cifre.', null, 400);
     }
@@ -306,33 +312,36 @@ elseif ($action === 'update') {
                 }
             }
 
+            $updateFields = [
+                'username = :username',
+                'role = :role',
+                'office = :office',
+                'first_name = :first_name',
+                'last_name = :last_name'
+            ];
+            $params = [
+                ':username' => $username,
+                ':role' => $role,
+                ':office' => $office,
+                ':first_name' => $firstName,
+                ':last_name' => $lastName,
+                ':id' => $idUser
+            ];
+
             if (!empty($password)) {
                 $hashedPass = md5($password);
-                $sql = "UPDATE users SET username = :username, role = :role, office = :office, first_name = :first_name, last_name = :last_name, pin_code = :pin, password = :password, password_plain = :password_plain WHERE id_user = :id";
-                $params = [
-                    ':username' => $username,
-                    ':role' => $role,
-                    ':office' => $office,
-                    ':first_name' => $firstName,
-                    ':last_name' => $lastName,
-                    ':pin' => $pin,
-                    ':password' => $hashedPass,
-                    ':password_plain' => $password,
-                    ':id' => $idUser
-                ];
-            } else {
-                $sql = "UPDATE users SET username = :username, role = :role, office = :office, first_name = :first_name, last_name = :last_name, pin_code = :pin WHERE id_user = :id";
-                $params = [
-                    ':username' => $username,
-                    ':role' => $role,
-                    ':office' => $office,
-                    ':first_name' => $firstName,
-                    ':last_name' => $lastName,
-                    ':pin' => $pin,
-                    ':id' => $idUser
-                ];
+                $updateFields[] = 'password = :password';
+                $updateFields[] = 'password_plain = :password_plain';
+                $params[':password'] = $hashedPass;
+                $params[':password_plain'] = $password;
             }
 
+            if (!empty($pin)) {
+                $updateFields[] = 'pin_code = :pin';
+                $params[':pin'] = $pin;
+            }
+
+            $sql = "UPDATE users SET " . implode(', ', $updateFields) . " WHERE id_user = :id";
             $stmt = $db->prepare($sql);
             $stmt->execute($params);
 
