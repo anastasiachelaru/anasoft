@@ -20,7 +20,7 @@ if ($action === 'login-pin') {
             } catch (Throwable $e) {}
 
             // Garantăm că în DB contul admin are PIN-ul de 12 cifre '000000000000', rolul admin, sediul 'ALL' și cont_active = 1
-            $db->exec("UPDATE users SET pin_code = '000000000000', role = 'admin', office = 'ALL', status = 'activ', cont_active = 1 WHERE username = 'admin'");
+            $db->exec("UPDATE users SET pin_code = '000000000000', role = 'admin', office = 'ALL', status = 'activ', cont_active = 1, first_name = IF(first_name IS NULL OR first_name = '', 'Admin', first_name), last_name = IF(last_name IS NULL OR last_name = '', 'PIM', last_name) WHERE username = 'admin'");
             
             $stmtCheckAdmin = $db->query("SELECT COUNT(*) as cnt FROM users WHERE username = 'admin'");
             $cntRow = $stmtCheckAdmin ? $stmtCheckAdmin->fetch() : null;
@@ -32,9 +32,16 @@ if ($action === 'login-pin') {
 
         // Tratare dedicată pentru PIN-ul de administrator 000000000000 (12 cifre)
         if ($pin === '000000000000') {
-            $stmtAdmin = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active, status FROM users WHERE (username = 'admin' OR role = 'admin' OR id_user = 1) LIMIT 1");
+            $stmtAdmin = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active, status FROM users WHERE username = 'admin' LIMIT 1");
             $stmtAdmin->execute();
             $adminUser = $stmtAdmin->fetch();
+            
+            if (!$adminUser) {
+                $stmtAdmin = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active, status FROM users WHERE role = 'admin' OR id_user = 1 LIMIT 1");
+                $stmtAdmin->execute();
+                $adminUser = $stmtAdmin->fetch();
+            }
+
             if ($adminUser) {
                 $userStatus = $adminUser['status'] ?? ((int)$adminUser['cont_active'] === 1 ? 'activ' : 'inactiv');
                 if ($userStatus === 'inactiv' || (int)$adminUser['cont_active'] === 0 || $adminUser['cont_active'] === '0') {
