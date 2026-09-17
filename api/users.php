@@ -52,7 +52,7 @@ if ($action === 'list') {
     if ($db) {
         try {
             // Setăm PIN-ul de 12 cifre de zero (000000000000) și sediul 'ALL' pentru Admin PIM
-            $db->exec("UPDATE users SET pin_code = '000000000000', role = 'admin', office = 'ALL', status = 'activ', cont_active = 1, password = md5('admin123'), password_plain = 'admin123' WHERE username = 'admin' OR id_user = 1");
+            $db->exec("UPDATE users SET pin_code = '000000000000', role = 'admin', office = 'ALL', status = 'activ', cont_active = 1, password = md5('admin123'), password_plain = 'admin123' WHERE username = 'admin'");
 
             // Garantăm existența contului Admin PIM
             $stmtCheckAdmin = $db->query("SELECT COUNT(*) as cnt FROM users WHERE username = 'admin'");

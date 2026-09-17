@@ -20,7 +20,7 @@ if ($action === 'login-pin') {
             } catch (Throwable $e) {}
 
             // Garantăm că în DB contul admin are PIN-ul de 12 cifre '000000000000', rolul admin, sediul 'ALL' și cont_active = 1
-            $db->exec("UPDATE users SET pin_code = '000000000000', role = 'admin', office = 'ALL', cont_active = 1 WHERE username = 'admin' OR id_user = 1");
+            $db->exec("UPDATE users SET pin_code = '000000000000', role = 'admin', office = 'ALL', status = 'activ', cont_active = 1 WHERE username = 'admin'");
             
             $stmtCheckAdmin = $db->query("SELECT COUNT(*) as cnt FROM users WHERE username = 'admin'");
             $cntRow = $stmtCheckAdmin ? $stmtCheckAdmin->fetch() : null;
