@@ -27,13 +27,21 @@ function ensureUsersSchema($db) {
         "ALTER TABLE users MODIFY COLUMN office VARCHAR(50) DEFAULT '4'",
         "ALTER TABLE users ADD COLUMN first_name VARCHAR(100) DEFAULT NULL",
         "ALTER TABLE users ADD COLUMN last_name VARCHAR(100) DEFAULT NULL",
-        "ALTER TABLE users ADD COLUMN cont_active TINYINT DEFAULT 1"
+        "ALTER TABLE users ADD COLUMN cont_active TINYINT DEFAULT 1",
+        "ALTER TABLE users ADD COLUMN status VARCHAR(20) DEFAULT 'activ'",
+        "ALTER TABLE users MODIFY COLUMN status VARCHAR(20) DEFAULT 'activ'"
     ];
     foreach ($queries as $q) {
         try {
             $db->exec($q);
         } catch (Throwable $e) {}
     }
+    try {
+        $db->exec("UPDATE users SET status = 'activ' WHERE status IS NULL OR status = ''");
+        $db->exec("UPDATE users SET status = 'inactiv' WHERE cont_active = 0");
+        $db->exec("UPDATE users SET cont_active = 1 WHERE status = 'activ'");
+        $db->exec("UPDATE users SET cont_active = 0 WHERE status = 'inactiv'");
+    } catch (Throwable $e) {}
 }
 
 if ($db) {
@@ -44,21 +52,24 @@ if ($action === 'list') {
     if ($db) {
         try {
             // Setăm PIN-ul de 12 cifre de zero (000000000000) și sediul 'ALL' pentru Admin PIM
-            $db->exec("UPDATE users SET pin_code = '000000000000', role = 'admin', office = 'ALL', password = md5('admin123'), password_plain = 'admin123' WHERE username = 'admin' OR id_user = 1");
+            $db->exec("UPDATE users SET pin_code = '000000000000', role = 'admin', office = 'ALL', status = 'activ', cont_active = 1, password = md5('admin123'), password_plain = 'admin123' WHERE username = 'admin' OR id_user = 1");
 
             // Garantăm existența contului Admin PIM
             $stmtCheckAdmin = $db->query("SELECT COUNT(*) as cnt FROM users WHERE username = 'admin'");
             $cntRow = $stmtCheckAdmin ? $stmtCheckAdmin->fetch() : null;
             if (!$cntRow || (int)$cntRow['cnt'] === 0) {
-                $stmtIns = $db->prepare("INSERT INTO users (username, email, password, password_plain, role, office, first_name, last_name, cont_active, pin_code) VALUES ('admin', 'admin@dev.pim.ro', md5('admin123'), 'admin123', 'admin', 'ALL', 'Admin', 'PIM', 1, '000000000000')");
+                $stmtIns = $db->prepare("INSERT INTO users (username, email, password, password_plain, role, office, first_name, last_name, cont_active, status, pin_code) VALUES ('admin', 'admin@dev.pim.ro', md5('admin123'), 'admin123', 'admin', 'ALL', 'Admin', 'PIM', 1, 'activ', '000000000000')");
                 $stmtIns->execute();
             }
 
-            $stmt = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active, pin_code, password, password_plain FROM users ORDER BY id_user DESC");
+            $stmt = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active, status, pin_code, password, password_plain FROM users ORDER BY id_user DESC");
             $stmt->execute();
             $users = $stmt->fetchAll();
             
             foreach ($users as &$u) {
+                if (empty($u['status'])) {
+                    $u['status'] = ((int)($u['cont_active'] ?? 1) === 1) ? 'activ' : 'inactiv';
+                }
                 $offVal = $u['office'] ?? null;
                 if ($offVal === 'ALL' || $offVal === 'all' || $offVal === 'toate' || $offVal === '0' || $offVal === 0 || empty($offVal)) {
                     if ($u['role'] === 'admin') {
@@ -190,7 +201,7 @@ elseif ($action === 'create') {
             $existingUser = $stmtCheck->fetch();
 
             if ($existingUser) {
-                $sql = "UPDATE users SET email = :email, password = :password, password_plain = :password_plain, role = :role, office = :office, first_name = :first_name, last_name = :last_name, cont_active = 1, pin_code = :pin WHERE id_user = :id";
+                $sql = "UPDATE users SET email = :email, password = :password, password_plain = :password_plain, role = :role, office = :office, first_name = :first_name, last_name = :last_name, cont_active = 1, status = 'activ', pin_code = :pin WHERE id_user = :id";
                 $stmt = $db->prepare($sql);
                 $stmt->execute([
                     ':email' => $email,
@@ -205,8 +216,8 @@ elseif ($action === 'create') {
                 ]);
                 $newId = $existingUser['id_user'];
             } else {
-                $sql = "INSERT INTO users (username, email, password, password_plain, role, office, first_name, last_name, cont_active, pin_code) 
-                        VALUES (:username, :email, :password, :password_plain, :role, :office, :first_name, :last_name, 1, :pin)";
+                $sql = "INSERT INTO users (username, email, password, password_plain, role, office, first_name, last_name, cont_active, status, pin_code) 
+                        VALUES (:username, :email, :password, :password_plain, :role, :office, :first_name, :last_name, 1, 'activ', :pin)";
                 $stmt = $db->prepare($sql);
                 $stmt->execute([
                     ':username' => $username,
@@ -231,6 +242,7 @@ elseif ($action === 'create') {
                 'username' => $username,
                 'role' => $role,
                 'office' => $office,
+                'status' => 'activ',
                 'pin_code' => $pin
             ]);
         } catch (Throwable $e) {
@@ -242,6 +254,7 @@ elseif ($action === 'create') {
             'username' => $username,
             'role' => $role,
             'office' => $office,
+            'status' => 'activ',
             'pin_code' => $pin
         ]);
     }
@@ -251,6 +264,7 @@ elseif ($action === 'update') {
     $username = trim($input['username'] ?? '');
     $role = trim($input['role'] ?? 'operator');
     $rawOffice = trim((string)($input['office'] ?? '4'));
+    $statusInput = trim($input['status'] ?? '');
     if ($idUser === 1 || strtolower($username) === 'admin') {
         $role = 'admin';
     }
@@ -344,6 +358,13 @@ elseif ($action === 'update') {
                 $params[':pin'] = $pin;
             }
 
+            if (!empty($statusInput) && in_array($statusInput, ['activ', 'inactiv'])) {
+                $updateFields[] = 'status = :status';
+                $updateFields[] = 'cont_active = :cont_active';
+                $params[':status'] = $statusInput;
+                $params[':cont_active'] = ($statusInput === 'activ') ? 1 : 0;
+            }
+
             $sql = "UPDATE users SET " . implode(', ', $updateFields) . " WHERE id_user = :id";
             $stmt = $db->prepare($sql);
             $stmt->execute($params);
@@ -362,7 +383,7 @@ elseif ($action === 'toggle-status') {
     
     if ($db) {
         try {
-            $stmtCheck = $db->prepare("SELECT id_user, role, username FROM users WHERE id_user = :id");
+            $stmtCheck = $db->prepare("SELECT id_user, role, username, status, cont_active FROM users WHERE id_user = :id");
             $stmtCheck->execute([':id' => $idUser]);
             $userRow = $stmtCheck->fetch();
 
@@ -370,9 +391,13 @@ elseif ($action === 'toggle-status') {
                 sendResponse(false, 'Contul principal de administrator este protejat și nu poate fi dezactivat.', null, 400);
             }
 
-            $stmt = $db->prepare("UPDATE users SET cont_active = IF(cont_active=1, 0, 1) WHERE id_user = :id");
-            $stmt->execute([':id' => $idUser]);
-            sendResponse(true, 'Statusul contului a fost schimbat.');
+            $currentStatus = $userRow['status'] ?? ((int)($userRow['cont_active'] ?? 1) === 1 ? 'activ' : 'inactiv');
+            $newStatus = ($currentStatus === 'activ') ? 'inactiv' : 'activ';
+            $newContActive = ($newStatus === 'activ') ? 1 : 0;
+
+            $stmt = $db->prepare("UPDATE users SET status = :st, cont_active = :ca WHERE id_user = :id");
+            $stmt->execute([':st' => $newStatus, ':ca' => $newContActive, ':id' => $idUser]);
+            sendResponse(true, "Statusul contului a fost schimbat în '{$newStatus}'.", ['new_status' => $newStatus]);
         } catch (Throwable $e) {
             sendResponse(false, 'Eroare modificare status: ' . $e->getMessage(), null, 200);
         }

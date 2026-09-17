@@ -358,6 +358,18 @@
             </div>
           </div>
 
+          <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;">
+            <button id="filter-user-all" class="btn btn-secondary active" style="padding: 6px 14px; font-size: 0.85rem; background: #0284c7; border-color: #38bdf8; color: #ffffff;" onclick="setUserStatusFilter('all')">
+              <i class="fa-solid fa-users"></i> Toți utilizatorii
+            </button>
+            <button id="filter-user-activ" class="btn btn-secondary" style="padding: 6px 14px; font-size: 0.85rem; background: rgba(30, 41, 59, 0.6); border-color: rgba(148, 163, 184, 0.2); color: #94a3b8;" onclick="setUserStatusFilter('activ')">
+              <i class="fa-solid fa-user-check"></i> Doar Activi
+            </button>
+            <button id="filter-user-inactiv" class="btn btn-secondary" style="padding: 6px 14px; font-size: 0.85rem; background: rgba(30, 41, 59, 0.6); border-color: rgba(148, 163, 184, 0.2); color: #94a3b8;" onclick="setUserStatusFilter('inactiv')">
+              <i class="fa-solid fa-user-xmark"></i> Inactivi / Arhivă
+            </button>
+          </div>
+
           <div class="table-card">
             <table class="custom-table">
               <thead>

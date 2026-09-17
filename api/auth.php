@@ -32,12 +32,13 @@ if ($action === 'login-pin') {
 
         // Tratare dedicată pentru PIN-ul de administrator 000000000000 (12 cifre)
         if ($pin === '000000000000') {
-            $stmtAdmin = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active FROM users WHERE (username = 'admin' OR role = 'admin' OR id_user = 1) LIMIT 1");
+            $stmtAdmin = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active, status FROM users WHERE (username = 'admin' OR role = 'admin' OR id_user = 1) LIMIT 1");
             $stmtAdmin->execute();
             $adminUser = $stmtAdmin->fetch();
             if ($adminUser) {
-                if ((int)$adminUser['cont_active'] === 0 || $adminUser['cont_active'] === '0') {
-                    sendResponse(false, 'Contul de administrator este dezactivat.', null, 403);
+                $userStatus = $adminUser['status'] ?? ((int)$adminUser['cont_active'] === 1 ? 'activ' : 'inactiv');
+                if ($userStatus === 'inactiv' || (int)$adminUser['cont_active'] === 0 || $adminUser['cont_active'] === '0') {
+                    sendResponse(false, 'Cont inactiv sau inexistent. Vă rugăm să contactați un administrator.', null, 403);
                 }
                 if (empty($adminUser['office']) || $adminUser['office'] === '0' || $adminUser['office'] === 0) {
                     $adminUser['office'] = 'ALL';
@@ -50,7 +51,7 @@ if ($action === 'login-pin') {
         }
 
         // Căutare utilizator după PIN (toți utilizatorii pentru a verifica și statusul contului)
-        $stmt = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active, pin_code, password FROM users");
+        $stmt = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active, status, pin_code, password FROM users");
         $stmt->execute();
         $users = $stmt->fetchAll();
         
@@ -65,8 +66,9 @@ if ($action === 'login-pin') {
         }
         
         if ($matchedUser) {
-            if ((int)$matchedUser['cont_active'] === 0 || $matchedUser['cont_active'] === '0') {
-                sendResponse(false, 'Contul tău a fost dezactivat de către un administrator. Nu te poți conecta până nu este reactivat.', null, 403);
+            $userStatus = $matchedUser['status'] ?? ((int)$matchedUser['cont_active'] === 1 ? 'activ' : 'inactiv');
+            if ($userStatus === 'inactiv' || (int)$matchedUser['cont_active'] === 0 || $matchedUser['cont_active'] === '0') {
+                sendResponse(false, 'Cont inactiv sau inexistent. Vă rugăm să contactați un administrator.', null, 403);
             }
 
             if ($matchedUser['role'] === 'admin' && (empty($matchedUser['office']) || $matchedUser['office'] === '0' || $matchedUser['office'] === 0)) {
@@ -93,7 +95,8 @@ if ($action === 'login-pin') {
                     'last_name' => 'PIM',
                     'role' => 'admin',
                     'office' => 'ALL',
-                    'email' => 'admin@dev.pim.ro'
+                    'email' => 'admin@dev.pim.ro',
+                    'status' => 'activ'
                 ],
                 'token' => 'demo_token_' . time()
             ]);
@@ -111,7 +114,7 @@ elseif ($action === 'login-password') {
     }
     
     if ($db) {
-        $stmt = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active, password FROM users WHERE username = :username");
+        $stmt = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active, status, password FROM users WHERE username = :username");
         $stmt->execute([':username' => $username]);
         $user = $stmt->fetch();
         
@@ -126,8 +129,9 @@ elseif ($action === 'login-password') {
             }
             
             if ($passwordValid) {
-                if ((int)$user['cont_active'] === 0) {
-                    sendResponse(false, 'Contul tău a fost dezactivat de către un administrator. Nu te poți conecta până nu este reactivat.', null, 403);
+                $userStatus = $user['status'] ?? ((int)$user['cont_active'] === 1 ? 'activ' : 'inactiv');
+                if ($userStatus === 'inactiv' || (int)$user['cont_active'] === 0) {
+                    sendResponse(false, 'Cont inactiv sau inexistent. Vă rugăm să contactați un administrator.', null, 403);
                 }
 
                 if ($user['role'] === 'admin' && (empty($user['office']) || $user['office'] === '0' || $user['office'] === 0)) {

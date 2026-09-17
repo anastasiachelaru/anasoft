@@ -463,6 +463,29 @@ function switchSection(secId) {
 // ----------------------------------------------------
 
 let usersData = [];
+let currentUserStatusFilter = 'all'; // 'all', 'activ', 'inactiv'
+
+function setUserStatusFilter(statusFilter) {
+  currentUserStatusFilter = statusFilter;
+  const buttons = ['all', 'activ', 'inactiv'];
+  buttons.forEach(b => {
+    const btn = document.getElementById(`filter-user-${b}`);
+    if (btn) {
+      if (b === statusFilter) {
+        btn.classList.add('active');
+        btn.style.background = '#0284c7';
+        btn.style.borderColor = '#38bdf8';
+        btn.style.color = '#ffffff';
+      } else {
+        btn.classList.remove('active');
+        btn.style.background = 'rgba(30, 41, 59, 0.6)';
+        btn.style.borderColor = 'rgba(148, 163, 184, 0.2)';
+        btn.style.color = '#94a3b8';
+      }
+    }
+  });
+  renderUsersTable();
+}
 
 async function loadUsersData() {
   const tbody = document.getElementById("users-table-body");
@@ -475,8 +498,8 @@ async function loadUsersData() {
     if (json.success) usersData = json.data;
   } catch (err) {
     usersData = [
-      { id_user: 1, username: 'admin', role: 'admin', office: 2, office_nume: 'Independenței', full_name: 'Admin PIM', cont_active: 1, pin_code: '000000000000', password: 'admin' },
-      { id_user: 46, username: 'operator', role: 'operator', office: 2, office_nume: 'Independenței', full_name: 'Operator Independenței', cont_active: 1, pin_code: '111111', password: 'operator' }
+      { id_user: 1, username: 'admin', role: 'admin', office: 2, office_nume: 'Independenței', full_name: 'Admin PIM', cont_active: 1, status: 'activ', pin_code: '000000000000', password: 'admin' },
+      { id_user: 46, username: 'operator', role: 'operator', office: 2, office_nume: 'Independenței', full_name: 'Operator Independenței', cont_active: 1, status: 'activ', pin_code: '111111', password: 'operator' }
     ];
   }
   
@@ -493,7 +516,9 @@ function populateEditUserSelect() {
   usersData.forEach(u => {
     const opt = document.createElement("option");
     opt.value = u.id_user;
-    opt.innerText = `${u.full_name || u.username} (@${u.username}) - ${formatOfficeName(u.office || u.office_nume)}`;
+    const st = u.status || ((parseInt(u.cont_active) === 1) ? 'activ' : 'inactiv');
+    const statusText = (st === 'inactiv') ? ' (Inactiv)' : '';
+    opt.innerText = `${u.full_name || u.username} (@${u.username})${statusText} - ${formatOfficeName(u.office || u.office_nume)}`;
     select.appendChild(opt);
   });
   if (currentVal && usersData.some(u => u.id_user == currentVal)) {
@@ -510,17 +535,33 @@ function renderUsersTable() {
     tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:28px; color:#94a3b8;"><i class="fa-solid fa-users-slash" style="font-size:1.5rem; margin-bottom:8px; display:block;"></i>Nu au fost găsiți utilizatori în baza de date.<br>Apasă pe butonul <strong style="color:#38bdf8;">"+ Utilizator Nou"</strong> pentru a crea un cont.</td></tr>`;
     return;
   }
-  
-  usersData.forEach(u => {
+
+  const filteredUsers = usersData.filter(u => {
+    const st = u.status || ((parseInt(u.cont_active) === 1) ? 'activ' : 'inactiv');
+    if (currentUserStatusFilter === 'activ') return st === 'activ';
+    if (currentUserStatusFilter === 'inactiv') return st === 'inactiv';
+    return true;
+  });
+
+  if (filteredUsers.length === 0) {
+    const label = (currentUserStatusFilter === 'activ') ? 'activi' : 'inactivi';
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:28px; color:#94a3b8;"><i class="fa-solid fa-user-slash" style="font-size:1.5rem; margin-bottom:8px; display:block;"></i>Nu există utilizatori ${label} în baza de date.</td></tr>`;
+    return;
+  }
+
+  filteredUsers.forEach(u => {
     const tr = document.createElement("tr");
     const isSuperAdmin = (u.id_user && parseInt(u.id_user) === 1) || (u.username && u.username.toLowerCase() === "admin");
     const isAdmin = u.role === "admin" || (u.username && u.username.toLowerCase().includes("admin"));
     const roleBadgeClass = isAdmin ? "badge-primary" : "badge-secondary";
     const roleLabel = isAdmin ? "Administrator" : "Operator (Angajat)";
-    const isActive = parseInt(u.cont_active) === 1;
+    
+    const userStatus = u.status || ((parseInt(u.cont_active) === 1) ? 'activ' : 'inactiv');
+    const isActive = userStatus === 'activ' && parseInt(u.cont_active) !== 0;
+
     const statusBadge = isActive 
-      ? '<span class="badge badge-stock-ok">Activ</span>' 
-      : '<span class="badge badge-stock-low">Inactiv</span>';
+      ? '<span class="badge" style="background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); padding: 4px 8px; border-radius: 6px;"><i class="fa-solid fa-circle-check"></i> Activ</span>' 
+      : '<span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); padding: 4px 8px; border-radius: 6px;"><i class="fa-solid fa-circle-minus"></i> Inactiv</span>';
 
     // Verificăm dacă utilizatorul din rând este cel conectat în prezent
     const isCurrentLoggedInUser = currentUser && (
@@ -591,9 +632,14 @@ function generateRandomUserPin(formType) {
   let newPin = '';
   let attempts = 0;
   do {
-    newPin = '';
-    for (let i = 0; i < targetLen; i++) {
-      newPin += Math.floor(Math.random() * 10).toString();
+    if (role === 'admin') {
+      newPin = '';
+      for (let i = 0; i < 12; i++) {
+        newPin += Math.floor(Math.random() * 10).toString();
+      }
+    } else {
+      // 6 cifre numerice garantate pentru Operator
+      newPin = String(Math.floor(100000 + Math.random() * 900000));
     }
     attempts++;
   } while (existingPins.includes(newPin) && attempts < 100);
