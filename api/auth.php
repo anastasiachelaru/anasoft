@@ -20,14 +20,22 @@ if ($action === 'login-pin') {
             } catch (Throwable $e) {}
 
             // Garantăm că în DB contul admin are PIN-ul de 12 cifre '000000000000', rolul admin, sediul 'ALL' și cont_active = 1
-            $db->exec("UPDATE users SET pin_code = '000000000000', role = 'admin', office = 'ALL', status = 'activ', cont_active = 1, first_name = IF(first_name IS NULL OR first_name = '', 'Admin', first_name), last_name = IF(last_name IS NULL OR last_name = '', 'PIM', last_name) WHERE username = 'admin'");
+            try {
+                $db->exec("UPDATE users SET pin_code = NULL WHERE pin_code = '000000000000' AND username != 'admin'");
+            } catch (Throwable $e) {}
+
+            try {
+                $db->exec("UPDATE users SET pin_code = '000000000000', role = 'admin', office = 'ALL', status = 'activ', cont_active = 1, first_name = IF(first_name IS NULL OR first_name = '', 'Admin', first_name), last_name = IF(last_name IS NULL OR last_name = '', 'PIM', last_name) WHERE username = 'admin'");
+            } catch (Throwable $e) {}
             
-            $stmtCheckAdmin = $db->query("SELECT COUNT(*) as cnt FROM users WHERE username = 'admin'");
-            $cntRow = $stmtCheckAdmin ? $stmtCheckAdmin->fetch() : null;
-            if (!$cntRow || (int)$cntRow['cnt'] === 0) {
-                $stmtIns = $db->prepare("INSERT INTO users (username, email, password, password_plain, role, office, first_name, last_name, cont_active, pin_code) VALUES ('admin', 'admin@dev.pim.ro', md5('admin123'), 'admin123', 'admin', 'ALL', 'Admin', 'PIM', 1, '000000000000')");
-                $stmtIns->execute();
-            }
+            try {
+                $stmtCheckAdmin = $db->query("SELECT COUNT(*) as cnt FROM users WHERE username = 'admin'");
+                $cntRow = $stmtCheckAdmin ? $stmtCheckAdmin->fetch() : null;
+                if (!$cntRow || (int)$cntRow['cnt'] === 0) {
+                    $stmtIns = $db->prepare("INSERT INTO users (username, email, password, password_plain, role, office, first_name, last_name, cont_active, pin_code) VALUES ('admin', 'admin@dev.pim.ro', md5('admin123'), 'admin123', 'admin', 'ALL', 'Admin', 'PIM', 1, '000000000000')");
+                    $stmtIns->execute();
+                }
+            } catch (Throwable $e) {}
         } catch (Throwable $e) {}
 
         // Tratare dedicată pentru PIN-ul de administrator 000000000000 (12 cifre)

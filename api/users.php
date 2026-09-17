@@ -51,16 +51,24 @@ if ($db) {
 if ($action === 'list') {
     if ($db) {
         try {
-            // Setăm PIN-ul de 12 cifre de zero (000000000000) și sediul 'ALL' pentru Admin PIM
-            $db->exec("UPDATE users SET pin_code = '000000000000', role = 'admin', office = 'ALL', status = 'activ', cont_active = 1, first_name = IF(first_name IS NULL OR first_name = '', 'Admin', first_name), last_name = IF(last_name IS NULL OR last_name = '', 'PIM', last_name), password = md5('admin123'), password_plain = 'admin123' WHERE username = 'admin'");
+            // Curățăm eventualele duplicate de PIN 000000000000 de pe alte conturi vechi
+            try {
+                $db->exec("UPDATE users SET pin_code = NULL WHERE pin_code = '000000000000' AND username != 'admin'");
+            } catch (Throwable $e) {}
+
+            try {
+                $db->exec("UPDATE users SET pin_code = '000000000000', role = 'admin', office = 'ALL', status = 'activ', cont_active = 1, first_name = IF(first_name IS NULL OR first_name = '', 'Admin', first_name), last_name = IF(last_name IS NULL OR last_name = '', 'PIM', last_name), password = md5('admin123'), password_plain = 'admin123' WHERE username = 'admin'");
+            } catch (Throwable $e) {}
 
             // Garantăm existența contului Admin PIM
-            $stmtCheckAdmin = $db->query("SELECT COUNT(*) as cnt FROM users WHERE username = 'admin'");
-            $cntRow = $stmtCheckAdmin ? $stmtCheckAdmin->fetch() : null;
-            if (!$cntRow || (int)$cntRow['cnt'] === 0) {
-                $stmtIns = $db->prepare("INSERT INTO users (username, email, password, password_plain, role, office, first_name, last_name, cont_active, status, pin_code) VALUES ('admin', 'admin@dev.pim.ro', md5('admin123'), 'admin123', 'admin', 'ALL', 'Admin', 'PIM', 1, 'activ', '000000000000')");
-                $stmtIns->execute();
-            }
+            try {
+                $stmtCheckAdmin = $db->query("SELECT COUNT(*) as cnt FROM users WHERE username = 'admin'");
+                $cntRow = $stmtCheckAdmin ? $stmtCheckAdmin->fetch() : null;
+                if (!$cntRow || (int)$cntRow['cnt'] === 0) {
+                    $stmtIns = $db->prepare("INSERT INTO users (username, email, password, password_plain, role, office, first_name, last_name, cont_active, status, pin_code) VALUES ('admin', 'admin@dev.pim.ro', md5('admin123'), 'admin123', 'admin', 'ALL', 'Admin', 'PIM', 1, 'activ', '000000000000')");
+                    $stmtIns->execute();
+                }
+            } catch (Throwable $e) {}
 
             $stmt = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active, status, pin_code, password, password_plain FROM users ORDER BY id_user DESC");
             $stmt->execute();
