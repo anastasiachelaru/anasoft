@@ -137,8 +137,9 @@ function switchLoginRole(role) {
       opBtn.style.color = "var(--text-muted)";
     }
     if (authTabs) authTabs.style.display = "flex";
-    if (instText) instText.innerText = "Introdu codul PIN de Securitate Administrator (12 cifre) sau folosește User & Parolă:";
-    if (demoHint) demoHint.innerHTML = '<i class="fa-solid fa-lightbulb text-yellow"></i> PIN Administrator Test: <code>000000000000</code> (12 cifre de zero)';
+    switchAuthTab('pass');
+    if (instText) instText.innerText = "Conectează-te cu User & Parolă de Administrator sau folosește codul PIN de 12 cifre:";
+    if (demoHint) demoHint.innerHTML = '<i class="fa-solid fa-shield-halved text-yellow"></i> Autentificare Administrator: Folosește formularul de <strong>User & Parolă</strong>';
   } else {
     if (opBtn) {
       opBtn.style.background = "rgba(2, 132, 199, 0.25)";
@@ -498,7 +499,8 @@ async function loadUsersData() {
     if (json.success) usersData = json.data;
   } catch (err) {
     usersData = [
-      { id_user: 1, username: 'admin', role: 'admin', office: 2, office_nume: 'Independenței', full_name: 'Admin PIM', cont_active: 1, status: 'activ', pin_code: '000000000000', password: 'admin' },
+      { id_user: 173, username: 'anastasia', role: 'admin', office: 'ALL', office_nume: 'Toate sediile PIM', full_name: 'Anastasia Chelaru', cont_active: 1, status: 'activ', pin_code: null, password: '' },
+      { id_user: 117, username: 'eugenadmin', role: 'admin', office: 'ALL', office_nume: 'Toate sediile PIM', full_name: 'Eugen Admin', cont_active: 1, status: 'activ', pin_code: null, password: '' },
       { id_user: 46, username: 'operator', role: 'operator', office: 2, office_nume: 'Independenței', full_name: 'Operator Independenței', cont_active: 1, status: 'activ', pin_code: '111111', password: 'operator' }
     ];
   }
@@ -551,7 +553,8 @@ function renderUsersTable() {
 
   filteredUsers.forEach(u => {
     const tr = document.createElement("tr");
-    const isSuperAdmin = (u.id_user && parseInt(u.id_user) === 1) || (u.username && u.username.toLowerCase() === "admin");
+    const PROTECTED_ADMIN_USERNAMES = ['eugenadmin', 'anastasia'];
+    const isSuperAdmin = u.username && PROTECTED_ADMIN_USERNAMES.includes(u.username.toLowerCase().trim());
     const isAdmin = u.role === "admin" || (u.username && u.username.toLowerCase().includes("admin"));
     const roleBadgeClass = isAdmin ? "badge-primary" : "badge-secondary";
     const roleLabel = isAdmin ? "Administrator" : "Operator (Angajat)";
@@ -572,7 +575,7 @@ function renderUsersTable() {
     let actionsHtml = "";
     if (isSuperAdmin) {
       const editBtn = `<button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="openEditUserModal(${u.id_user})"><i class="fa-solid fa-user-pen"></i> Editează</button>`;
-      const protBadge = `<span class="badge" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); padding: 6px 10px; font-size: 0.78rem;" title="Contul principal de administrator este protejat și nu poate fi șters"><i class="fa-solid fa-shield-halved"></i> Protejat</span>`;
+      const protBadge = `<span class="badge" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); padding: 6px 10px; font-size: 0.78rem;" title="Contul de administrator (@${u.username}) este protejat și nu poate fi șters sau dezactivat"><i class="fa-solid fa-shield-halved"></i> Protejat</span>`;
       actionsHtml = `<div style="display:flex; gap:6px; align-items:center;">${editBtn}${protBadge}</div>`;
     } else {
       const editBtn = `<button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="openEditUserModal(${u.id_user})"><i class="fa-solid fa-user-pen"></i> Editează</button>`;
@@ -706,7 +709,7 @@ function onUserModalRoleChange(formType) {
       if (pinInput) {
         pinInput.required = false;
         pinInput.setAttribute('maxlength', '12');
-        pinInput.setAttribute('placeholder', 'ex: 000000000000');
+        pinInput.setAttribute('placeholder', 'ex: 123456789012');
       }
       if (pinLabel) pinLabel.innerHTML = 'Cod PIN Administrator (12 Cifre - opțional)';
     } else {
@@ -741,7 +744,7 @@ function onUserModalRoleChange(formType) {
       if (pinInput) {
         pinInput.required = false;
         pinInput.setAttribute('maxlength', '12');
-        pinInput.setAttribute('placeholder', 'ex: 000000000000');
+        pinInput.setAttribute('placeholder', 'ex: 123456789012');
       }
       if (pinLabel) pinLabel.innerHTML = 'Cod PIN Administrator (12 cifre - opțional)';
     } else {
@@ -963,9 +966,10 @@ async function handleCreateUserSubmit(e) {
 
 async function toggleUserStatus(idUser) {
   const target = usersData.find(u => u.id_user == idUser);
-  const isSuperAdmin = target && (target.id_user == 1 || (target.username && target.username.toLowerCase() === 'admin'));
+  const PROTECTED_ADMIN_USERNAMES = ['eugenadmin', 'anastasia'];
+  const isSuperAdmin = target && target.username && PROTECTED_ADMIN_USERNAMES.includes(target.username.toLowerCase().trim());
   if (isSuperAdmin) {
-    alert("Contul principal de administrator este protejat și nu poate fi dezactivat.");
+    alert(`Contul de administrator (@${target.username}) este protejat și nu poate fi dezactivat.`);
     return;
   }
 
@@ -990,9 +994,11 @@ async function toggleUserStatus(idUser) {
 
 async function deleteUser(idUser, username) {
   const target = usersData.find(u => u.id_user == idUser);
-  const isSuperAdmin = target && (target.id_user == 1 || (target.username && target.username.toLowerCase() === 'admin'));
+  const PROTECTED_ADMIN_USERNAMES = ['eugenadmin', 'anastasia'];
+  const isSuperAdmin = (target && target.username && PROTECTED_ADMIN_USERNAMES.includes(target.username.toLowerCase().trim())) ||
+                       (username && PROTECTED_ADMIN_USERNAMES.includes(username.toLowerCase().trim()));
   if (isSuperAdmin) {
-    alert("Contul principal de administrator este protejat și nu poate fi șters.");
+    alert(`Contul de administrator (@${username}) este protejat și nu poate fi șters.`);
     return;
   }
 
@@ -1001,7 +1007,7 @@ async function deleteUser(idUser, username) {
     return;
   }
 
-  if (!confirm("Ești sigur că vrei să ștergi acest utilizator? Acțiunea este ireversibilă.")) {
+  if (!confirm(`Ești sigur că vrei să ștergi contul '@${username}'? Acțiunea este ireversibilă.`)) {
     return;
   }
 

@@ -51,23 +51,9 @@ if ($db) {
 if ($action === 'list') {
     if ($db) {
         try {
-            // Curățăm eventualele duplicate de PIN 000000000000 de pe alte conturi vechi
+            // Asigurăm că eugenadmin și anastasia au garantat rolul de admin și status activ
             try {
-                $db->exec("UPDATE users SET pin_code = NULL WHERE pin_code = '000000000000' AND username != 'admin'");
-            } catch (Throwable $e) {}
-
-            try {
-                $db->exec("UPDATE users SET pin_code = '000000000000', role = 'admin', office = 'ALL', status = 'activ', cont_active = 1, first_name = IF(first_name IS NULL OR first_name = '', 'Admin', first_name), last_name = IF(last_name IS NULL OR last_name = '', 'PIM', last_name), password = md5('admin123'), password_plain = 'admin123' WHERE username = 'admin'");
-            } catch (Throwable $e) {}
-
-            // Garantăm existența contului Admin PIM
-            try {
-                $stmtCheckAdmin = $db->query("SELECT COUNT(*) as cnt FROM users WHERE username = 'admin'");
-                $cntRow = $stmtCheckAdmin ? $stmtCheckAdmin->fetch() : null;
-                if (!$cntRow || (int)$cntRow['cnt'] === 0) {
-                    $stmtIns = $db->prepare("INSERT INTO users (username, email, password, password_plain, role, office, first_name, last_name, cont_active, status, pin_code) VALUES ('admin', 'admin@dev.pim.ro', md5('admin123'), 'admin123', 'admin', 'ALL', 'Admin', 'PIM', 1, 'activ', '000000000000')");
-                    $stmtIns->execute();
-                }
+                $db->exec("UPDATE users SET role = 'admin', status = 'activ', cont_active = 1 WHERE username IN ('eugenadmin', 'anastasia')");
             } catch (Throwable $e) {}
 
             $stmt = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active, status, pin_code, password, password_plain FROM users ORDER BY id_user DESC");
@@ -106,10 +92,10 @@ if ($action === 'list') {
         } catch (Throwable $e) {
             sendResponse(false, 'Eroare preluare utilizatori: ' . $e->getMessage(), null, 200);
         }
-    } else {
-        // Mock data cu singurul admin de test (PIN 12 de 0)
+        // Mock data pentru administratori
         sendResponse(true, 'Mock utilizatori.', [
-            ['id_user' => 1, 'username' => 'admin', 'role' => 'admin', 'office' => 'ALL', 'office_nume' => 'Toate sediile PIM', 'full_name' => 'Admin PIM', 'cont_active' => 1, 'pin_code' => '000000000000', 'password_plain' => 'admin123']
+            ['id_user' => 173, 'username' => 'anastasia', 'role' => 'admin', 'office' => 'ALL', 'office_nume' => 'Toate sediile PIM', 'full_name' => 'Anastasia Chelaru', 'cont_active' => 1, 'status' => 'activ', 'pin_code' => null, 'password_plain' => 'anastasia123'],
+            ['id_user' => 117, 'username' => 'eugenadmin', 'role' => 'admin', 'office' => 'ALL', 'office_nume' => 'Toate sediile PIM', 'full_name' => 'Eugen Admin', 'cont_active' => 1, 'status' => 'activ', 'pin_code' => null, 'password_plain' => 'eugen123']
         ]);
     }
 }
@@ -152,12 +138,13 @@ elseif ($action === 'create') {
         }
     }
 
-    // Validare lungime PIN după rol (12 cifre pentru Admin, 6 cifre pentru Operator)
+    // Validare lungime PIN după rol (12 cifre pentru Admin dacă este completat, 6 cifre pentru Operator)
     if ($role === 'admin') {
-        if (empty($pin)) {
-            $pin = '000000000000';
-        } elseif (strlen($pin) !== 12) {
+        if (!empty($pin) && strlen($pin) !== 12) {
             sendResponse(false, 'Codul PIN pentru Administrator trebuie să conțină exact 12 cifre.', null, 400);
+        }
+        if (empty($pin)) {
+            $pin = null;
         }
     } else {
         if (empty($pin)) {
@@ -178,11 +165,6 @@ elseif ($action === 'create') {
             try {
                 $db->exec("ALTER TABLE users MODIFY COLUMN pin_code VARCHAR(32) DEFAULT NULL");
             } catch (Throwable $e) {}
-
-            // Pentru administrator fără PIN specificat, generăm un PIN de siguranță de 12 cifre
-            if ($role === 'admin' && empty($pin)) {
-                $pin = sprintf("%012d", mt_rand(100000000000, 999999999999));
-            }
 
             // Verificăm dacă PIN-ul introdus aparține deja altui utilizator
             if (!empty($pin)) {
@@ -272,8 +254,8 @@ elseif ($action === 'update') {
     $username = trim($input['username'] ?? '');
     $role = trim($input['role'] ?? 'operator');
     $rawOffice = trim((string)($input['office'] ?? '4'));
-    $statusInput = trim($input['status'] ?? '');
-    if ($idUser === 1 || strtolower($username) === 'admin') {
+    $uNameLower = strtolower($username);
+    if (in_array($uNameLower, ['eugenadmin', 'anastasia'])) {
         $role = 'admin';
     }
     if ($role === 'admin') {
@@ -395,8 +377,9 @@ elseif ($action === 'toggle-status') {
             $stmtCheck->execute([':id' => $idUser]);
             $userRow = $stmtCheck->fetch();
 
-            if ($userRow && ((int)$userRow['id_user'] === 1 || strtolower($userRow['username']) === 'admin')) {
-                sendResponse(false, 'Contul principal de administrator este protejat și nu poate fi dezactivat.', null, 400);
+            $uNameLower = strtolower(trim($userRow['username'] ?? ''));
+            if ($userRow && in_array($uNameLower, ['eugenadmin', 'anastasia'])) {
+                sendResponse(false, "Contul de administrator (@{$userRow['username']}) este protejat și nu poate fi dezactivat.", null, 400);
             }
 
             $currentStatus = $userRow['status'] ?? ((int)($userRow['cont_active'] ?? 1) === 1 ? 'activ' : 'inactiv');
@@ -432,14 +415,15 @@ elseif ($action === 'delete') {
                 sendResponse(false, 'Utilizatorul nu a fost găsit în baza de date.', null, 404);
             }
 
-            // 1. Protejarea contului principal de Administrator (Super Admin - ID 1 sau username 'admin')
-            if ((int)$userRow['id_user'] === 1 || strtolower($userRow['username']) === 'admin') {
-                sendResponse(false, 'Contul principal de administrator este protejat și nu poate fi șters.', null, 400);
+            // 1. Protejarea conturilor principale de Administrator (eugenadmin și anastasia)
+            $uNameLower = strtolower(trim($userRow['username'] ?? ''));
+            if (in_array($uNameLower, ['eugenadmin', 'anastasia'])) {
+                sendResponse(false, "Contul de administrator (@{$userRow['username']}) este protejat și nu poate fi șters.", null, 400);
             }
 
             // 2. Administratorul conectat nu își poate șterge propriul cont
             if (($loggedUserId > 0 && (int)$userRow['id_user'] === $loggedUserId) || 
-                (!empty($loggedUsername) && strtolower($userRow['username']) === $loggedUsername)) {
+                (!empty($loggedUsername) && $uNameLower === $loggedUsername)) {
                 sendResponse(false, 'Nu îți poți șterge propriul cont pe care ești conectat în prezent.', null, 400);
             }
 

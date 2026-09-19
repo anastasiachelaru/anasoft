@@ -15,55 +15,8 @@ if ($action === 'login-pin') {
     
     if ($db) {
         try {
-            try {
-                $db->exec("ALTER TABLE users MODIFY COLUMN pin_code VARCHAR(32) DEFAULT NULL");
-            } catch (Throwable $e) {}
-
-            // Garantăm că în DB contul admin are PIN-ul de 12 cifre '000000000000', rolul admin, sediul 'ALL' și cont_active = 1
-            try {
-                $db->exec("UPDATE users SET pin_code = NULL WHERE pin_code = '000000000000' AND username != 'admin'");
-            } catch (Throwable $e) {}
-
-            try {
-                $db->exec("UPDATE users SET pin_code = '000000000000', role = 'admin', office = 'ALL', status = 'activ', cont_active = 1, first_name = IF(first_name IS NULL OR first_name = '', 'Admin', first_name), last_name = IF(last_name IS NULL OR last_name = '', 'PIM', last_name) WHERE username = 'admin'");
-            } catch (Throwable $e) {}
-            
-            try {
-                $stmtCheckAdmin = $db->query("SELECT COUNT(*) as cnt FROM users WHERE username = 'admin'");
-                $cntRow = $stmtCheckAdmin ? $stmtCheckAdmin->fetch() : null;
-                if (!$cntRow || (int)$cntRow['cnt'] === 0) {
-                    $stmtIns = $db->prepare("INSERT INTO users (username, email, password, password_plain, role, office, first_name, last_name, cont_active, pin_code) VALUES ('admin', 'admin@dev.pim.ro', md5('admin123'), 'admin123', 'admin', 'ALL', 'Admin', 'PIM', 1, '000000000000')");
-                    $stmtIns->execute();
-                }
-            } catch (Throwable $e) {}
+            $db->exec("ALTER TABLE users MODIFY COLUMN pin_code VARCHAR(32) DEFAULT NULL");
         } catch (Throwable $e) {}
-
-        // Tratare dedicată pentru PIN-ul de administrator 000000000000 (12 cifre)
-        if ($pin === '000000000000') {
-            $stmtAdmin = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active, status FROM users WHERE username = 'admin' LIMIT 1");
-            $stmtAdmin->execute();
-            $adminUser = $stmtAdmin->fetch();
-            
-            if (!$adminUser) {
-                $stmtAdmin = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active, status FROM users WHERE role = 'admin' OR id_user = 1 LIMIT 1");
-                $stmtAdmin->execute();
-                $adminUser = $stmtAdmin->fetch();
-            }
-
-            if ($adminUser) {
-                $userStatus = $adminUser['status'] ?? ((int)$adminUser['cont_active'] === 1 ? 'activ' : 'inactiv');
-                if ($userStatus === 'inactiv' || (int)$adminUser['cont_active'] === 0 || $adminUser['cont_active'] === '0') {
-                    sendResponse(false, 'Cont inactiv sau inexistent. Vă rugăm să contactați un administrator.', null, 403);
-                }
-                if (empty($adminUser['office']) || $adminUser['office'] === '0' || $adminUser['office'] === 0) {
-                    $adminUser['office'] = 'ALL';
-                }
-                sendResponse(true, 'Autentificare reușită ca Administrator!', [
-                    'user' => $adminUser,
-                    'token' => bin2hex(random_bytes(16))
-                ]);
-            }
-        }
 
         // Căutare utilizator după PIN (toți utilizatorii pentru a verifica și statusul contului)
         $stmt = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active, status, pin_code, password FROM users");
@@ -101,16 +54,16 @@ if ($action === 'login-pin') {
         }
     } else {
         // Mock fallback pentru demo când DB nu este activă local
-        if ($pin === '000000000000') {
-            sendResponse(true, 'Autentificare Demo reușită!', [
+        if ($pin === '111111') {
+            sendResponse(true, 'Autentificare Operator Demo reușită!', [
                 'user' => [
-                    'id_user' => 1,
-                    'username' => 'admin',
-                    'first_name' => 'Admin',
+                    'id_user' => 40,
+                    'username' => 'operator',
+                    'first_name' => 'Operator',
                     'last_name' => 'PIM',
-                    'role' => 'admin',
-                    'office' => 'ALL',
-                    'email' => 'admin@dev.pim.ro',
+                    'role' => 'operator',
+                    'office' => 2,
+                    'email' => 'operator@dev.pim.ro',
                     'status' => 'activ'
                 ],
                 'token' => 'demo_token_' . time()
@@ -163,16 +116,16 @@ elseif ($action === 'login-password') {
         sendResponse(false, 'Utilizator sau parolă incorectă.', null, 401);
     } else {
         // Mock fallback demo
-        if (($username === 'admin' || $username === 'operator') && !empty($password)) {
-            $isAdmin = ($username === 'admin');
+        if (($username === 'anastasia' || $username === 'eugenadmin' || $username === 'admin') && !empty($password)) {
+            $isAnastasia = ($username === 'anastasia');
             sendResponse(true, 'Autentificare Demo reușită!', [
                 'user' => [
-                    'id_user' => $isAdmin ? 1 : 40,
+                    'id_user' => $isAnastasia ? 173 : 117,
                     'username' => $username,
-                    'first_name' => $isAdmin ? 'Andrei' : 'Operator',
-                    'last_name' => 'PIM',
-                    'role' => $isAdmin ? 'admin' : 'operator',
-                    'office' => $isAdmin ? 'ALL' : 2,
+                    'first_name' => $isAnastasia ? 'Anastasia' : 'Eugen',
+                    'last_name' => 'Admin',
+                    'role' => 'admin',
+                    'office' => 'ALL',
                     'email' => $username . '@dev.pim.ro'
                 ],
                 'token' => 'demo_token_' . time()
