@@ -1284,7 +1284,7 @@ select option {
   color: #93c5fd;
   background: rgba(59, 130, 246, 0.15);
   border-color: rgba(59, 130, 246, 0.3);
-  font-size: 0.95rem;
+  font-size: 1.15rem;
 }
 .wkey-btn.action-back:hover {
   background: rgba(59, 130, 246, 0.3);
