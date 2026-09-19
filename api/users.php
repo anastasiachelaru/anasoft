@@ -427,11 +427,7 @@ elseif ($action === 'delete') {
                 sendResponse(false, 'Nu îți poți șterge propriul cont pe care ești conectat în prezent.', null, 400);
             }
 
-            // 3. Integritate bazei de date: Salvăm numele operatorului în istoric_schimbari și setăm id_user = NULL pentru a preveni erorile de FK
-            try {
-                $db->exec("ALTER TABLE istoric_schimbari ADD COLUMN nume_operator VARCHAR(255) DEFAULT NULL");
-            } catch (Throwable $e) {}
-
+            // 3. Integritate bazei de date: Salvăm numele operatorului în tabelele de istoric (istoric_schimbari și ink_history)
             $firstName = trim($userRow['first_name'] ?? '');
             $lastName = trim($userRow['last_name'] ?? '');
             $fullName = trim($firstName . ' ' . $lastName);
@@ -439,12 +435,38 @@ elseif ($action === 'delete') {
                 $fullName = $userRow['username'];
             }
 
-            $stmtHist = $db->prepare("UPDATE istoric_schimbari SET nume_operator = :name, id_user = NULL WHERE id_user = :id");
-            $stmtHist->execute([':name' => $fullName, ':id' => $idUser]);
+            try {
+                $db->exec("ALTER TABLE istoric_schimbari ADD COLUMN nume_operator VARCHAR(255) DEFAULT NULL");
+            } catch (Throwable $e) {}
 
-            // 4. Ștergerea din tabela users
-            $stmt = $db->prepare("DELETE FROM users WHERE id_user = :id");
-            $stmt->execute([':id' => $idUser]);
+            try {
+                $db->exec("ALTER TABLE ink_history ADD COLUMN nume_operator VARCHAR(255) DEFAULT NULL");
+            } catch (Throwable $e) {}
+
+            try {
+                $db->exec("ALTER TABLE ink_history MODIFY COLUMN id_user INT DEFAULT NULL");
+            } catch (Throwable $e) {}
+
+            try {
+                $stmtHist = $db->prepare("UPDATE istoric_schimbari SET nume_operator = :name, id_user = NULL WHERE id_user = :id");
+                $stmtHist->execute([':name' => $fullName, ':id' => $idUser]);
+            } catch (Throwable $e) {}
+
+            try {
+                $stmtInk = $db->prepare("UPDATE ink_history SET nume_operator = :name, id_user = NULL WHERE id_user = :id");
+                $stmtInk->execute([':name' => $fullName, ':id' => $idUser]);
+            } catch (Throwable $e) {}
+
+            // 4. Ștergerea din tabela users cu protecție temporară împotriva constrângerilor de FK din tabele vechi
+            try {
+                $db->exec("SET FOREIGN_KEY_CHECKS = 0");
+                $stmt = $db->prepare("DELETE FROM users WHERE id_user = :id");
+                $stmt->execute([':id' => $idUser]);
+                $db->exec("SET FOREIGN_KEY_CHECKS = 1");
+            } catch (Throwable $eDel) {
+                try { $db->exec("SET FOREIGN_KEY_CHECKS = 1"); } catch (Throwable $e2) {}
+                throw $eDel;
+            }
 
             sendResponse(true, "Contul de utilizator '@{$userRow['username']}' a fost șters cu succes.");
         } catch (Throwable $e) {
