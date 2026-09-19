@@ -1,5 +1,6 @@
 <?php
-$secret = 'pimro1_anasoft_deploy_2026';
+require_once __DIR__ . '/config.php';
+$secret = defined('DEPLOY_SECRET') ? DEPLOY_SECRET : 'pimro1_anasoft_deploy_2026';
 if (($_GET['secret'] ?? '') !== $secret) {
     http_response_code(403);
     die(json_encode(['status' => 'error', 'message' => 'Unauthorized']));

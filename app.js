@@ -1,5 +1,39 @@
 // PIM Iași - Toner Management System & Wizard Logic
 
+// 1.1 & 1.4 Interceptor Global Fetch pentru Sesiuni Securizate, CORS și Bearer Token
+const originalFetch = window.fetch;
+window.fetch = async function (url, options = {}) {
+  options = options || {};
+  options.credentials = options.credentials || 'same-origin';
+  
+  options.headers = options.headers || {};
+  const token = localStorage.getItem("pim_auth_token");
+  if (token) {
+    if (options.headers instanceof Headers) {
+      if (!options.headers.has('Authorization')) {
+        options.headers.set('Authorization', `Bearer ${token}`);
+      }
+    } else {
+      if (!options.headers['Authorization']) {
+        options.headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+  }
+
+  const response = await originalFetch(url, options);
+
+  // Dacă sesiunea a expirat pe server (401), atenționăm utilizatorul și deconectăm curat
+  if (response.status === 401 && typeof url === 'string' && !url.includes('action=login') && !url.includes('action=check-session')) {
+    if (currentUser) {
+      console.warn("Sesiune expirată sau neautorizată (401).");
+      alert("Sesiunea ta a expirat. Te rugăm să te reconectezi.");
+      logout();
+    }
+  }
+
+  return response;
+};
+
 let currentLoginRole = "operator"; // "operator" sau "admin"
 let currentPin = "";
 let maxPinLength = 6;
@@ -259,9 +293,9 @@ async function submitPinLogin() {
     
     const result = await response.json();
     if (result && result.success && result.data && result.data.user) {
-      handleLoginSuccess(result.data.user);
+      handleLoginSuccess(result.data.user, result.data.token);
     } else {
-      showAuthError((result && result.message) ? result.message : "Cod PIN invalid.");
+      showAuthError((result && result.message) ? result.message : "Cod PIN incorect.");
       clearPinKey();
     }
   } catch (err) {
@@ -286,20 +320,12 @@ async function handlePassLogin(e) {
     
     const result = await response.json();
     if (result && result.success && result.data && result.data.user) {
-      handleLoginSuccess(result.data.user);
+      handleLoginSuccess(result.data.user, result.data.token);
     } else {
       showAuthError((result && result.message) ? result.message : "Utilizator sau parolă incorectă.");
     }
   } catch (err) {
-    const isAdmin = usernameInput.toLowerCase().includes("admin");
-    handleLoginSuccess({
-      id_user: isAdmin ? 1 : 40,
-      username: usernameInput || "poturuandreea",
-      first_name: isAdmin ? "Admin" : "Andreea",
-      last_name: "Poturu",
-      role: isAdmin ? "admin" : "operator",
-      office: 4
-    });
+    showAuthError("Eroare de conexiune la server. Te rugăm să reîncerci.");
   }
 }
 
@@ -318,8 +344,13 @@ function hideAuthError() {
   }
 }
 
-function handleLoginSuccess(user) {
+function handleLoginSuccess(user, token) {
   currentUser = user;
+  if (token) {
+    try {
+      localStorage.setItem("pim_auth_token", token);
+    } catch (e) {}
+  }
   try {
     localStorage.setItem("pim_toner_user", JSON.stringify(user));
   } catch (e) {}
@@ -347,25 +378,47 @@ function handleLoginSuccess(user) {
   }
 }
 
-function checkExistingSession() {
+async function checkExistingSession() {
   const saved = localStorage.getItem("pim_toner_user");
+  const token = localStorage.getItem("pim_auth_token");
   if (saved) {
     try {
       const user = JSON.parse(saved);
       if (user && user.id_user) {
-        handleLoginSuccess(user);
+        // Validăm sesiunea în mod silențios cu backend-ul
+        try {
+          const res = await fetch("api/auth.php?action=check-session");
+          const json = await res.json();
+          if (json && json.success && json.data && json.data.user) {
+            handleLoginSuccess(json.data.user, token);
+            return;
+          }
+        } catch (e) {
+          // În caz de deconectare temporară de rețea, menținem starea locală
+          handleLoginSuccess(user, token);
+          return;
+        }
       }
     } catch (e) {
       localStorage.removeItem("pim_toner_user");
+      localStorage.removeItem("pim_auth_token");
     }
   }
 }
 
-function logout() {
+async function logout() {
   currentUser = null;
   localStorage.removeItem("pim_toner_user");
+  localStorage.removeItem("pim_auth_token");
   clearPinKey();
   
+  try {
+    await originalFetch("api/auth.php?action=logout", {
+      method: "POST",
+      credentials: "same-origin"
+    });
+  } catch (e) {}
+
   const authScr = document.getElementById("auth-screen");
   const appScr = document.getElementById("app-screen");
   if (appScr) {
@@ -750,11 +803,11 @@ function onUserModalRoleChange(formType) {
       if (passTitle) passTitle.innerText = 'SCHIMBARE COD PIN OPERATOR';
       if (pinGroup) pinGroup.style.display = 'block';
       if (pinInput) {
-        pinInput.required = true;
+        pinInput.required = false;
         pinInput.setAttribute('maxlength', '6');
-        pinInput.setAttribute('placeholder', 'ex: 111111');
+        pinInput.setAttribute('placeholder', 'Lasă gol pentru a păstra PIN-ul existent');
       }
-      if (pinLabel) pinLabel.innerHTML = 'Cod PIN Operator (6 cifre) *';
+      if (pinLabel) pinLabel.innerHTML = 'Cod PIN Operator (opțional - lasă gol pentru a păstra PIN-ul actual)';
     }
   }
 }
@@ -784,7 +837,7 @@ function onEditUserSelectChange() {
 
   document.getElementById("edituser-username").value = user.username || "";
   document.getElementById("edituser-fullname").value = user.full_name || "";
-  document.getElementById("edituser-pin").value = user.pin_code || "";
+  document.getElementById("edituser-pin").value = "";
   document.getElementById("edituser-password").value = "";
 }
 
@@ -809,9 +862,9 @@ async function handleEditUserSubmit(e) {
       return;
     }
   } else {
-    if (!pin || pin.length !== 6) {
-      showUserModalError("edituser", "Codul PIN pentru Operator trebuie să aibă exact 6 cifre!");
-      alert("Codul PIN pentru Operator trebuie să aibă exact 6 cifre!");
+    if (pin && pin.length !== 6) {
+      showUserModalError("edituser", "Codul PIN pentru Operator trebuie să aibă exact 6 cifre (dacă dorești Schimbarea PIN-ului)!");
+      alert("Codul PIN pentru Operator trebuie să aibă exact 6 cifre (dacă dorești Schimbarea PIN-ului)!");
       return;
     }
   }

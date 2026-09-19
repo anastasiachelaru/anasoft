@@ -784,11 +784,11 @@
 
           <div class="form-grid-2col">
             <div class="form-group" id="edituser-pin-group" style="grid-column: span 2;">
-              <label for="edituser-pin" id="edituser-pin-label">Cod PIN Operator (6 cifre) *</label>
+              <label for="edituser-pin" id="edituser-pin-label">Cod PIN (opțional - lasă gol pentru a păstra PIN-ul actual)</label>
               <div style="display: flex; gap: 8px;">
-                <input type="text" id="edituser-pin" maxlength="6" placeholder="ex: 111111" required style="flex: 1;">
+                <input type="text" id="edituser-pin" maxlength="6" placeholder="Lasă gol pentru a păstra PIN-ul existent" style="flex: 1;">
                 <button type="button" class="btn btn-secondary" onclick="generateRandomUserPin('edituser')" style="white-space: nowrap; display: flex; align-items: center; gap: 6px; padding: 8px 14px; font-size: 0.85rem;">
-                  <i class="fa-solid fa-wand-magic-sparkles text-cyan"></i> Generează PIN aleatoriu
+                  <i class="fa-solid fa-wand-magic-sparkles text-cyan"></i> Generează PIN nou
                 </button>
               </div>
             </div>

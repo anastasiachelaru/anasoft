@@ -7,3 +7,7 @@ dist/
 # Database dumps
 *.sql
 
+# Environment & Secrets
+.env
+.env.php
+api/.env.php

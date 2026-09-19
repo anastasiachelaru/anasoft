@@ -15,6 +15,8 @@ $officesMap = [
 ];
 
 if ($action === 'list') {
+    $authUser = requireAuth(null, $db);
+
     if ($db) {
         $sql = "SELECT t.id_toner, t.id_tip_toner, t.office, t.stoc, t.toner_activ, 
                        tt.denumire_tip, tt.consum_referinta
@@ -69,6 +71,8 @@ if ($action === 'list') {
     }
 }
 elseif ($action === 'aparate') {
+    $authUser = requireAuth(null, $db);
+
     if ($db) {
         $sql = "SELECT id_aparat, nume_aparat, office, aparat_activ FROM aparate WHERE aparat_activ = 1";
         if ($officeId !== null) {
@@ -103,6 +107,8 @@ elseif ($action === 'aparate') {
     }
 }
 elseif ($action === 'tonere-aparat') {
+    $authUser = requireAuth(null, $db);
+
     $idAparat = (int)($_GET['id_aparat'] ?? 0);
     
     if ($db) {
@@ -173,15 +179,11 @@ elseif ($action === 'tonere-aparat') {
     }
 }
 elseif ($action === 'add-stock' || $action === 'update-stock') {
+    $authAdmin = requireAuth('admin', $db);
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
     $idToner = (int)($input['id_toner'] ?? 0);
     $cantitate = (int)($input['cantitate'] ?? 0);
     $operation = $input['operation'] ?? 'add';
-    $userRole = $input['user_role'] ?? ($input['role'] ?? '');
-    
-    if (!empty($userRole) && $userRole !== 'admin') {
-        sendResponse(false, 'Acces restricționat! Doar administratorii au permisiunea de a modifica stocul de tonere.', null, 403);
-    }
     
     if ($idToner <= 0 || $cantitate <= 0) {
         sendResponse(false, 'Selectează un toner și introdu o cantitate validă.', null, 400);
@@ -203,6 +205,8 @@ elseif ($action === 'add-stock' || $action === 'update-stock') {
     }
 }
 elseif ($action === 'manage-catalog') {
+    $authAdmin = requireAuth('admin', $db);
+
     if ($db) {
         try {
             // Preluăm toate tipurile de toner
@@ -289,6 +293,8 @@ elseif ($action === 'manage-catalog') {
     }
 }
 elseif ($action === 'save-toner-type') {
+    $authAdmin = requireAuth('admin', $db);
+
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
     $denumire = trim($input['denumire'] ?? '');
     $culoare = trim($input['culoare'] ?? 'Black');
@@ -378,6 +384,8 @@ elseif ($action === 'save-toner-type') {
     }
 }
 elseif ($action === 'update-toner-type') {
+    $authAdmin = requireAuth('admin', $db);
+
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
     $idTipToner = (int)($input['id_tip_toner'] ?? 0);
     $denumire = trim($input['denumire_tip'] ?? '');
@@ -396,6 +404,8 @@ elseif ($action === 'update-toner-type') {
     }
 }
 elseif ($action === 'save-aparat') {
+    $authAdmin = requireAuth('admin', $db);
+
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
     $numeAparat = trim($input['nume_aparat'] ?? '');
     $officeId = (int)($input['office'] ?? 2);
@@ -485,6 +495,8 @@ elseif ($action === 'save-aparat') {
     }
 }
 elseif ($action === 'toggle-status') {
+    $authAdmin = requireAuth('admin', $db);
+
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
     $target = $input['target'] ?? ''; // 'toner' sau 'aparat'
     $id = (int)($input['id'] ?? 0);
@@ -514,6 +526,8 @@ elseif ($action === 'toggle-status') {
     }
 }
 elseif ($action === 'delete-aparat') {
+    $authAdmin = requireAuth('admin', $db);
+
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
     $idAparat = (int)($input['id_aparat'] ?? 0);
 
@@ -550,6 +564,8 @@ elseif ($action === 'delete-aparat') {
     }
 }
 elseif ($action === 'delete-toner') {
+    $authAdmin = requireAuth('admin', $db);
+
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
     $idToner = (int)($input['id_toner'] ?? 0);
 

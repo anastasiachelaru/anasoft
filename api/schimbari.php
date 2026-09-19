@@ -14,6 +14,7 @@ $officesMap = [
 ];
 
 if ($action === 'list') {
+    $authUser = requireAuth(null, $db);
     $officeId = isset($_GET['office']) ? (int)$_GET['office'] : null;
     $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 5000;
     
@@ -128,6 +129,7 @@ if ($action === 'list') {
     }
 }
 elseif ($action === 'get-last-index') {
+    $authUser = requireAuth(null, $db);
     $idAparat = (int)($_GET['id_aparat'] ?? 0);
     $idToner = (int)($_GET['id_toner'] ?? 0);
     
@@ -181,12 +183,18 @@ elseif ($action === 'get-last-index') {
     }
 }
 elseif ($action === 'add') {
+    $authUser = requireAuth(null, $db);
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
     
     $idAparat = (int)($input['id_aparat'] ?? 0);
     $idToner = (int)($input['id_toner'] ?? 0);
-    $idUser = (int)($input['id_user'] ?? 1);
+    $idUser = (int)($authUser['id_user'] ?? ($input['id_user'] ?? 1));
     $contor = (int)($input['contor'] ?? 0);
+
+    $numeOp = trim(($authUser['first_name'] ?? '') . ' ' . ($authUser['last_name'] ?? ''));
+    if (empty($numeOp)) {
+        $numeOp = $authUser['username'] ?? 'Operator';
+    }
     
     if ($idAparat <= 0 || $idToner <= 0 || $contor <= 0) {
         sendResponse(false, 'Te rugăm să completezi aparatul, tonerul și contorul curent al aparatului.', null, 400);
@@ -253,15 +261,20 @@ elseif ($action === 'add') {
             
             $procentRealizat = ($consumReferinta > 0 && $copiiRealizate > 0) ? round(($copiiRealizate / $consumReferinta) * 100, 2) : 0;
             
-            // Inserare în istoric
+            // Inserare în istoric (asigurând și nume_operator)
+            try {
+                $db->exec("ALTER TABLE istoric_schimbari ADD COLUMN nume_operator VARCHAR(255) DEFAULT NULL");
+            } catch (Throwable $e) {}
+
             $stmtIns = $db->prepare("INSERT INTO istoric_schimbari 
-                                     (id_aparat, id_toner, contor, data_schimbare, id_user, copii_realizate, consum_referinta, procent_realizat)
-                                     VALUES (:aparat, :toner, :contor, NOW(), :user, :copii, :ref, :procent)");
+                                     (id_aparat, id_toner, contor, data_schimbare, id_user, nume_operator, copii_realizate, consum_referinta, procent_realizat)
+                                     VALUES (:aparat, :toner, :contor, NOW(), :user, :nume_op, :copii, :ref, :procent)");
             $stmtIns->execute([
                 ':aparat' => $idAparat,
                 ':toner' => $idToner,
                 ':contor' => $contor,
                 ':user' => $idUser,
+                ':nume_op' => $numeOp,
                 ':copii' => $copiiRealizate,
                 ':ref' => $consumReferinta,
                 ':procent' => $procentRealizat
@@ -288,6 +301,7 @@ elseif ($action === 'add') {
     }
 }
 elseif ($action === 'update-aparat-index') {
+    $authAdmin = requireAuth('admin', $db);
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
     $idAparat = (int)($input['id_aparat'] ?? 0);
     $numeAparat = trim($input['nume_aparat'] ?? '');

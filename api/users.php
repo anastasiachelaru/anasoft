@@ -18,9 +18,7 @@ $officesMap = [
 function ensureUsersSchema($db) {
     if (!$db) return;
     $queries = [
-        "ALTER TABLE users ADD COLUMN password_plain VARCHAR(255) DEFAULT NULL",
-        "ALTER TABLE users ADD COLUMN pin_code VARCHAR(32) DEFAULT NULL",
-        "ALTER TABLE users MODIFY COLUMN pin_code VARCHAR(32) DEFAULT NULL",
+        "ALTER TABLE users MODIFY COLUMN pin_code VARCHAR(255) DEFAULT NULL",
         "ALTER TABLE users ADD COLUMN email VARCHAR(255) DEFAULT NULL",
         "ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'operator'",
         "ALTER TABLE users ADD COLUMN office VARCHAR(50) DEFAULT '4'",
@@ -29,7 +27,8 @@ function ensureUsersSchema($db) {
         "ALTER TABLE users ADD COLUMN last_name VARCHAR(100) DEFAULT NULL",
         "ALTER TABLE users ADD COLUMN cont_active TINYINT DEFAULT 1",
         "ALTER TABLE users ADD COLUMN status VARCHAR(20) DEFAULT 'activ'",
-        "ALTER TABLE users MODIFY COLUMN status VARCHAR(20) DEFAULT 'activ'"
+        "ALTER TABLE users MODIFY COLUMN status VARCHAR(20) DEFAULT 'activ'",
+        "UPDATE users SET password_plain = NULL WHERE password_plain IS NOT NULL"
     ];
     foreach ($queries as $q) {
         try {
@@ -49,6 +48,9 @@ if ($db) {
 }
 
 if ($action === 'list') {
+    // 1.1 Protecție sesiune/token
+    $authUser = requireAuth(null, $db);
+
     if ($db) {
         try {
             // Asigurăm că eugenadmin și anastasia au garantat rolul de admin și status activ
@@ -56,7 +58,8 @@ if ($action === 'list') {
                 $db->exec("UPDATE users SET role = 'admin', status = 'activ', cont_active = 1 WHERE username IN ('eugenadmin', 'anastasia')");
             } catch (Throwable $e) {}
 
-            $stmt = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active, status, pin_code, password, password_plain FROM users ORDER BY id_user DESC");
+            // 1.2 Selectăm STRICT coloanele non-secrete (NU selectăm password, password_plain sau pin_code)
+            $stmt = $db->prepare("SELECT id_user, username, email, role, office, first_name, last_name, cont_active, status, (CASE WHEN pin_code IS NOT NULL AND pin_code != '' THEN 1 ELSE 0 END) as has_pin FROM users ORDER BY id_user DESC");
             $stmt->execute();
             $users = $stmt->fetchAll();
             
@@ -82,24 +85,23 @@ if ($action === 'list') {
                 } else {
                     $u['full_name'] = trim(($u['first_name'] ?? '') . ' ' . ($u['last_name'] ?? ''));
                 }
-
-                if (empty($u['password_plain'])) {
-                    $u['password_plain'] = !empty($u['password']) && strlen($u['password']) < 32 ? $u['password'] : ($u['role'] === 'admin' ? 'admin123' : 'operator123');
-                }
             }
             
             sendResponse(true, 'Lista de utilizatori încărcată.', $users);
         } catch (Throwable $e) {
-            sendResponse(false, 'Eroare preluare utilizatori: ' . $e->getMessage(), null, 200);
+            sendResponse(false, 'Eroare preluare utilizatori: ' . $e->getMessage(), null, 500);
         }
-        // Mock data pentru administratori
+    } else {
+        // Mock data pentru mediu fără bază de date (fără parole/PIN-uri expuse)
         sendResponse(true, 'Mock utilizatori.', [
-            ['id_user' => 173, 'username' => 'anastasia', 'role' => 'admin', 'office' => 'ALL', 'office_nume' => 'Toate sediile PIM', 'full_name' => 'Anastasia Chelaru', 'cont_active' => 1, 'status' => 'activ', 'pin_code' => null, 'password_plain' => 'anastasia123'],
-            ['id_user' => 117, 'username' => 'eugenadmin', 'role' => 'admin', 'office' => 'ALL', 'office_nume' => 'Toate sediile PIM', 'full_name' => 'Eugen Admin', 'cont_active' => 1, 'status' => 'activ', 'pin_code' => null, 'password_plain' => 'eugen123']
+            ['id_user' => 173, 'username' => 'anastasia', 'role' => 'admin', 'office' => 'ALL', 'office_nume' => 'Toate sediile PIM', 'full_name' => 'Anastasia Chelaru', 'cont_active' => 1, 'status' => 'activ', 'has_pin' => 0],
+            ['id_user' => 117, 'username' => 'eugenadmin', 'role' => 'admin', 'office' => 'ALL', 'office_nume' => 'Toate sediile PIM', 'full_name' => 'Eugen Admin', 'cont_active' => 1, 'status' => 'activ', 'has_pin' => 0]
         ]);
     }
 }
 elseif ($action === 'create') {
+    $authAdmin = requireAuth('admin', $db);
+
     $username = trim($input['username'] ?? '');
     $role = trim($input['role'] ?? 'operator');
     $rawOffice = trim((string)($input['office'] ?? '4'));
@@ -133,7 +135,7 @@ elseif ($action === 'create') {
         }
     } else {
         if (empty($password)) {
-            $password = 'op_' . bin2hex(random_bytes(4));
+            $password = 'op_' . bin2hex(random_bytes(6));
             $confirmPassword = $password;
         }
     }
@@ -161,27 +163,15 @@ elseif ($action === 'create') {
 
     if ($db) {
         try {
-            // Asigurăm că pin_code permite 32 caractere
-            try {
-                $db->exec("ALTER TABLE users MODIFY COLUMN pin_code VARCHAR(32) DEFAULT NULL");
-            } catch (Throwable $e) {}
-
             // Verificăm dacă PIN-ul introdus aparține deja altui utilizator
             if (!empty($pin)) {
-                $stmtCheckPin = $db->prepare("SELECT id_user FROM users WHERE pin_code = :pin AND username != :u");
-                $stmtCheckPin->execute([':pin' => $pin, ':u' => $username]);
-                if ($stmtCheckPin->fetch()) {
-                    sendResponse(false, "Acest PIN este deja folosit de un alt utilizator, te rugăm să alegi altul.", null, 200);
-                }
-            }
-
-            // Verificăm dacă parola introdusă aparține deja altui utilizator
-            if (!empty($password)) {
-                $hashedPass = md5($password);
-                $stmtCheckPass = $db->prepare("SELECT id_user FROM users WHERE (password_plain = :p1 OR password = :h OR password = :p2) AND username != :u");
-                $stmtCheckPass->execute([':p1' => $password, ':h' => $hashedPass, ':p2' => $password, ':u' => $username]);
-                if ($stmtCheckPass->fetch()) {
-                    sendResponse(false, "Această parolă este deja folosită de un alt utilizator, te rugăm să alegi alta.", null, 200);
+                $stmtCheckPin = $db->prepare("SELECT id_user, pin_code FROM users WHERE pin_code IS NOT NULL AND username != :u");
+                $stmtCheckPin->execute([':u' => $username]);
+                $existingPins = $stmtCheckPin->fetchAll();
+                foreach ($existingPins as $ep) {
+                    if (!empty($ep['pin_code']) && (password_verify($pin, $ep['pin_code']) || trim($ep['pin_code']) === $pin)) {
+                        sendResponse(false, "Acest PIN este deja folosit de un alt utilizator, te rugăm să alegi altul.", null, 400);
+                    }
                 }
             }
 
@@ -190,35 +180,36 @@ elseif ($action === 'create') {
             $stmtCheck->execute([':u' => $username]);
             $existingUser = $stmtCheck->fetch();
 
+            $hashedPassword = !empty($password) ? password_hash($password, PASSWORD_DEFAULT) : null;
+            $hashedPin = !empty($pin) ? password_hash($pin, PASSWORD_DEFAULT) : null;
+
             if ($existingUser) {
-                $sql = "UPDATE users SET email = :email, password = :password, password_plain = :password_plain, role = :role, office = :office, first_name = :first_name, last_name = :last_name, cont_active = 1, status = 'activ', pin_code = :pin WHERE id_user = :id";
+                $sql = "UPDATE users SET email = :email, password = :password, password_plain = NULL, role = :role, office = :office, first_name = :first_name, last_name = :last_name, cont_active = 1, status = 'activ', pin_code = :pin WHERE id_user = :id";
                 $stmt = $db->prepare($sql);
                 $stmt->execute([
                     ':email' => $email,
-                    ':password' => md5($password),
-                    ':password_plain' => $password,
+                    ':password' => $hashedPassword,
                     ':role' => $role,
                     ':office' => $office,
                     ':first_name' => $firstName,
                     ':last_name' => $lastName,
-                    ':pin' => $pin,
+                    ':pin' => $hashedPin,
                     ':id' => $existingUser['id_user']
                 ]);
                 $newId = $existingUser['id_user'];
             } else {
                 $sql = "INSERT INTO users (username, email, password, password_plain, role, office, first_name, last_name, cont_active, status, pin_code) 
-                        VALUES (:username, :email, :password, :password_plain, :role, :office, :first_name, :last_name, 1, 'activ', :pin)";
+                        VALUES (:username, :email, :password, NULL, :role, :office, :first_name, :last_name, 1, 'activ', :pin)";
                 $stmt = $db->prepare($sql);
                 $stmt->execute([
                     ':username' => $username,
                     ':email' => $email,
-                    ':password' => md5($password),
-                    ':password_plain' => $password,
+                    ':password' => $hashedPassword,
                     ':role' => $role,
                     ':office' => $office,
                     ':first_name' => $firstName,
                     ':last_name' => $lastName,
-                    ':pin' => $pin
+                    ':pin' => $hashedPin
                 ]);
                 $newId = $db->lastInsertId();
             }
@@ -228,15 +219,14 @@ elseif ($action === 'create') {
                 : "Contul pentru '{$username}' a fost salvat cu succes! Cod PIN atribuit: {$pin}";
 
             sendResponse(true, $successMsg, [
-                'id_user' => $newId,
+                'id_user' => (int)$newId,
                 'username' => $username,
                 'role' => $role,
                 'office' => $office,
-                'status' => 'activ',
-                'pin_code' => $pin
+                'status' => 'activ'
             ]);
         } catch (Throwable $e) {
-            sendResponse(false, 'Eroare salvare utilizator: ' . $e->getMessage(), null, 200);
+            sendResponse(false, 'Eroare salvare utilizator: ' . $e->getMessage(), null, 500);
         }
     } else {
         sendResponse(true, "Cont creat (Demo)!", [
@@ -244,12 +234,13 @@ elseif ($action === 'create') {
             'username' => $username,
             'role' => $role,
             'office' => $office,
-            'status' => 'activ',
-            'pin_code' => $pin
+            'status' => 'activ'
         ]);
     }
 }
 elseif ($action === 'update') {
+    $authAdmin = requireAuth('admin', $db);
+
     $idUser = (int)($input['id_user'] ?? 0);
     $username = trim($input['username'] ?? '');
     $role = trim($input['role'] ?? 'operator');
@@ -297,25 +288,18 @@ elseif ($action === 'update') {
             $stmtCheck = $db->prepare("SELECT id_user FROM users WHERE username = :u AND id_user != :id");
             $stmtCheck->execute([':u' => $username, ':id' => $idUser]);
             if ($stmtCheck->fetch()) {
-                sendResponse(false, "Numele de utilizator '{$username}' este deja utilizat de un alt cont.", null, 200);
+                sendResponse(false, "Numele de utilizator '{$username}' este deja utilizat de un alt cont.", null, 400);
             }
 
             // Verificăm dacă PIN-ul introdus este deja utilizat de un alt cont
             if (!empty($pin)) {
-                $stmtCheckPin = $db->prepare("SELECT id_user FROM users WHERE pin_code = :pin AND id_user != :id");
-                $stmtCheckPin->execute([':pin' => $pin, ':id' => $idUser]);
-                if ($stmtCheckPin->fetch()) {
-                    sendResponse(false, "Acest PIN este deja folosit de un alt utilizator, te rugăm să alegi altul.", null, 200);
-                }
-            }
-
-            // Verificăm dacă parola introdusă este deja utilizată de un alt cont
-            if (!empty($password)) {
-                $hashedPass = md5($password);
-                $stmtCheckPass = $db->prepare("SELECT id_user FROM users WHERE (password_plain = :p1 OR password = :h OR password = :p2) AND id_user != :id");
-                $stmtCheckPass->execute([':p1' => $password, ':h' => $hashedPass, ':p2' => $password, ':id' => $idUser]);
-                if ($stmtCheckPass->fetch()) {
-                    sendResponse(false, "Această parolă este deja folosită de un alt utilizator, te rugăm să alegi alta.", null, 200);
+                $stmtCheckPin = $db->prepare("SELECT id_user, pin_code FROM users WHERE pin_code IS NOT NULL AND id_user != :id");
+                $stmtCheckPin->execute([':id' => $idUser]);
+                $existingPins = $stmtCheckPin->fetchAll();
+                foreach ($existingPins as $ep) {
+                    if (!empty($ep['pin_code']) && (password_verify($pin, $ep['pin_code']) || trim($ep['pin_code']) === $pin)) {
+                        sendResponse(false, "Acest PIN este deja folosit de un alt utilizator, te rugăm să alegi altul.", null, 400);
+                    }
                 }
             }
 
@@ -336,23 +320,16 @@ elseif ($action === 'update') {
             ];
 
             if (!empty($password)) {
-                $hashedPass = md5($password);
+                $hashedPass = password_hash($password, PASSWORD_DEFAULT);
                 $updateFields[] = 'password = :password';
-                $updateFields[] = 'password_plain = :password_plain';
+                $updateFields[] = 'password_plain = NULL';
                 $params[':password'] = $hashedPass;
-                $params[':password_plain'] = $password;
             }
 
             if (!empty($pin)) {
+                $hashedPin = password_hash($pin, PASSWORD_DEFAULT);
                 $updateFields[] = 'pin_code = :pin';
-                $params[':pin'] = $pin;
-            }
-
-            if (!empty($statusInput) && in_array($statusInput, ['activ', 'inactiv'])) {
-                $updateFields[] = 'status = :status';
-                $updateFields[] = 'cont_active = :cont_active';
-                $params[':status'] = $statusInput;
-                $params[':cont_active'] = ($statusInput === 'activ') ? 1 : 0;
+                $params[':pin'] = $hashedPin;
             }
 
             $sql = "UPDATE users SET " . implode(', ', $updateFields) . " WHERE id_user = :id";
@@ -361,13 +338,15 @@ elseif ($action === 'update') {
 
             sendResponse(true, "Datele utilizatorului '@{$username}' au fost actualizate cu succes.");
         } catch (Throwable $e) {
-            sendResponse(false, 'Eroare modificare utilizator: ' . $e->getMessage(), null, 200);
+            sendResponse(false, 'Eroare modificare utilizator: ' . $e->getMessage(), null, 500);
         }
     } else {
         sendResponse(true, "Date utilizator modificate (Demo).");
     }
 }
 elseif ($action === 'toggle-status') {
+    $authAdmin = requireAuth('admin', $db);
+
     $idUser = (int)($input['id_user'] ?? 0);
     if ($idUser <= 0) sendResponse(false, 'ID utilizator invalid.', null, 400);
     
@@ -390,16 +369,18 @@ elseif ($action === 'toggle-status') {
             $stmt->execute([':st' => $newStatus, ':ca' => $newContActive, ':id' => $idUser]);
             sendResponse(true, "Statusul contului a fost schimbat în '{$newStatus}'.", ['new_status' => $newStatus]);
         } catch (Throwable $e) {
-            sendResponse(false, 'Eroare modificare status: ' . $e->getMessage(), null, 200);
+            sendResponse(false, 'Eroare modificare status: ' . $e->getMessage(), null, 500);
         }
     } else {
         sendResponse(true, 'Status modificat (Demo).');
     }
 }
 elseif ($action === 'delete') {
+    $authAdmin = requireAuth('admin', $db);
+
     $idUser = (int)($input['id_user'] ?? 0);
-    $loggedUserId = (int)($input['logged_user_id'] ?? 0);
-    $loggedUsername = trim(strtolower($input['logged_username'] ?? ''));
+    $loggedUserId = (int)($authAdmin['id_user'] ?? 0);
+    $loggedUsername = trim(strtolower($authAdmin['username'] ?? ''));
 
     if ($idUser <= 0) {
         sendResponse(false, 'ID utilizator invalid.', null, 400);
