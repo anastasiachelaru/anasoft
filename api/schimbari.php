@@ -13,6 +13,7 @@ if ($action === 'list') {
     $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 5000;
     
     if ($db) {
+        try {
             $sql = "SELECT s.id_istoric_schimbare, s.id_aparat, s.id_toner, s.contor, s.data_schimbare, 
                            s.id_user, s.copii_realizate, s.consum_referinta, s.procent_realizat,
                            COALESCE(s.nume_operator, '') AS istoric_nume_operator,
