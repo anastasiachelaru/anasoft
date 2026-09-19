@@ -6,6 +6,7 @@ dist/
 
 # Database dumps
 *.sql
+!database/*.sql
 
 # Environment & Secrets
 .env

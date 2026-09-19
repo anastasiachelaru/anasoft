@@ -6,46 +6,7 @@ $method = $_SERVER['REQUEST_METHOD'];
 $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 $action = $input['action'] ?? $_GET['action'] ?? 'list';
 
-$officesMap = [
-    'ALL' => 'Toate sediile PIM',
-    2 => 'Independenței',
-    3 => 'Tudor',
-    4 => 'Tipografie',
-    5 => 'Smârdan',
-    6 => 'UMF 2'
-];
-
-function ensureUsersSchema($db) {
-    if (!$db) return;
-    $queries = [
-        "ALTER TABLE users MODIFY COLUMN pin_code VARCHAR(255) DEFAULT NULL",
-        "ALTER TABLE users ADD COLUMN email VARCHAR(255) DEFAULT NULL",
-        "ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'operator'",
-        "ALTER TABLE users ADD COLUMN office VARCHAR(50) DEFAULT '4'",
-        "ALTER TABLE users MODIFY COLUMN office VARCHAR(50) DEFAULT '4'",
-        "ALTER TABLE users ADD COLUMN first_name VARCHAR(100) DEFAULT NULL",
-        "ALTER TABLE users ADD COLUMN last_name VARCHAR(100) DEFAULT NULL",
-        "ALTER TABLE users ADD COLUMN cont_active TINYINT DEFAULT 1",
-        "ALTER TABLE users ADD COLUMN status VARCHAR(20) DEFAULT 'activ'",
-        "ALTER TABLE users MODIFY COLUMN status VARCHAR(20) DEFAULT 'activ'",
-        "UPDATE users SET password_plain = NULL WHERE password_plain IS NOT NULL"
-    ];
-    foreach ($queries as $q) {
-        try {
-            $db->exec($q);
-        } catch (Throwable $e) {}
-    }
-    try {
-        $db->exec("UPDATE users SET status = 'activ' WHERE status IS NULL OR status = ''");
-        $db->exec("UPDATE users SET status = 'inactiv' WHERE cont_active = 0");
-        $db->exec("UPDATE users SET cont_active = 1 WHERE status = 'activ'");
-        $db->exec("UPDATE users SET cont_active = 0 WHERE status = 'inactiv'");
-    } catch (Throwable $e) {}
-}
-
-if ($db) {
-    ensureUsersSchema($db);
-}
+$officesMap = getOfficesMap($db);
 
 if ($action === 'list') {
     // 1.1 Protecție sesiune/token

@@ -6,13 +6,7 @@ $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
 $officeId = isset($_GET['office']) ? (int)$_GET['office'] : null;
 
-$officesMap = [
-    2 => 'Independenței',
-    3 => 'Tudor',
-    4 => 'Tipografie',
-    5 => 'Smârdan',
-    6 => 'UMF 2'
-];
+$officesMap = getOfficesMap($db);
 
 if ($action === 'list') {
     $authUser = requireAuth(null, $db);

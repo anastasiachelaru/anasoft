@@ -128,6 +128,54 @@ function requireAuth($requiredRole = null, $db = null) {
     return $user;
 }
 
+// 2.3 Management Centralizat al Sediilor PIM (Single Source of Truth)
+function getOfficesList($db = null) {
+    static $cachedList = null;
+    if ($cachedList !== null) {
+        return $cachedList;
+    }
+
+    $defaultOffices = [
+        ['id_office' => 2, 'nume_sediu' => 'Independenței', 'activ' => 1],
+        ['id_office' => 3, 'nume_sediu' => 'Tudor', 'activ' => 1],
+        ['id_office' => 4, 'nume_sediu' => 'Tipografie', 'activ' => 1],
+        ['id_office' => 5, 'nume_sediu' => 'Smârdan', 'activ' => 1],
+        ['id_office' => 6, 'nume_sediu' => 'UMF 2', 'activ' => 1],
+    ];
+
+    if ($db) {
+        try {
+            $stmt = $db->query("SELECT id_office, nume_sediu, activ FROM sedii WHERE activ = 1 ORDER BY id_office ASC");
+            if ($stmt) {
+                $rows = $stmt->fetchAll();
+                if (!empty($rows)) {
+                    $cachedList = $rows;
+                    return $cachedList;
+                }
+            }
+        } catch (Throwable $e) {}
+    }
+
+    $cachedList = $defaultOffices;
+    return $cachedList;
+}
+
+function getOfficesMap($db = null) {
+    static $cachedMap = null;
+    if ($cachedMap !== null) {
+        return $cachedMap;
+    }
+
+    $list = getOfficesList($db);
+    $map = ['ALL' => 'Toate sediile PIM'];
+    foreach ($list as $item) {
+        $map[(int)$item['id_office']] = $item['nume_sediu'];
+        $map[(string)$item['id_office']] = $item['nume_sediu'];
+    }
+    $cachedMap = $map;
+    return $cachedMap;
+}
+
 function sendResponse($success, $message = '', $data = null, $code = 200) {
     http_response_code($code);
     echo json_encode([
