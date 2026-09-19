@@ -122,7 +122,6 @@ function switchLoginRole(role) {
   const opBtn = document.getElementById("role-operator-btn");
   const adminBtn = document.getElementById("role-admin-btn");
   const instText = document.getElementById("pin-instruction-text");
-  const demoHint = document.getElementById("demo-hint-box");
   const authTabs = document.querySelector(".auth-tabs");
 
   if (role === "admin") {
@@ -139,7 +138,6 @@ function switchLoginRole(role) {
     if (authTabs) authTabs.style.display = "flex";
     switchAuthTab('pass');
     if (instText) instText.innerText = "Conectează-te cu User & Parolă de Administrator sau folosește codul PIN de 12 cifre:";
-    if (demoHint) demoHint.innerHTML = '<i class="fa-solid fa-shield-halved text-yellow"></i> Autentificare Administrator: Folosește formularul de <strong>User & Parolă</strong>';
   } else {
     if (opBtn) {
       opBtn.style.background = "rgba(2, 132, 199, 0.25)";
@@ -154,7 +152,6 @@ function switchLoginRole(role) {
     if (authTabs) authTabs.style.display = "none";
     switchAuthTab('pin');
     if (instText) instText.innerText = "Introdu codul PIN din 6 cifre atribuit contului tău de Operator:";
-    if (demoHint) demoHint.innerHTML = '<i class="fa-solid fa-lightbulb text-cyan"></i> Autentificare Operator prin PIN (6 cifre)';
   }
 
   renderPinDots();
