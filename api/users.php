@@ -76,7 +76,7 @@ elseif ($action === 'create') {
         if ($rawOffice === 'ALL' || $rawOffice === 'all' || $rawOffice === '0' || $rawOffice === 'toate' || empty($rawOffice)) {
             sendResponse(false, 'Pentru Operatori este obligatorie alegerea unui singur sediu fizic.', null, 400);
         }
-        $office = $rawOffice;
+        $office = (string)(int)$rawOffice;
     }
     $password = trim($input['password'] ?? '');
     $confirmPassword = trim($input['confirm_password'] ?? '');
@@ -220,7 +220,7 @@ elseif ($action === 'update') {
         if ($rawOffice === 'ALL' || $rawOffice === 'all' || $rawOffice === '0' || $rawOffice === 'toate' || empty($rawOffice)) {
             sendResponse(false, 'Pentru Operatori este obligatorie alegerea unui singur sediu fizic.', null, 400);
         }
-        $office = $rawOffice;
+        $office = (string)(int)$rawOffice;
     }
     $password = trim($input['password'] ?? '');
     $fullName = trim($input['full_name'] ?? '');

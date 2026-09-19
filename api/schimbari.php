@@ -9,11 +9,56 @@ $officesMap = getOfficesMap($db);
 
 if ($action === 'list') {
     $authUser = requireAuth(null, $db);
-    $officeId = isset($_GET['office']) ? (int)$_GET['office'] : null;
-    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 5000;
+    $rawOffice = $_GET['office'] ?? null;
+    $officeId = ($rawOffice !== null && $rawOffice !== 'all' && $rawOffice !== 'ALL' && $rawOffice !== '') ? (int)$rawOffice : null;
+    
+    $isAll = (isset($_GET['all']) && $_GET['all'] == '1');
+    $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+    $perPage = isset($_GET['per_page']) ? max(1, min(100, (int)$_GET['per_page'])) : (isset($_GET['limit']) ? min(5000, max(1, (int)$_GET['limit'])) : 10);
+    if ($isAll) {
+        $perPage = 5000;
+        $page = 1;
+    }
+    $search = trim((string)($_GET['search'] ?? ''));
+    $offset = ($page - 1) * $perPage;
     
     if ($db) {
         try {
+            $where = [];
+            $params = [];
+
+            if ($officeId !== null && $officeId > 0) {
+                $where[] = "a.office = :office";
+                $params[':office'] = $officeId;
+            }
+
+            if ($search !== '') {
+                $where[] = "(a.nume_aparat LIKE :search1 OR tt.denumire_tip LIKE :search2 OR u.username LIKE :search3 OR u.first_name LIKE :search4 OR u.last_name LIKE :search5 OR s.nume_operator LIKE :search6)";
+                $searchLike = '%' . $search . '%';
+                $params[':search1'] = $searchLike;
+                $params[':search2'] = $searchLike;
+                $params[':search3'] = $searchLike;
+                $params[':search4'] = $searchLike;
+                $params[':search5'] = $searchLike;
+                $params[':search6'] = $searchLike;
+            }
+
+            $whereSql = !empty($where) ? (' WHERE ' . implode(' AND ', $where)) : '';
+
+            // 1. Numărare totală pe înregistrările filtrate
+            $countSql = "SELECT COUNT(*) AS total 
+                         FROM istoric_schimbari s
+                         LEFT JOIN aparate a ON s.id_aparat = a.id_aparat
+                         LEFT JOIN tonere t ON s.id_toner = t.id_toner
+                         LEFT JOIN tipuri_toner tt ON t.id_tip_toner = tt.id_tip_toner
+                         LEFT JOIN users u ON s.id_user = u.id_user" . $whereSql;
+
+            $stmtCount = $db->prepare($countSql);
+            $stmtCount->execute($params);
+            $totalRecords = (int)($stmtCount->fetchColumn() ?: 0);
+            $totalPages = max(1, (int)ceil($totalRecords / $perPage));
+
+            // 2. Preluare paginată
             $sql = "SELECT s.id_istoric_schimbare, s.id_aparat, s.id_toner, s.contor, s.data_schimbare, 
                            s.id_user, s.copii_realizate, s.consum_referinta, s.procent_realizat,
                            COALESCE(s.nume_operator, '') AS istoric_nume_operator,
@@ -25,17 +70,17 @@ if ($action === 'list') {
                     LEFT JOIN aparate a ON s.id_aparat = a.id_aparat
                     LEFT JOIN tonere t ON s.id_toner = t.id_toner
                     LEFT JOIN tipuri_toner tt ON t.id_tip_toner = tt.id_tip_toner
-                    LEFT JOIN users u ON s.id_user = u.id_user";
-            
-            $params = [];
-            if ($officeId !== null) {
-                $sql .= " WHERE a.office = :office";
-                $params[':office'] = $officeId;
-            }
-            
-            $sql .= " ORDER BY s.data_schimbare DESC, s.id_istoric_schimbare DESC LIMIT " . $limit;
+                    LEFT JOIN users u ON s.id_user = u.id_user"
+                    . $whereSql
+                    . " ORDER BY s.data_schimbare DESC, s.id_istoric_schimbare DESC LIMIT :limit OFFSET :offset";
+
             $stmt = $db->prepare($sql);
-            $stmt->execute($params);
+            foreach ($params as $k => $v) {
+                $stmt->bindValue($k, $v);
+            }
+            $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->execute();
             $schimbari = $stmt->fetchAll();
             
             foreach ($schimbari as &$s) {
@@ -60,9 +105,14 @@ if ($action === 'list') {
                 $s['nume_operator'] = $fullName;
             }
             
-            sendResponse(true, 'Istoric schimbări încărcat.', $schimbari);
+            sendResponse(true, 'Istoric schimbări încărcat.', $schimbari, 200, [
+                'total' => $totalRecords,
+                'page' => $page,
+                'per_page' => $perPage,
+                'total_pages' => $totalPages
+            ]);
         } catch (Throwable $e) {
-            sendResponse(false, 'Eroare SQL istoric: ' . $e->getMessage(), null, 200);
+            sendResponse(false, 'Eroare SQL istoric: ' . $e->getMessage(), null, 500);
         }
     } else {
         // Mock istoric din pimcopyr_toner.sql
@@ -240,29 +290,54 @@ elseif ($action === 'add') {
             
             $procentRealizat = ($consumReferinta > 0 && $copiiRealizate > 0) ? round(($copiiRealizate / $consumReferinta) * 100, 2) : 0;
             
-            $stmtIns = $db->prepare("INSERT INTO istoric_schimbari 
-                                     (id_aparat, id_toner, contor, data_schimbare, id_user, nume_operator, copii_realizate, consum_referinta, procent_realizat)
-                                     VALUES (:aparat, :toner, :contor, NOW(), :user, :nume_op, :copii, :ref, :procent)");
-            $stmtIns->execute([
-                ':aparat' => $idAparat,
-                ':toner' => $idToner,
-                ':contor' => $contor,
-                ':user' => $idUser,
-                ':nume_op' => $numeOp,
-                ':copii' => $copiiRealizate,
-                ':ref' => $consumReferinta,
-                ':procent' => $procentRealizat
-            ]);
-            
-            // Scădere din stoc
-            $stmtStock = $db->prepare("UPDATE tonere SET stoc = GREATEST(0, stoc - 1) WHERE id_toner = :toner");
-            $stmtStock->execute([':toner' => $idToner]);
-            
-            sendResponse(true, 'Schimbarea de toner a fost înregistrată cu succes! Stocul a fost scăzut.', [
-                'id_schimbare' => $db->lastInsertId(),
-                'copii_realizate' => $copiiRealizate,
-                'procent_realizat' => $procentRealizat
-            ]);
+            // Inițiere tranzacție atomică ACID
+            $db->beginTransaction();
+            try {
+                // 1. Verificare și blocare pe rând pentru stoc (FOR UPDATE)
+                $stmtLock = $db->prepare("SELECT stoc FROM tonere WHERE id_toner = :toner FOR UPDATE");
+                $stmtLock->execute([':toner' => $idToner]);
+                $tonerRow = $stmtLock->fetch();
+
+                if (!$tonerRow || (int)$tonerRow['stoc'] <= 0) {
+                    $db->rollBack();
+                    sendResponse(false, 'Stoc epuizat! Tonerul selectat are 0 bucăți disponibile și nu poate fi instalat.', null, 400);
+                }
+
+                // 2. Inserare în istoric_schimbari
+                $stmtIns = $db->prepare("INSERT INTO istoric_schimbari 
+                                         (id_aparat, id_toner, contor, data_schimbare, id_user, nume_operator, copii_realizate, consum_referinta, procent_realizat)
+                                         VALUES (:aparat, :toner, :contor, NOW(), :user, :nume_op, :copii, :ref, :procent)");
+                $stmtIns->execute([
+                    ':aparat' => $idAparat,
+                    ':toner' => $idToner,
+                    ':contor' => $contor,
+                    ':user' => $idUser,
+                    ':nume_op' => $numeOp,
+                    ':copii' => $copiiRealizate,
+                    ':ref' => $consumReferinta,
+                    ':procent' => $procentRealizat
+                ]);
+                
+                $newId = (int)$db->lastInsertId();
+
+                // 3. Scădere din stoc
+                $stmtStock = $db->prepare("UPDATE tonere SET stoc = GREATEST(0, stoc - 1) WHERE id_toner = :toner");
+                $stmtStock->execute([':toner' => $idToner]);
+
+                // 4. Salvare definitivă a tranzacției atomice
+                $db->commit();
+
+                sendResponse(true, 'Schimbarea de toner a fost înregistrată cu succes! Stocul a fost scăzut.', [
+                    'id_schimbare' => $newId,
+                    'copii_realizate' => $copiiRealizate,
+                    'procent_realizat' => $procentRealizat
+                ]);
+            } catch (Throwable $e) {
+                if ($db->inTransaction()) {
+                    $db->rollBack();
+                }
+                throw $e;
+            }
         } catch (Throwable $ex) {
             sendResponse(false, 'Eroare la salvarea schimbării în baza de date: ' . $ex->getMessage(), null, 500);
         }

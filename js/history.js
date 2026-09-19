@@ -1,26 +1,76 @@
 // =============================================================================
-// PIM Iași - Modul Istoric Schimbări & Paginare (js/history.js)
+// PIM Iași - Modul Istoric Schimbări & Paginare Server-Side (js/history.js)
 // =============================================================================
 
 let historyData = [];
+let historyTotalRecords = 0;
 let historyCurrentPage = 1;
+
+let recentData = [];
+let recentTotalRecords = 0;
 let recentCurrentPage = 1;
+
+let historySearchQuery = '';
+let historySearchDebounceTimer = null;
 const PAGE_SIZE = 10;
 
 async function loadHistoryData() {
+  await Promise.all([
+    loadRecentHistoryData(recentCurrentPage),
+    loadFullHistoryData(historyCurrentPage, historySearchQuery)
+  ]);
+}
+
+async function loadRecentHistoryData(page = 1) {
+  recentCurrentPage = Math.max(1, parseInt(page) || 1);
   try {
     const activeOffice = (typeof currentOfficeFilter !== 'undefined') ? currentOfficeFilter : "all";
-    const url = (activeOffice !== "all") 
-      ? `api/schimbari.php?action=list&office=${activeOffice}` 
-      : "api/schimbari.php?action=list";
+    const url = `api/schimbari.php?action=list&page=${recentCurrentPage}&per_page=${PAGE_SIZE}&office=${activeOffice}`;
     const res = await fetch(url);
     const json = await res.json();
-    if (json.success) historyData = json.data;
+    if (json && json.success && Array.isArray(json.data)) {
+      recentData = json.data;
+      recentTotalRecords = (typeof json.total === 'number') ? json.total : json.data.length;
+    } else {
+      recentData = [];
+      recentTotalRecords = 0;
+    }
   } catch (err) {
+    console.warn("Eroare la incarcare istoric recent:", err);
+    recentData = [];
+    recentTotalRecords = 0;
+  }
+  renderWizardRecentTable();
+}
+
+async function loadFullHistoryData(page = 1, searchQuery = '') {
+  historyCurrentPage = Math.max(1, parseInt(page) || 1);
+  historySearchQuery = searchQuery;
+  try {
+    const activeOffice = (typeof currentOfficeFilter !== 'undefined') ? currentOfficeFilter : "all";
+    const url = `api/schimbari.php?action=list&page=${historyCurrentPage}&per_page=${PAGE_SIZE}&office=${activeOffice}&search=${encodeURIComponent(searchQuery)}`;
+    const res = await fetch(url);
+    const json = await res.json();
+    if (json && json.success && Array.isArray(json.data)) {
+      historyData = json.data;
+      historyTotalRecords = (typeof json.total === 'number') ? json.total : json.data.length;
+    } else {
+      historyData = [];
+      historyTotalRecords = 0;
+    }
+  } catch (err) {
+    console.warn("Eroare la incarcare istoric complet:", err);
     historyData = [];
+    historyTotalRecords = 0;
   }
   renderHistoryTable();
-  renderWizardRecentTable();
+}
+
+function onSearchHistoryInput(query) {
+  clearTimeout(historySearchDebounceTimer);
+  historySearchDebounceTimer = setTimeout(() => {
+    loadFullHistoryData(1, (query || '').trim());
+  }, 300);
 }
 
 function renderPaginationControls(containerId, infoId, currentPage, totalItems, pageSize, onPageChange) {
@@ -96,21 +146,13 @@ function renderHistoryTable() {
   if (!tbody) return;
   tbody.innerHTML = "";
   
-  let filtered = historyData;
-  const activeOffice = (typeof currentOfficeFilter !== 'undefined') ? currentOfficeFilter : "all";
-  if (activeOffice !== "all") {
-    filtered = filtered.filter(h => h.office == activeOffice);
+  if (historyData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:#94a3b8; padding:20px;">Nu există înregistrări în istoric conform filtrelor selectate.</td></tr>';
+    renderPaginationControls("history-pagination-controls", "history-pagination-info", 1, 0, PAGE_SIZE, () => {});
+    return;
   }
   
-  const totalItems = filtered.length;
-  const totalPages = Math.ceil(totalItems / PAGE_SIZE) || 1;
-  if (historyCurrentPage > totalPages) historyCurrentPage = totalPages;
-  if (historyCurrentPage < 1) historyCurrentPage = 1;
-  
-  const startIdx = (historyCurrentPage - 1) * PAGE_SIZE;
-  const pageItems = filtered.slice(startIdx, startIdx + PAGE_SIZE);
-  
-  pageItems.forEach(h => {
+  historyData.forEach(h => {
     const tr = document.createElement("tr");
     const procentStr = h.procent_realizat ? `${parseFloat(h.procent_realizat).toFixed(2)}%` : '0.00%';
     const colorBadge = (typeof getColorBadge === 'function') ? getColorBadge(h.denumire_tip || '') : (h.denumire_tip || '');
@@ -150,11 +192,10 @@ function renderHistoryTable() {
     "history-pagination-controls",
     "history-pagination-info",
     historyCurrentPage,
-    totalItems,
+    historyTotalRecords,
     PAGE_SIZE,
     (newPage) => {
-      historyCurrentPage = newPage;
-      renderHistoryTable();
+      loadFullHistoryData(newPage, historySearchQuery);
     }
   );
 }
@@ -164,21 +205,13 @@ function renderWizardRecentTable() {
   if (!tbody) return;
   tbody.innerHTML = "";
   
-  let filtered = historyData;
-  const activeOffice = (typeof currentOfficeFilter !== 'undefined') ? currentOfficeFilter : "all";
-  if (activeOffice !== "all") {
-    filtered = filtered.filter(h => h.office == activeOffice);
+  if (recentData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:#94a3b8; padding:20px;">Nu există schimbări recente pe acest sediu.</td></tr>';
+    renderPaginationControls("recent-pagination-controls", "recent-pagination-info", 1, 0, PAGE_SIZE, () => {});
+    return;
   }
   
-  const totalItems = filtered.length;
-  const totalPages = Math.ceil(totalItems / PAGE_SIZE) || 1;
-  if (recentCurrentPage > totalPages) recentCurrentPage = totalPages;
-  if (recentCurrentPage < 1) recentCurrentPage = 1;
-  
-  const startIdx = (recentCurrentPage - 1) * PAGE_SIZE;
-  const pageItems = filtered.slice(startIdx, startIdx + PAGE_SIZE);
-  
-  pageItems.forEach(h => {
+  recentData.forEach(h => {
     const tr = document.createElement("tr");
     const procentStr = h.procent_realizat ? `${parseFloat(h.procent_realizat).toFixed(2)}%` : '0.00%';
     const colorBadge = (typeof getColorBadge === 'function') ? getColorBadge(h.denumire_tip || '') : (h.denumire_tip || '');
@@ -218,11 +251,17 @@ function renderWizardRecentTable() {
     "recent-pagination-controls",
     "recent-pagination-info",
     recentCurrentPage,
-    totalItems,
+    recentTotalRecords,
     PAGE_SIZE,
     (newPage) => {
-      recentCurrentPage = newPage;
-      renderWizardRecentTable();
+      loadRecentHistoryData(newPage);
     }
   );
 }
+
+window.loadHistoryData = loadHistoryData;
+window.loadRecentHistoryData = loadRecentHistoryData;
+window.loadFullHistoryData = loadFullHistoryData;
+window.onSearchHistoryInput = onSearchHistoryInput;
+window.renderHistoryTable = renderHistoryTable;
+window.renderWizardRecentTable = renderWizardRecentTable;

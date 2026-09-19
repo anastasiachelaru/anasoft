@@ -53,3 +53,21 @@ ALTER TABLE `ink_history` MODIFY COLUMN `id_user` INT DEFAULT NULL;
 
 -- Asigurare status activ pentru administratorii principali
 UPDATE `users` SET `role` = 'admin', `status` = 'activ', `cont_active` = 1 WHERE `username` IN ('eugenadmin', 'anastasia');
+
+-- Normalizare valori sedii în tabela 'users'
+UPDATE `users` SET `office` = 'ALL' WHERE `role` = 'admin' AND (`office` IS NULL OR `office` = '0' OR `office` = 'toate');
+UPDATE `users` SET `office` = '4' WHERE `role` = 'operator' AND (`office` = 'ALL' OR `office` = '0' OR `office` IS NULL OR `office` = '');
+
+-- 5. Indexuri de performanță pentru căutare rapidă și paginare pe istoric
+SET @exist_idx1 = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'istoric_schimbari' AND INDEX_NAME = 'idx_istoric_aparat');
+SET @sql_idx1 = IF(@exist_idx1 = 0, 'CREATE INDEX idx_istoric_aparat ON `istoric_schimbari` (`id_aparat`)', 'SELECT "Index idx_istoric_aparat exists"');
+PREPARE stmt_idx1 FROM @sql_idx1;
+EXECUTE stmt_idx1;
+DEALLOCATE PREPARE stmt_idx1;
+
+SET @exist_idx2 = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'istoric_schimbari' AND INDEX_NAME = 'idx_istoric_data');
+SET @sql_idx2 = IF(@exist_idx2 = 0, 'CREATE INDEX idx_istoric_data ON `istoric_schimbari` (`data_schimbare`)', 'SELECT "Index idx_istoric_data exists"');
+PREPARE stmt_idx2 FROM @sql_idx2;
+EXECUTE stmt_idx2;
+DEALLOCATE PREPARE stmt_idx2;
+

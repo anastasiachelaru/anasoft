@@ -176,13 +176,17 @@ function getOfficesMap($db = null) {
     return $cachedMap;
 }
 
-function sendResponse($success, $message = '', $data = null, $code = 200) {
+function sendResponse($success, $message = '', $data = null, $code = 200, $extra = []) {
     http_response_code($code);
-    echo json_encode([
+    $response = [
         'success' => $success,
         'message' => $message,
         'data' => $data,
         'timestamp' => date('Y-m-d H:i:s')
-    ], JSON_UNESCAPED_UNICODE);
+    ];
+    if (!empty($extra) && is_array($extra)) {
+        $response = array_merge($response, $extra);
+    }
+    echo json_encode($response, JSON_UNESCAPED_UNICODE);
     exit();
 }

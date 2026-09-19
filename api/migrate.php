@@ -50,7 +50,9 @@ $queries = [
 
     // Ajustări istoric
     "ALTER TABLE `ink_history` MODIFY COLUMN `id_user` INT DEFAULT NULL;" => "Coloana id_user din ink_history permite NULL.",
-    "UPDATE `users` SET `role` = 'admin', `status` = 'activ', `cont_active` = 1 WHERE `username` IN ('eugenadmin', 'anastasia');" => "Conturile administrative principale sincronizate."
+    "UPDATE `users` SET `role` = 'admin', `status` = 'activ', `cont_active` = 1 WHERE `username` IN ('eugenadmin', 'anastasia');" => "Conturile administrative principale sincronizate.",
+    "UPDATE `users` SET `office` = 'ALL' WHERE `role` = 'admin' AND (`office` IS NULL OR `office` = '0' OR `office` = 'toate');" => "Sedii administratori normalizate (ALL).",
+    "UPDATE `users` SET `office` = '4' WHERE `role` = 'operator' AND (`office` = 'ALL' OR `office` = '0' OR `office` IS NULL OR `office` = '');" => "Sedii operatori normalizate."
 ];
 
 foreach ($queries as $sql => $desc) {
@@ -86,6 +88,25 @@ try {
     }
 } catch (Throwable $e) {
     $log[] = ['status' => 'warning', 'message' => "Verificare ink_history: " . $e->getMessage()];
+}
+
+// Verificare și creare indexuri pe istoric_schimbari pentru viteză
+$indexes = [
+    'idx_istoric_aparat' => "CREATE INDEX idx_istoric_aparat ON `istoric_schimbari` (`id_aparat`)",
+    'idx_istoric_data' => "CREATE INDEX idx_istoric_data ON `istoric_schimbari` (`data_schimbare`)"
+];
+foreach ($indexes as $idxName => $idxSql) {
+    try {
+        $idxCheck = $db->query("SHOW INDEX FROM `istoric_schimbari` WHERE Key_name = '{$idxName}'");
+        if ($idxCheck && !$idxCheck->fetch()) {
+            $db->exec($idxSql);
+            $log[] = ['status' => 'success', 'message' => "Indexul '{$idxName}' a fost creat."];
+        } else {
+            $log[] = ['status' => 'info', 'message' => "Indexul '{$idxName}' există deja."];
+        }
+    } catch (Throwable $e) {
+        $log[] = ['status' => 'warning', 'message' => "Index '{$idxName}': " . $e->getMessage()];
+    }
 }
 
 sendResponse(true, 'Migrarea bazei de date a fost executată cu succes!', [
