@@ -71,3 +71,28 @@ PREPARE stmt_idx2 FROM @sql_idx2;
 EXECUTE stmt_idx2;
 DEALLOCATE PREPARE stmt_idx2;
 
+SET @exist_idx3 = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'istoric_schimbari' AND INDEX_NAME = 'idx_istoric_toner');
+SET @sql_idx3 = IF(@exist_idx3 = 0, 'CREATE INDEX idx_istoric_toner ON `istoric_schimbari` (`id_toner`)', 'SELECT "Index idx_istoric_toner exists"');
+PREPARE stmt_idx3 FROM @sql_idx3;
+EXECUTE stmt_idx3;
+DEALLOCATE PREPARE stmt_idx3;
+
+SET @exist_idx4 = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'istoric_schimbari' AND INDEX_NAME = 'idx_istoric_user');
+SET @sql_idx4 = IF(@exist_idx4 = 0, 'CREATE INDEX idx_istoric_user ON `istoric_schimbari` (`id_user`)', 'SELECT "Index idx_istoric_user exists"');
+PREPARE stmt_idx4 FROM @sql_idx4;
+EXECUTE stmt_idx4;
+DEALLOCATE PREPARE stmt_idx4;
+
+SET @exist_idx5 = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'istoric_schimbari' AND INDEX_NAME = 'idx_istoric_aparat_data');
+SET @sql_idx5 = IF(@exist_idx5 = 0, 'CREATE INDEX idx_istoric_aparat_data ON `istoric_schimbari` (`id_aparat`, `data_schimbare`)', 'SELECT "Index idx_istoric_aparat_data exists"');
+PREPARE stmt_idx5 FROM @sql_idx5;
+EXECUTE stmt_idx5;
+DEALLOCATE PREPARE stmt_idx5;
+
+SET @exist_idx6 = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tonere' AND INDEX_NAME = 'idx_tonere_tip_office');
+SET @sql_idx6 = IF(@exist_idx6 = 0, 'CREATE INDEX idx_tonere_tip_office ON `tonere` (`id_tip_toner`, `office`)', 'SELECT "Index idx_tonere_tip_office exists"');
+PREPARE stmt_idx6 FROM @sql_idx6;
+EXECUTE stmt_idx6;
+DEALLOCATE PREPARE stmt_idx6;
+
+

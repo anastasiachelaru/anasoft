@@ -46,6 +46,10 @@ async function loadRecentHistoryData(page = 1) {
 async function loadFullHistoryData(page = 1, searchQuery = '') {
   historyCurrentPage = Math.max(1, parseInt(page) || 1);
   historySearchQuery = searchQuery;
+  
+  const tbody = document.getElementById("history-table-body");
+  if (tbody) tbody.classList.add("table-loading");
+
   try {
     const activeOffice = (typeof currentOfficeFilter !== 'undefined') ? currentOfficeFilter : "all";
     const url = `api/schimbari.php?action=list&page=${historyCurrentPage}&per_page=${PAGE_SIZE}&office=${activeOffice}&search=${encodeURIComponent(searchQuery)}`;
@@ -62,15 +66,37 @@ async function loadFullHistoryData(page = 1, searchQuery = '') {
     console.warn("Eroare la incarcare istoric complet:", err);
     historyData = [];
     historyTotalRecords = 0;
+  } finally {
+    if (tbody) tbody.classList.remove("table-loading");
   }
   renderHistoryTable();
 }
 
 function onSearchHistoryInput(query) {
+  const clearBtn = document.getElementById("btn-clear-history-search");
+  if (clearBtn) {
+    if (query && query.trim().length > 0) {
+      clearBtn.classList.remove("hidden");
+    } else {
+      clearBtn.classList.add("hidden");
+    }
+  }
+
   clearTimeout(historySearchDebounceTimer);
   historySearchDebounceTimer = setTimeout(() => {
     loadFullHistoryData(1, (query || '').trim());
   }, 300);
+}
+
+function resetHistorySearch() {
+  const input = document.getElementById("search-history-input");
+  if (input) input.value = '';
+  const clearBtn = document.getElementById("btn-clear-history-search");
+  if (clearBtn) clearBtn.classList.add("hidden");
+
+  clearTimeout(historySearchDebounceTimer);
+  historySearchQuery = '';
+  loadFullHistoryData(1, '');
 }
 
 function renderPaginationControls(containerId, infoId, currentPage, totalItems, pageSize, onPageChange) {
@@ -83,7 +109,10 @@ function renderPaginationControls(containerId, infoId, currentPage, totalItems, 
   const startIdx = totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0;
   const endIdx = Math.min(currentPage * pageSize, totalItems);
   
-  infoElem.innerHTML = `Afișare <strong>${startIdx}-${endIdx}</strong> din <strong>${totalItems}</strong> înregistrări (Pagina ${currentPage} din ${totalPages})`;
+  const searchNotice = (containerId === "history-pagination-controls" && historySearchQuery)
+    ? ` pentru căutarea <strong style="color:var(--cyan-accent);">„${String(historySearchQuery).replace(/</g, '&lt;').replace(/>/g, '&gt;')}”</strong>`
+    : '';
+  infoElem.innerHTML = `Afișare <strong>${startIdx}-${endIdx}</strong> din <strong>${totalItems}</strong> înregistrări${searchNotice} (Pagina ${currentPage} din ${totalPages})`;
   
   if (totalPages <= 1) return;
   
@@ -263,5 +292,6 @@ window.loadHistoryData = loadHistoryData;
 window.loadRecentHistoryData = loadRecentHistoryData;
 window.loadFullHistoryData = loadFullHistoryData;
 window.onSearchHistoryInput = onSearchHistoryInput;
+window.resetHistorySearch = resetHistorySearch;
 window.renderHistoryTable = renderHistoryTable;
 window.renderWizardRecentTable = renderWizardRecentTable;

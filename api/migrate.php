@@ -90,22 +90,30 @@ try {
     $log[] = ['status' => 'warning', 'message' => "Verificare ink_history: " . $e->getMessage()];
 }
 
-// Verificare și creare indexuri pe istoric_schimbari pentru viteză
+// Verificare și creare indexuri de performanță pentru viteză (Problema 4)
 $indexes = [
-    'idx_istoric_aparat' => "CREATE INDEX idx_istoric_aparat ON `istoric_schimbari` (`id_aparat`)",
-    'idx_istoric_data' => "CREATE INDEX idx_istoric_data ON `istoric_schimbari` (`data_schimbare`)"
+    ['table' => 'istoric_schimbari', 'name' => 'idx_istoric_aparat', 'sql' => "CREATE INDEX idx_istoric_aparat ON `istoric_schimbari` (`id_aparat`)"],
+    ['table' => 'istoric_schimbari', 'name' => 'idx_istoric_data', 'sql' => "CREATE INDEX idx_istoric_data ON `istoric_schimbari` (`data_schimbare`)"],
+    ['table' => 'istoric_schimbari', 'name' => 'idx_istoric_toner', 'sql' => "CREATE INDEX idx_istoric_toner ON `istoric_schimbari` (`id_toner`)"],
+    ['table' => 'istoric_schimbari', 'name' => 'idx_istoric_user', 'sql' => "CREATE INDEX idx_istoric_user ON `istoric_schimbari` (`id_user`)"],
+    ['table' => 'istoric_schimbari', 'name' => 'idx_istoric_aparat_data', 'sql' => "CREATE INDEX idx_istoric_aparat_data ON `istoric_schimbari` (`id_aparat`, `data_schimbare`)"],
+    ['table' => 'tonere', 'name' => 'idx_tonere_tip_office', 'sql' => "CREATE INDEX idx_tonere_tip_office ON `tonere` (`id_tip_toner`, `office`)"]
 ];
-foreach ($indexes as $idxName => $idxSql) {
+
+foreach ($indexes as $idx) {
+    $tbl = $idx['table'];
+    $idxName = $idx['name'];
+    $idxSql = $idx['sql'];
     try {
-        $idxCheck = $db->query("SHOW INDEX FROM `istoric_schimbari` WHERE Key_name = '{$idxName}'");
+        $idxCheck = $db->query("SHOW INDEX FROM `{$tbl}` WHERE Key_name = '{$idxName}'");
         if ($idxCheck && !$idxCheck->fetch()) {
             $db->exec($idxSql);
-            $log[] = ['status' => 'success', 'message' => "Indexul '{$idxName}' a fost creat."];
+            $log[] = ['status' => 'success', 'message' => "Indexul '{$idxName}' pe tabela '{$tbl}' a fost creat."];
         } else {
-            $log[] = ['status' => 'info', 'message' => "Indexul '{$idxName}' există deja."];
+            $log[] = ['status' => 'info', 'message' => "Indexul '{$idxName}' pe tabela '{$tbl}' există deja."];
         }
     } catch (Throwable $e) {
-        $log[] = ['status' => 'warning', 'message' => "Index '{$idxName}': " . $e->getMessage()];
+        $log[] = ['status' => 'warning', 'message' => "Index '{$idxName}' pe '{$tbl}': " . $e->getMessage()];
     }
 }
 
