@@ -25,7 +25,7 @@
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-  <link rel="stylesheet" href="style.css?v=1.1.4">
+  <link rel="stylesheet" href="style.css?v=1.1.5">
 </head>
 
 <body class="dark-theme">
@@ -176,9 +176,6 @@
         <button class="nav-btn" id="nav-tonere-btn" onclick="switchSection('tonere')">
           <i class="fa-solid fa-boxes-stacked"></i> Stoc Tonere
         </button>
-        <button class="nav-btn" id="nav-istoric-btn" onclick="switchSection('istoric')">
-          <i class="fa-solid fa-clock-rotate-left text-yellow"></i> Istoric Schimbări
-        </button>
 
         <!-- OPȚIUNI EXCLUSIVE PENTRU ADMIN -->
         <button class="nav-btn admin-only hidden" id="nav-utilizatori-btn" onclick="switchSection('utilizatori')">
@@ -304,46 +301,7 @@
           </div>
         </div>
 
-        <!-- SECȚIUNEA 3: ISTORIC ÎNLOCUIRI TONERE -->
-        <div id="section-istoric" class="app-section">
-          <div class="section-header">
-            <div>
-              <h3><i class="fa-solid fa-clock-rotate-left text-yellow"></i> Istoric Schimbări Tonere</h3>
-              <p class="section-subtitle">Jurnalul complet al schimburilor de toner efectuate în sediile PIM Iași</p>
-            </div>
-            <div class="search-history-wrapper">
-              <input type="text" id="search-history-input" class="search-input full-width" placeholder="Caută aparat, toner, operator..." oninput="onSearchHistoryInput(this.value)">
-              <button type="button" id="btn-clear-history-search" class="clear-search-btn hidden" onclick="resetHistorySearch()" title="Șterge căutarea">&times;</button>
-            </div>
-          </div>
-
-          <div class="table-card">
-            <table class="custom-table">
-              <thead>
-                <tr>
-                  <th>Număr</th>
-                  <th>Aparat</th>
-                  <th>Tip Toner</th>
-                  <th>Sediu</th>
-                  <th>Utilizator</th>
-                  <th>Contor / Consum Ref.</th>
-                  <th>Nr. Copii</th>
-                  <th>Procent</th>
-                  <th>Data Schimbare</th>
-                </tr>
-              </thead>
-              <tbody id="history-table-body">
-                <!-- Se populează dinamic -->
-              </tbody>
-            </table>
-            <div class="pagination-footer" id="history-pagination-footer">
-              <div class="pagination-info" id="history-pagination-info">Afișare 0 din 0 înregistrări</div>
-              <div class="pagination-controls" id="history-pagination-controls"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- SECȚIUNEA 4: MANAGEMENT UTILIZATORI (ADMIN ONLY) -->
+        <!-- SECȚIUNEA 3: MANAGEMENT UTILIZATORI (ADMIN ONLY) -->
         <div id="section-utilizatori" class="app-section">
           <div class="section-header">
             <div>
@@ -1167,15 +1125,15 @@
     </div>
   </div>
 
-  <script src="js/utils.js?v=1.1.4"></script>
-  <script src="js/offices.js?v=1.1.4"></script>
-  <script src="js/auth.js?v=1.1.4"></script>
-  <script src="js/users.js?v=1.1.4"></script>
-  <script src="js/stock.js?v=1.1.4"></script>
-  <script src="js/history.js?v=1.1.4"></script>
-  <script src="js/wizard.js?v=1.1.4"></script>
-  <script src="js/catalog.js?v=1.1.4"></script>
-  <script src="app.js?v=1.1.4"></script>
+  <script src="js/utils.js?v=1.1.5"></script>
+  <script src="js/offices.js?v=1.1.5"></script>
+  <script src="js/auth.js?v=1.1.5"></script>
+  <script src="js/users.js?v=1.1.5"></script>
+  <script src="js/stock.js?v=1.1.5"></script>
+  <script src="js/history.js?v=1.1.5"></script>
+  <script src="js/wizard.js?v=1.1.5"></script>
+  <script src="js/catalog.js?v=1.1.5"></script>
+  <script src="app.js?v=1.1.5"></script>
 </body>
 
 </html>

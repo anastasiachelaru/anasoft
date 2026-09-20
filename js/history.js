@@ -15,10 +15,7 @@ let historySearchDebounceTimer = null;
 const PAGE_SIZE = 10;
 
 async function loadHistoryData() {
-  await Promise.all([
-    loadRecentHistoryData(recentCurrentPage),
-    loadFullHistoryData(historyCurrentPage, historySearchQuery)
-  ]);
+  await loadRecentHistoryData(recentCurrentPage, recentSearchQuery);
 }
 
 let recentSearchQuery = '';

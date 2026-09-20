@@ -322,7 +322,6 @@ function renderUserHeader() {
 
   if (isAdmin) {
     document.querySelectorAll(".admin-only").forEach(el => el.classList.remove("hidden"));
-    document.getElementById("nav-istoric-btn")?.classList.remove("hidden");
     if (selectElem) {
       selectElem.disabled = false;
       const off = currentUser ? currentUser.office : null;
@@ -337,7 +336,6 @@ function renderUserHeader() {
     if (typeof loadUsersData === 'function') loadUsersData();
   } else {
     document.querySelectorAll(".admin-only").forEach(el => el.classList.add("hidden"));
-    document.getElementById("nav-istoric-btn")?.classList.remove("hidden");
     
     // Operatorul vede DOAR sediul la care a fost asignat!
     if (typeof currentOfficeFilter !== 'undefined') {
