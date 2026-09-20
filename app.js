@@ -26,6 +26,12 @@ function switchSection(secId) {
   if (secId === "utilizatori" && typeof loadUsersData === 'function') {
     loadUsersData();
   }
+  if (secId === "istoric" && typeof loadFullHistoryData === 'function') {
+    loadFullHistoryData(typeof historyCurrentPage !== 'undefined' ? historyCurrentPage : 1, typeof historySearchQuery !== 'undefined' ? historySearchQuery : '');
+  }
+  if (secId === "tonere" && typeof loadTonersData === 'function') {
+    loadTonersData();
+  }
 }
 
 /**
