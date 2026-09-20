@@ -25,7 +25,7 @@
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-  <link rel="stylesheet" href="style.css?v=1.1.3">
+  <link rel="stylesheet" href="style.css?v=1.1.4">
 </head>
 
 <body class="dark-theme">
@@ -202,6 +202,10 @@
           <div class="table-card margin-top">
             <div class="table-card-header">
               <h4><i class="fa-solid fa-clock-rotate-left"></i> Ultimele Schimbări Înregistrate</h4>
+              <div class="search-history-wrapper">
+                <input type="text" id="search-recent-input" class="search-input full-width" placeholder="Caută aparat, toner, operator..." oninput="onSearchRecentInput(this.value)">
+                <button type="button" id="btn-clear-recent-search" class="clear-search-btn hidden" onclick="resetRecentSearch()" title="Șterge căutarea">&times;</button>
+              </div>
             </div>
             <table class="custom-table">
               <thead>
@@ -1160,15 +1164,15 @@
     </div>
   </div>
 
-  <script src="js/utils.js?v=1.1.3"></script>
-  <script src="js/offices.js?v=1.1.3"></script>
-  <script src="js/auth.js?v=1.1.3"></script>
-  <script src="js/users.js?v=1.1.3"></script>
-  <script src="js/stock.js?v=1.1.3"></script>
-  <script src="js/history.js?v=1.1.3"></script>
-  <script src="js/wizard.js?v=1.1.3"></script>
-  <script src="js/catalog.js?v=1.1.3"></script>
-  <script src="app.js?v=1.1.3"></script>
+  <script src="js/utils.js?v=1.1.4"></script>
+  <script src="js/offices.js?v=1.1.4"></script>
+  <script src="js/auth.js?v=1.1.4"></script>
+  <script src="js/users.js?v=1.1.4"></script>
+  <script src="js/stock.js?v=1.1.4"></script>
+  <script src="js/history.js?v=1.1.4"></script>
+  <script src="js/wizard.js?v=1.1.4"></script>
+  <script src="js/catalog.js?v=1.1.4"></script>
+  <script src="app.js?v=1.1.4"></script>
 </body>
 
 </html>

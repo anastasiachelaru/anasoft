@@ -21,11 +21,19 @@ async function loadHistoryData() {
   ]);
 }
 
-async function loadRecentHistoryData(page = 1) {
+let recentSearchQuery = '';
+let recentSearchDebounceTimer = null;
+
+async function loadRecentHistoryData(page = 1, searchQuery = '') {
   recentCurrentPage = Math.max(1, parseInt(page) || 1);
+  if (typeof searchQuery === 'string') recentSearchQuery = searchQuery;
+
+  const tbody = document.getElementById("wizard-recent-tbody");
+  if (tbody) tbody.classList.add("table-loading");
+
   try {
     const activeOffice = (typeof currentOfficeFilter !== 'undefined') ? currentOfficeFilter : "all";
-    const url = `api/schimbari.php?action=list&page=${recentCurrentPage}&per_page=${PAGE_SIZE}&office=${activeOffice}`;
+    const url = `api/schimbari.php?action=list&page=${recentCurrentPage}&per_page=${PAGE_SIZE}&office=${activeOffice}&search=${encodeURIComponent(recentSearchQuery)}`;
     const res = await fetch(url);
     const json = await res.json();
     if (json && json.success && Array.isArray(json.data)) {
@@ -39,8 +47,37 @@ async function loadRecentHistoryData(page = 1) {
     console.warn("Eroare la incarcare istoric recent:", err);
     recentData = [];
     recentTotalRecords = 0;
+  } finally {
+    if (tbody) tbody.classList.remove("table-loading");
   }
   renderWizardRecentTable();
+}
+
+function onSearchRecentInput(query) {
+  const clearBtn = document.getElementById("btn-clear-recent-search");
+  if (clearBtn) {
+    if (query && query.trim().length > 0) {
+      clearBtn.classList.remove("hidden");
+    } else {
+      clearBtn.classList.add("hidden");
+    }
+  }
+
+  clearTimeout(recentSearchDebounceTimer);
+  recentSearchDebounceTimer = setTimeout(() => {
+    loadRecentHistoryData(1, (query || '').trim());
+  }, 300);
+}
+
+function resetRecentSearch() {
+  const input = document.getElementById("search-recent-input");
+  if (input) input.value = '';
+  const clearBtn = document.getElementById("btn-clear-recent-search");
+  if (clearBtn) clearBtn.classList.add("hidden");
+
+  clearTimeout(recentSearchDebounceTimer);
+  recentSearchQuery = '';
+  loadRecentHistoryData(1, '');
 }
 
 async function loadFullHistoryData(page = 1, searchQuery = '') {
@@ -109,8 +146,9 @@ function renderPaginationControls(containerId, infoId, currentPage, totalItems, 
   const startIdx = totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0;
   const endIdx = Math.min(currentPage * pageSize, totalItems);
   
-  const searchNotice = (containerId === "history-pagination-controls" && historySearchQuery)
-    ? ` pentru căutarea <strong style="color:var(--cyan-accent);">„${String(historySearchQuery).replace(/</g, '&lt;').replace(/>/g, '&gt;')}”</strong>`
+  const activeSearch = (containerId === "history-pagination-controls") ? historySearchQuery : ((containerId === "recent-pagination-controls") ? recentSearchQuery : '');
+  const searchNotice = activeSearch
+    ? ` pentru căutarea <strong style="color:var(--cyan-accent);">„${String(activeSearch).replace(/</g, '&lt;').replace(/>/g, '&gt;')}”</strong>`
     : '';
   infoElem.innerHTML = `Afișare <strong>${startIdx}-${endIdx}</strong> din <strong>${totalItems}</strong> înregistrări${searchNotice} (Pagina ${currentPage} din ${totalPages})`;
   
@@ -283,7 +321,7 @@ function renderWizardRecentTable() {
     recentTotalRecords,
     PAGE_SIZE,
     (newPage) => {
-      loadRecentHistoryData(newPage);
+      loadRecentHistoryData(newPage, recentSearchQuery);
     }
   );
 }
@@ -293,5 +331,7 @@ window.loadRecentHistoryData = loadRecentHistoryData;
 window.loadFullHistoryData = loadFullHistoryData;
 window.onSearchHistoryInput = onSearchHistoryInput;
 window.resetHistorySearch = resetHistorySearch;
+window.onSearchRecentInput = onSearchRecentInput;
+window.resetRecentSearch = resetRecentSearch;
 window.renderHistoryTable = renderHistoryTable;
 window.renderWizardRecentTable = renderWizardRecentTable;
