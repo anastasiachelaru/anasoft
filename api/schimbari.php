@@ -165,18 +165,57 @@ elseif ($action === 'get-last-index') {
     if ($idAparat <= 0) {
         sendResponse(false, 'Aparatul este obligatoriu.', null, 400);
     }
-    if ($idToner <= 0) {
-        $idToner = 1;
-    }
     
     if ($db) {
-        // Caută ultimul contor ("Index Vechi") înregistrat pe APARATUL selectat
-        $stmt = $db->prepare("SELECT contor FROM istoric_schimbari WHERE id_aparat = :aparat ORDER BY data_schimbare DESC, id_istoric_schimbare DESC LIMIT 1");
-        $stmt->execute([':aparat' => $idAparat]);
+        // Determinăm id_tip_toner pentru tonerul selectat
+        $idTipToner = 0;
+        if ($idToner > 0) {
+            $stmtT = $db->prepare("SELECT id_tip_toner FROM tonere WHERE id_toner = :id");
+            $stmtT->execute([':id' => $idToner]);
+            $tRow = $stmtT->fetch();
+            if ($tRow) {
+                $idTipToner = (int)$tRow['id_tip_toner'];
+            } else {
+                $idTipToner = $idToner;
+            }
+        }
+
+        // 1. Căutare primară: ultimul contor pentru ACELAȘI APARAT și ACELAȘI TONER / TIP DE TONER
+        $sqlIndex = "SELECT s.contor 
+                     FROM istoric_schimbari s
+                     LEFT JOIN tonere t ON s.id_toner = t.id_toner
+                     WHERE s.id_aparat = :aparat";
+        $paramsIndex = [':aparat' => $idAparat];
+
+        if ($idToner > 0) {
+            if ($idTipToner > 0) {
+                $sqlIndex .= " AND (s.id_toner = :id_toner OR t.id_tip_toner = :id_tip_toner)";
+                $paramsIndex[':id_toner'] = $idToner;
+                $paramsIndex[':id_tip_toner'] = $idTipToner;
+            } else {
+                $sqlIndex .= " AND s.id_toner = :id_toner";
+                $paramsIndex[':id_toner'] = $idToner;
+            }
+        }
+
+        $sqlIndex .= " ORDER BY s.data_schimbare DESC, s.id_istoric_schimbare DESC LIMIT 1";
+
+        $stmt = $db->prepare($sqlIndex);
+        $stmt->execute($paramsIndex);
         $row = $stmt->fetch();
+        
+        // 2. Fallback dacă tonerul specific nu a fost schimbat niciodată pe acest aparat
+        if (!$row) {
+            $stmtFallback = $db->prepare("SELECT contor FROM istoric_schimbari WHERE id_aparat = :aparat ORDER BY data_schimbare DESC, id_istoric_schimbare DESC LIMIT 1");
+            $stmtFallback->execute([':aparat' => $idAparat]);
+            $row = $stmtFallback->fetch();
+        }
+
         $indexVechi = $row ? (int)$row['contor'] : 0;
         
-        // Preluare consum referință specific DEDICAT tonerului selectat (căutare după id_toner sau id_tip_toner)
+        // Preluare consum referință specific DEDICAT tonerului selectat
+        $consumReferinta = 105000;
+        if ($idToner > 0) {
             $stmtRef = $db->prepare("
                 SELECT tt.consum_referinta 
                 FROM tipuri_toner tt 
@@ -185,10 +224,13 @@ elseif ($action === 'get-last-index') {
                 ORDER BY tt.id_tip_toner DESC 
                 LIMIT 1
             ");
-            $stmtRef->execute([':toner1' => $idToner, ':toner2' => $idToner]);
-        $refRow = $stmtRef->fetch();
-        $rawRef = ($refRow && isset($refRow['consum_referinta'])) ? (int)$refRow['consum_referinta'] : 0;
-        $consumReferinta = ($rawRef > 0) ? $rawRef : 105000;
+            $stmtRef->execute([':toner1' => $idToner, ':toner2' => ($idTipToner ?: $idToner)]);
+            $refRow = $stmtRef->fetch();
+            $rawRef = ($refRow && isset($refRow['consum_referinta'])) ? (int)$refRow['consum_referinta'] : 0;
+            if ($rawRef > 0) {
+                $consumReferinta = $rawRef;
+            }
+        }
         
         $minContor = $indexVechi + 1;
         $maxContor = $indexVechi + ($consumReferinta * 2);
@@ -266,13 +308,51 @@ elseif ($action === 'add') {
                 $idUser = $uFirst ? (int)$uFirst['id_user'] : 1;
             }
 
-            // Caută schimbarea anterioară pe aparat pentru calculul de copii realizate
-            $stmtPrev = $db->prepare("SELECT contor FROM istoric_schimbari WHERE id_aparat = :aparat ORDER BY data_schimbare DESC, id_istoric_schimbare DESC LIMIT 1");
-            $stmtPrev->execute([':aparat' => $idAparat]);
+            // Determinăm id_tip_toner pentru tonerul selectat
+            $idTipToner = 0;
+            if ($idToner > 0) {
+                $stmtT = $db->prepare("SELECT id_tip_toner FROM tonere WHERE id_toner = :id");
+                $stmtT->execute([':id' => $idToner]);
+                $tRow = $stmtT->fetch();
+                if ($tRow) {
+                    $idTipToner = (int)$tRow['id_tip_toner'];
+                } else {
+                    $idTipToner = $idToner;
+                }
+            }
+
+            // Caută schimbarea anterioară a ACELUIAȘI TONER / TIP TONER pe aparat pentru calculul de copii realizate
+            $sqlPrev = "SELECT s.contor 
+                        FROM istoric_schimbari s
+                        LEFT JOIN tonere t ON s.id_toner = t.id_toner
+                        WHERE s.id_aparat = :aparat";
+            $paramsPrev = [':aparat' => $idAparat];
+
+            if ($idToner > 0) {
+                if ($idTipToner > 0) {
+                    $sqlPrev .= " AND (s.id_toner = :id_toner OR t.id_tip_toner = :id_tip_toner)";
+                    $paramsPrev[':id_toner'] = $idToner;
+                    $paramsPrev[':id_tip_toner'] = $idTipToner;
+                } else {
+                    $sqlPrev .= " AND s.id_toner = :id_toner";
+                    $paramsPrev[':id_toner'] = $idToner;
+                }
+            }
+
+            $sqlPrev .= " ORDER BY s.data_schimbare DESC, s.id_istoric_schimbare DESC LIMIT 1";
+
+            $stmtPrev = $db->prepare($sqlPrev);
+            $stmtPrev->execute($paramsPrev);
             $prevEntry = $stmtPrev->fetch();
+
+            if (!$prevEntry) {
+                $stmtFallback = $db->prepare("SELECT contor FROM istoric_schimbari WHERE id_aparat = :aparat ORDER BY data_schimbare DESC, id_istoric_schimbare DESC LIMIT 1");
+                $stmtFallback->execute([':aparat' => $idAparat]);
+                $prevEntry = $stmtFallback->fetch();
+            }
             
             $indexVechi = $prevEntry ? (int)$prevEntry['contor'] : 0;
-            $copiiRealizate = ($contor > $indexVechi) ? ($contor - $indexVechi) : 0;
+            $copiiRealizate = ($indexVechi > 0 && $contor > $indexVechi) ? ($contor - $indexVechi) : 0;
             
             // Preluare consum referință
             $stmtRef = $db->prepare("

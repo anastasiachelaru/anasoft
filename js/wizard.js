@@ -284,8 +284,11 @@ async function initWizardStep3Data() {
   updateWizardStep3TonerHeader(wizardSelectedToner);
 
   let lastIndexData = null;
+  const tonerId = wizardSelectedToner.id_toner || wizardSelectedToner.id_tip_toner || 0;
+  const tonerKey = `${wizardSelectedAparat.id_aparat}_${tonerId}`;
+
   try {
-    const res = await fetch(`api/schimbari.php?action=get-last-index&id_aparat=${wizardSelectedAparat.id_aparat}&id_toner=${wizardSelectedToner.id_toner}`);
+    const res = await fetch(`api/schimbari.php?action=get-last-index&id_aparat=${wizardSelectedAparat.id_aparat}&id_toner=${tonerId}`);
     const json = await res.json();
     if (json.success) lastIndexData = json.data;
   } catch (e) {
@@ -302,7 +305,7 @@ async function initWizardStep3Data() {
   
   wizardConsumRef = (rawRef > 0) ? rawRef : tonerSpecificRef;
 
-  const customIndex = aparateCustomIndexesMap[wizardSelectedAparat.id_aparat];
+  const customIndex = aparateCustomIndexesMap[tonerKey];
   if (customIndex !== undefined && customIndex !== null) {
     wizardIndexVechi = parseInt(customIndex);
   } else if (lastIndexData && lastIndexData.index_vechi !== undefined && lastIndexData.index_vechi !== null && parseInt(lastIndexData.index_vechi) > 0) {
@@ -405,8 +408,10 @@ async function handleWizardSubmit(e) {
     });
     const json = await res.json();
     if (json.success) {
-      if (wizardSelectedAparat && wizardSelectedAparat.id_aparat) {
-        aparateCustomIndexesMap[wizardSelectedAparat.id_aparat] = contorVal;
+      if (wizardSelectedAparat && wizardSelectedAparat.id_aparat && wizardSelectedToner) {
+        const tonerId = wizardSelectedToner.id_toner || wizardSelectedToner.id_tip_toner || 0;
+        const tonerKey = `${wizardSelectedAparat.id_aparat}_${tonerId}`;
+        aparateCustomIndexesMap[tonerKey] = contorVal;
       }
 
       if (wizardSelectedToner) {
@@ -434,8 +439,10 @@ async function handleWizardSubmit(e) {
       alert("Eroare la salvare: " + (json.message || "Nu s-a putut efectua salvarea."));
     }
   } catch (err) {
-    if (wizardSelectedAparat && wizardSelectedAparat.id_aparat) {
-      aparateCustomIndexesMap[wizardSelectedAparat.id_aparat] = contorVal;
+    if (wizardSelectedAparat && wizardSelectedAparat.id_aparat && wizardSelectedToner) {
+      const tonerId = wizardSelectedToner.id_toner || wizardSelectedToner.id_tip_toner || 0;
+      const tonerKey = `${wizardSelectedAparat.id_aparat}_${tonerId}`;
+      aparateCustomIndexesMap[tonerKey] = contorVal;
     }
     if (wizardSelectedToner) {
       wizardSelectedToner.stoc = Math.max(0, parseInt(wizardSelectedToner.stoc || 1) - 1);
