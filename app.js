@@ -111,9 +111,30 @@ async function initApp() {
   if (typeof checkExistingSession === 'function') {
     await checkExistingSession();
   }
+
+  // 4. Prevenire dublă trimitere pe formulare (Debounce protecție dublu click)
+  initSubmitDebounceProtection();
+}
+
+/**
+ * Prevenire dublă înregistrare și protecție anti-dublu-click pe formulare
+ */
+function initSubmitDebounceProtection() {
+  const wizardForm = document.getElementById("wizard-form-step3");
+  if (wizardForm) {
+    wizardForm.addEventListener("submit", (e) => {
+      const btn = document.getElementById("btn-submit-wizard");
+      if (btn && btn.disabled) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return false;
+      }
+    }, true);
+  }
 }
 
 // Pornire la finalizarea încărcării DOM-ului
 document.addEventListener("DOMContentLoaded", () => {
   initApp();
 });
+

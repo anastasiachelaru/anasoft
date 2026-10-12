@@ -358,7 +358,28 @@ elseif ($action === 'add') {
             }
             
             $indexVechi = $prevEntry ? (int)$prevEntry['contor'] : 0;
-            $copiiRealizate = ($contor > $indexVechi) ? ($contor - $indexVechi) : 0;
+            
+            // a) Verificare contor: contor_nou TREBUIE să fie strict mai mare decât contor_anterior (deci nr_copii > 0)
+            if ($contor <= $indexVechi) {
+                sendResponse(false, 'Contorul introdus trebuie să fie mai mare decât contorul anterior!', null, 400);
+            }
+
+            // b) Protecție anti-duplicare (Rate-limit / Idempotency): Verifică dacă există deja o înregistrare pentru același id_aparat și id_toner creată în ultimele 5 secunde
+            $stmtDup = $db->prepare("
+                SELECT id_istoric_schimbare 
+                FROM istoric_schimbari 
+                WHERE id_aparat = :aparat 
+                  AND id_toner = :toner 
+                  AND data_schimbare >= DATE_SUB(NOW(), INTERVAL 5 SECOND)
+                ORDER BY data_schimbare DESC, id_istoric_schimbare DESC 
+                LIMIT 1
+            ");
+            $stmtDup->execute([':aparat' => $idAparat, ':toner' => $idToner]);
+            if ($stmtDup->fetch()) {
+                sendResponse(false, 'Cerere duplicată respinsă! O înregistrare pentru acest aparat și toner a fost deja salvată în ultimele 5 secunde.', null, 429);
+            }
+
+            $copiiRealizate = $contor - $indexVechi;
             
             // Preluare consum referință
             $stmtRef = $db->prepare("
@@ -379,6 +400,21 @@ elseif ($action === 'add') {
             // Inițiere tranzacție atomică ACID
             $db->beginTransaction();
             try {
+                // Dublă verificare anti-duplicare în interiorul tranzacției pentru concurență la milisecundă
+                $stmtDupTx = $db->prepare("
+                    SELECT id_istoric_schimbare 
+                    FROM istoric_schimbari 
+                    WHERE id_aparat = :aparat 
+                      AND id_toner = :toner 
+                      AND data_schimbare >= DATE_SUB(NOW(), INTERVAL 5 SECOND)
+                    LIMIT 1
+                ");
+                $stmtDupTx->execute([':aparat' => $idAparat, ':toner' => $idToner]);
+                if ($stmtDupTx->fetch()) {
+                    $db->rollBack();
+                    sendResponse(false, 'Cerere duplicată respinsă! O înregistrare pentru acest aparat și toner a fost deja salvată în ultimele 5 secunde.', null, 429);
+                }
+
                 // 1. Verificare și blocare pe rând pentru stoc (FOR UPDATE)
                 $stmtLock = $db->prepare("SELECT stoc FROM tonere WHERE id_toner = :toner FOR UPDATE");
                 $stmtLock->execute([':toner' => $idToner]);

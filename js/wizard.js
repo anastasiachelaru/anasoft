@@ -12,6 +12,7 @@ let wizardMinAllowed = 0;
 let wizardMaxAllowed = 0;
 let wizardConsumRef = 105000;
 let aparateCustomIndexesMap = {};
+let isWizardSubmitting = false;
 
 async function loadAparateData() {
   try {
@@ -397,13 +398,17 @@ function calculateWizardMetrics() {
     if (submitBtn) submitBtn.disabled = true;
   } else {
     if (alertDiv) alertDiv.classList.add("hidden");
-    if (submitBtn) submitBtn.disabled = false;
+    if (submitBtn && !isWizardSubmitting) submitBtn.disabled = false;
   }
 }
 
-// SALVARE SCHIMBARE DIN WIZARD
+// SALVARE SCHIMBARE DIN WIZARD (CU PROTECȚIE DEBOUNCE ȘI STARE LOADING)
 async function handleWizardSubmit(e) {
   if (e) e.preventDefault();
+
+  if (isWizardSubmitting) {
+    return;
+  }
 
   if (!wizardSelectedToner || parseInt(wizardSelectedToner.stoc || 0) <= 0) {
     alert("Imposibil de salvat! Tonerul selectat nu are stoc suficient (0 bucăți). Vă rugăm să suplimentați stocul mai întâi.");
@@ -416,6 +421,16 @@ async function handleWizardSubmit(e) {
     return;
   }
   
+  const submitBtn = document.getElementById("btn-submit-wizard");
+  const originalBtnContent = submitBtn ? submitBtn.innerHTML : '<i class="fa-solid fa-floppy-disk"></i> Salvează Schimbarea';
+
+  // 1. Dezactivare imediată a butonului de submit și schimbare text în "Se salvează..."
+  isWizardSubmitting = true;
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Se salvează...';
+  }
+
   const payload = {
     id_aparat: wizardSelectedAparat.id_aparat,
     id_toner: wizardSelectedToner.id_toner || wizardSelectedToner.id_tip_toner || 1,
@@ -462,17 +477,20 @@ async function handleWizardSubmit(e) {
       alert("Eroare la salvare: " + (json.message || "Nu s-a putut efectua salvarea."));
     }
   } catch (err) {
-    if (wizardSelectedAparat && wizardSelectedAparat.id_aparat && wizardSelectedToner) {
-      const tonerId = wizardSelectedToner.id_toner || wizardSelectedToner.id_tip_toner || 0;
-      const tonerKey = `${wizardSelectedAparat.id_aparat}_${tonerId}`;
-      aparateCustomIndexesMap[tonerKey] = contorVal;
+    console.error("Eroare trimitere schimbare toner:", err);
+    if (window.location.protocol === 'file:') {
+      alert("Schimbarea a fost salvată local (Demo offline).");
+      closeWizardModal();
+    } else {
+      alert("Eroare de comunicare: Nu s-a putut trimite cererea către server. Verificați conexiunea.");
     }
-    if (wizardSelectedToner) {
-      wizardSelectedToner.stoc = Math.max(0, parseInt(wizardSelectedToner.stoc || 1) - 1);
+  } finally {
+    // 2. Reactivare buton și repunere text inițial în blocul finally
+    isWizardSubmitting = false;
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalBtnContent;
     }
-    alert("Schimbarea de toner a fost salvată cu succes!");
-    if (typeof renderTonersTable === 'function') renderTonersTable();
-    closeWizardModal();
   }
 }
 
