@@ -204,11 +204,13 @@ elseif ($action === 'get-last-index') {
         $stmt->execute($paramsIndex);
         $row = $stmt->fetch();
         
-        // 2. Fallback dacă tonerul specific nu a fost schimbat niciodată pe acest aparat
+        $isFallbackInitial = false;
+        // Pasul 2 (Fallback): Dacă interogarea de mai sus NU returnează niciun rând (este prima schimbare a acelui tip de toner pe acest aparat):
         if (!$row) {
-            $stmtFallback = $db->prepare("SELECT contor FROM istoric_schimbari WHERE id_aparat = :aparat ORDER BY data_schimbare DESC, id_istoric_schimbare DESC LIMIT 1");
+            $stmtFallback = $db->prepare("SELECT contor_initial AS contor FROM aparate WHERE id_aparat = :aparat LIMIT 1");
             $stmtFallback->execute([':aparat' => $idAparat]);
             $row = $stmtFallback->fetch();
+            $isFallbackInitial = true;
         }
 
         $indexVechi = $row ? (int)$row['contor'] : 0;
@@ -237,6 +239,8 @@ elseif ($action === 'get-last-index') {
         
         sendResponse(true, 'Index vechi calculat cu succes.', [
             'index_vechi' => $indexVechi,
+            'is_fallback_initial' => $isFallbackInitial,
+            'contor_initial' => $isFallbackInitial ? $indexVechi : null,
             'consum_referinta' => $consumReferinta,
             'min_contor' => $minContor,
             'max_contor' => $maxContor
@@ -247,6 +251,8 @@ elseif ($action === 'get-last-index') {
         $mockRef = 105000;
         sendResponse(true, 'Index vechi mock calculat.', [
             'index_vechi' => $mockIndex,
+            'is_fallback_initial' => false,
+            'contor_initial' => null,
             'consum_referinta' => $mockRef,
             'min_contor' => $mockIndex + 1,
             'max_contor' => $mockIndex + ($mockRef * 2)
@@ -346,13 +352,13 @@ elseif ($action === 'add') {
             $prevEntry = $stmtPrev->fetch();
 
             if (!$prevEntry) {
-                $stmtFallback = $db->prepare("SELECT contor FROM istoric_schimbari WHERE id_aparat = :aparat ORDER BY data_schimbare DESC, id_istoric_schimbare DESC LIMIT 1");
+                $stmtFallback = $db->prepare("SELECT contor_initial AS contor FROM aparate WHERE id_aparat = :aparat LIMIT 1");
                 $stmtFallback->execute([':aparat' => $idAparat]);
                 $prevEntry = $stmtFallback->fetch();
             }
             
             $indexVechi = $prevEntry ? (int)$prevEntry['contor'] : 0;
-            $copiiRealizate = ($indexVechi > 0 && $contor > $indexVechi) ? ($contor - $indexVechi) : 0;
+            $copiiRealizate = ($contor > $indexVechi) ? ($contor - $indexVechi) : 0;
             
             // Preluare consum referință
             $stmtRef = $db->prepare("
@@ -441,9 +447,20 @@ elseif ($action === 'update-aparat-index') {
     }
 
     if ($db) {
+        ensureAparatContorInitialColumn($db);
+        $contorInitial = isset($input['contor_initial']) ? (int)$input['contor_initial'] : null;
+
         if (!empty($numeAparat)) {
-            $stmtAp = $db->prepare("UPDATE aparate SET nume_aparat = :n WHERE id_aparat = :id");
-            $stmtAp->execute([':n' => $numeAparat, ':id' => $idAparat]);
+            if ($contorInitial !== null) {
+                $stmtAp = $db->prepare("UPDATE aparate SET nume_aparat = :n, contor_initial = :ci WHERE id_aparat = :id");
+                $stmtAp->execute([':n' => $numeAparat, ':ci' => $contorInitial, ':id' => $idAparat]);
+            } else {
+                $stmtAp = $db->prepare("UPDATE aparate SET nume_aparat = :n WHERE id_aparat = :id");
+                $stmtAp->execute([':n' => $numeAparat, ':id' => $idAparat]);
+            }
+        } elseif ($contorInitial !== null) {
+            $stmtAp = $db->prepare("UPDATE aparate SET contor_initial = :ci WHERE id_aparat = :id");
+            $stmtAp->execute([':ci' => $contorInitial, ':id' => $idAparat]);
         }
 
         $stmtCheck = $db->prepare("SELECT id_istoric_schimbare FROM istoric_schimbari WHERE id_aparat = :id ORDER BY data_schimbare DESC, id_istoric_schimbare DESC LIMIT 1");
@@ -454,12 +471,9 @@ elseif ($action === 'update-aparat-index') {
             $stmtUpd = $db->prepare("UPDATE istoric_schimbari SET contor = :c WHERE id_istoric_schimbare = :id");
             $stmtUpd->execute([':c' => $contor, ':id' => $lastEntry['id_istoric_schimbare']]);
         } else {
-            $stmtT = $db->query("SELECT id_toner FROM tonere LIMIT 1");
-            $tRow = $stmtT ? $stmtT->fetch() : null;
-            $tonerIdValid = $tRow ? (int)$tRow['id_toner'] : 34;
-
-            $stmtIns = $db->prepare("INSERT INTO istoric_schimbari (id_aparat, id_toner, contor, data_schimbare, id_user, copii_realizate, consum_referinta, procent_realizat) VALUES (:aparat, :toner, :contor, NOW(), 1, 0, 105000, 0)");
-            $stmtIns->execute([':aparat' => $idAparat, ':toner' => $tonerIdValid, ':contor' => $contor]);
+            // Dacă aparatul este nou și nu are încă schimbări, actualizăm contorul de pornire în tabela aparate
+            $stmtApCi = $db->prepare("UPDATE aparate SET contor_initial = :c WHERE id_aparat = :id");
+            $stmtApCi->execute([':c' => $contor, ':id' => $idAparat]);
         }
 
         sendResponse(true, 'Indexul și datele aparatului au fost actualizate cu succes.');

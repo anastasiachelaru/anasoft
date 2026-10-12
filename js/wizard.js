@@ -287,10 +287,16 @@ async function initWizardStep3Data() {
   const tonerId = wizardSelectedToner.id_toner || wizardSelectedToner.id_tip_toner || 0;
   const tonerKey = `${wizardSelectedAparat.id_aparat}_${tonerId}`;
 
+  let isFallbackInitial = false;
   try {
     const res = await fetch(`api/schimbari.php?action=get-last-index&id_aparat=${wizardSelectedAparat.id_aparat}&id_toner=${tonerId}`);
     const json = await res.json();
-    if (json.success) lastIndexData = json.data;
+    if (json.success && json.data) {
+      lastIndexData = json.data;
+      if (json.data.is_fallback_initial) {
+        isFallbackInitial = true;
+      }
+    }
   } catch (e) {
     lastIndexData = null;
   }
@@ -308,10 +314,27 @@ async function initWizardStep3Data() {
   const customIndex = aparateCustomIndexesMap[tonerKey];
   if (customIndex !== undefined && customIndex !== null) {
     wizardIndexVechi = parseInt(customIndex);
-  } else if (lastIndexData && lastIndexData.index_vechi !== undefined && lastIndexData.index_vechi !== null && parseInt(lastIndexData.index_vechi) > 0) {
+  } else if (lastIndexData && lastIndexData.index_vechi !== undefined && lastIndexData.index_vechi !== null) {
     wizardIndexVechi = parseInt(lastIndexData.index_vechi);
+  } else if (wizardSelectedAparat && wizardSelectedAparat.contor_initial !== undefined && wizardSelectedAparat.contor_initial !== null) {
+    wizardIndexVechi = parseInt(wizardSelectedAparat.contor_initial);
+    isFallbackInitial = true;
   } else {
     wizardIndexVechi = 0;
+  }
+
+  // Afișare etichetă informativă pentru contor de pornire (fallback inițial)
+  const noticeElem = document.getElementById("wizard-fallback-notice");
+  const noticeText = document.getElementById("wizard-fallback-notice-text");
+  const labelIndexVechi = document.getElementById("label-index-vechi");
+
+  if (isFallbackInitial) {
+    if (noticeElem) noticeElem.classList.remove("hidden");
+    if (noticeText) noticeText.innerText = `Contor de pornire aparat: ${formatNumberWithDots(wizardIndexVechi)}`;
+    if (labelIndexVechi) labelIndexVechi.innerText = "CONTOR DE PORNIRE APARAT (Referință inițială):";
+  } else {
+    if (noticeElem) noticeElem.classList.add("hidden");
+    if (labelIndexVechi) labelIndexVechi.innerText = "INDEX VECHI (Ultima schimbare înregistrată):";
   }
 
   // Garantare calcul corect al minimului și maximului (200% din consumul de referință specific al tonerului)

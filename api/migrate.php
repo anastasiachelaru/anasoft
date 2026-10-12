@@ -117,7 +117,21 @@ foreach ($indexes as $idx) {
     }
 }
 
+// Verificare și adăugare coloană contor_initial în aparate dacă lipsește (BIGINT pentru utilaje Konica)
+try {
+    $colCheckAparat = $db->query("SHOW COLUMNS FROM `aparate` LIKE 'contor_initial'");
+    if ($colCheckAparat && !$colCheckAparat->fetch()) {
+        $db->exec("ALTER TABLE `aparate` ADD COLUMN `contor_initial` BIGINT DEFAULT 0");
+        $log[] = ['status' => 'success', 'message' => "Coloana 'contor_initial' (BIGINT) adăugată în tabela aparate."];
+    } else {
+        $log[] = ['status' => 'info', 'message' => "Coloana 'contor_initial' există deja în tabela aparate."];
+    }
+} catch (Throwable $e) {
+    $log[] = ['status' => 'warning', 'message' => "Verificare contor_initial aparate: " . $e->getMessage()];
+}
+
 sendResponse(true, 'Migrarea bazei de date a fost executată cu succes!', [
     'timestamp' => date('Y-m-d H:i:s'),
     'log' => $log
 ]);
+

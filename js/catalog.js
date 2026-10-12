@@ -334,6 +334,7 @@ function renderManageAparateView() {
       <tr>
         <td style="font-weight:600; color:#fff;">${a.nume_aparat}</td>
         <td>${formatOfficeName(a.office)}</td>
+        <td style="color:var(--cyan-accent); font-family: monospace; font-size: 0.92rem;"><i class="fa-solid fa-gauge-simple"></i> ${formatNumberWithDots(a.contor_initial || 0)}</td>
         <td>${stBadge}</td>
         <td class="action-cell">${btnEdit}${btnAction}${btnDelete}</td>
       </tr>
@@ -404,10 +405,16 @@ async function openEditAparatModal(idAparat, numeAparat) {
   const editId = document.getElementById("edit-aparat-id");
   const editName = document.getElementById("edit-aparat-name");
   const editIndex = document.getElementById("edit-aparat-index");
+  const editCi = document.getElementById("edit-aparat-contor-initial");
 
   if (editId) editId.value = idAparat;
   if (editName) editName.value = numeAparat;
   
+  const foundAparat = (manageCatalogState.aparate || []).find(a => parseInt(a.id_aparat) === idAparat);
+  if (editCi) {
+    editCi.value = formatNumberWithDots(foundAparat && foundAparat.contor_initial !== undefined ? foundAparat.contor_initial : "0");
+  }
+
   const customIdx = (typeof aparateCustomIndexesMap !== 'undefined') ? aparateCustomIndexesMap[idAparat] : undefined;
   if (editIndex) editIndex.value = formatNumberWithDots((customIdx !== undefined) ? customIdx : "0");
   openModal("edit-aparat-modal");
@@ -420,6 +427,9 @@ async function openEditAparatModal(idAparat, numeAparat) {
         aparateCustomIndexesMap[idAparat] = json.data.index_vechi;
       }
       if (editIndex) editIndex.value = formatNumberWithDots(json.data.index_vechi);
+    }
+    if (json.success && json.data && json.data.contor_initial !== undefined && json.data.contor_initial !== null && editCi && !editCi.value) {
+      editCi.value = formatNumberWithDots(json.data.contor_initial);
     }
   } catch (e) {
     if (customIdx !== undefined && editIndex) editIndex.value = formatNumberWithDots(customIdx);
@@ -435,6 +445,7 @@ async function handleEditAparatSubmit(e) {
   const idAparat = parseInt(document.getElementById("edit-aparat-id")?.value);
   const numeAparat = document.getElementById("edit-aparat-name")?.value.trim();
   const contorVal = parseDotsNumber(document.getElementById("edit-aparat-index")?.value);
+  const contorInitialVal = parseDotsNumber(document.getElementById("edit-aparat-contor-initial")?.value);
 
   if (!idAparat || isNaN(contorVal)) {
     alert("Te rugăm să introduci o valoare validă pentru contor.");
@@ -450,7 +461,7 @@ async function handleEditAparatSubmit(e) {
     const res = await fetch("api/schimbari.php?action=update-aparat-index", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id_aparat: idAparat, nume_aparat: numeAparat, contor: contorVal })
+      body: JSON.stringify({ id_aparat: idAparat, nume_aparat: numeAparat, contor: contorVal, contor_initial: contorInitialVal })
     });
     const json = await res.json();
     alert(json.message || "Index aparat actualizat!");
@@ -546,6 +557,8 @@ async function handleCreateAparatSubmit(e) {
   if (e) e.preventDefault();
   const nume_aparat = document.getElementById("newaparat-name")?.value.trim();
   const office = parseInt(document.getElementById("newaparat-office")?.value || 2);
+  const contorInput = document.getElementById("newaparat-contor");
+  const contor_initial = parseDotsNumber(contorInput ? contorInput.value : "");
   
   const tonere_ids = Array.from(selectedTonereIdsForAparat);
 
@@ -554,16 +567,22 @@ async function handleCreateAparatSubmit(e) {
     return;
   }
 
+  if (isNaN(contor_initial) || contor_initial < 0) {
+    alert("Te rugăm să introduci o valoare validă pentru Contorul inițial (Total Counter de pe ecran).");
+    return;
+  }
+
   try {
-    const res = await fetch("api/tonere.php?action=save-aparat", {
+    const res = await fetch("api/aparate.php?action=save", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nume_aparat, office, tonere_ids })
+      body: JSON.stringify({ nume_aparat, office, contor_initial, tonere_ids })
     });
     const json = await res.json();
     alert(json.message || "Aparat creat cu succes!");
 
     document.getElementById("newaparat-name").value = "";
+    if (contorInput) contorInput.value = "";
     selectedTonereIdsForAparat.clear();
     renderSelectedTonereChips();
     renderTonerePicker();
@@ -573,6 +592,7 @@ async function handleCreateAparatSubmit(e) {
   } catch (err) {
     alert("Aparat adăugat cu succes în catalog!");
     document.getElementById("newaparat-name").value = "";
+    if (contorInput) contorInput.value = "";
     selectedTonereIdsForAparat.clear();
     renderSelectedTonereChips();
     renderTonerePicker();

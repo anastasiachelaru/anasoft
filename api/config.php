@@ -176,6 +176,20 @@ function getOfficesMap($db = null) {
     return $cachedMap;
 }
 
+function ensureAparatContorInitialColumn($db) {
+    static $checked = false;
+    if ($checked || !$db) return;
+    try {
+        $colCheck = $db->query("SHOW COLUMNS FROM `aparate` LIKE 'contor_initial'");
+        if ($colCheck && !$colCheck->fetch()) {
+            $db->exec("ALTER TABLE `aparate` ADD COLUMN `contor_initial` BIGINT DEFAULT 0");
+        }
+    } catch (Throwable $e) {
+        // Ignoră dacă nu are drepturi DDL sau dacă tabela nu există încă
+    }
+    $checked = true;
+}
+
 function sendResponse($success, $message = '', $data = null, $code = 200, $extra = []) {
     http_response_code($code);
     $response = [
@@ -190,3 +204,4 @@ function sendResponse($success, $message = '', $data = null, $code = 200, $extra
     echo json_encode($response, JSON_UNESCAPED_UNICODE);
     exit();
 }
+

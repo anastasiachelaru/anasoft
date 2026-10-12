@@ -68,7 +68,8 @@ elseif ($action === 'aparate') {
     $authUser = requireAuth(null, $db);
 
     if ($db) {
-        $sql = "SELECT id_aparat, nume_aparat, office, aparat_activ FROM aparate WHERE aparat_activ = 1";
+        ensureAparatContorInitialColumn($db);
+        $sql = "SELECT id_aparat, nume_aparat, office, aparat_activ, contor_initial FROM aparate WHERE aparat_activ = 1";
         if ($officeId !== null) {
             $sql .= " AND office = " . (int)$officeId;
         }
@@ -78,20 +79,21 @@ elseif ($action === 'aparate') {
         sendResponse(true, 'Aparate încărcate.', $stmt->fetchAll());
     } else {
         $mockAparate = [
-            ['id_aparat' => 8, 'nume_aparat' => 'UMF-AN3', 'office' => 2],
-            ['id_aparat' => 9, 'nume_aparat' => 'UMF-AN2', 'office' => 2],
-            ['id_aparat' => 14, 'nume_aparat' => 'UMF-C1100-1', 'office' => 2],
-            ['id_aparat' => 16, 'nume_aparat' => 'UMF-C364e', 'office' => 2],
-            ['id_aparat' => 20, 'nume_aparat' => 'TUDOR-T1', 'office' => 3],
-            ['id_aparat' => 27, 'nume_aparat' => 'SMARDAN-1250-1', 'office' => 5],
-            ['id_aparat' => 48, 'nume_aparat' => 'TIPO-1250-3', 'office' => 4],
-            ['id_aparat' => 50, 'nume_aparat' => 'TIPO-2250-1-DR', 'office' => 4],
-            ['id_aparat' => 51, 'nume_aparat' => 'TIPO-2250-2-DR', 'office' => 4],
-            ['id_aparat' => 52, 'nume_aparat' => 'TIPO-2250-3-DR', 'office' => 4],
-            ['id_aparat' => 53, 'nume_aparat' => 'TIPO-2250-4-DR', 'office' => 4],
-            ['id_aparat' => 54, 'nume_aparat' => 'TIPO-2250-5-DR', 'office' => 4],
-            ['id_aparat' => 55, 'nume_aparat' => 'TIPO-2250-6-DR', 'office' => 4],
+            ['id_aparat' => 8, 'nume_aparat' => 'UMF-AN3', 'office' => 2, 'contor_initial' => 0],
+            ['id_aparat' => 9, 'nume_aparat' => 'UMF-AN2', 'office' => 2, 'contor_initial' => 0],
+            ['id_aparat' => 14, 'nume_aparat' => 'UMF-C1100-1', 'office' => 2, 'contor_initial' => 0],
+            ['id_aparat' => 16, 'nume_aparat' => 'UMF-C364e', 'office' => 2, 'contor_initial' => 0],
+            ['id_aparat' => 20, 'nume_aparat' => 'TUDOR-T1', 'office' => 3, 'contor_initial' => 0],
+            ['id_aparat' => 27, 'nume_aparat' => 'SMARDAN-1250-1', 'office' => 5, 'contor_initial' => 0],
+            ['id_aparat' => 48, 'nume_aparat' => 'TIPO-1250-3', 'office' => 4, 'contor_initial' => 0],
+            ['id_aparat' => 50, 'nume_aparat' => 'TIPO-2250-1-DR', 'office' => 4, 'contor_initial' => 0],
+            ['id_aparat' => 51, 'nume_aparat' => 'TIPO-2250-2-DR', 'office' => 4, 'contor_initial' => 0],
+            ['id_aparat' => 52, 'nume_aparat' => 'TIPO-2250-3-DR', 'office' => 4, 'contor_initial' => 0],
+            ['id_aparat' => 53, 'nume_aparat' => 'TIPO-2250-4-DR', 'office' => 4, 'contor_initial' => 0],
+            ['id_aparat' => 54, 'nume_aparat' => 'TIPO-2250-5-DR', 'office' => 4, 'contor_initial' => 0],
+            ['id_aparat' => 55, 'nume_aparat' => 'TIPO-2250-6-DR', 'office' => 4, 'contor_initial' => 0],
         ];
+
         if ($officeId !== null) {
             $mockAparate = array_values(array_filter($mockAparate, function($a) use ($officeId) {
                 return $a['office'] === $officeId;
@@ -219,12 +221,14 @@ elseif ($action === 'manage-catalog') {
             }
 
             // Preluăm toate aparatele (inclusiv inactive)
-            $stmtAparate = $db->query("SELECT id_aparat, nume_aparat, office, aparat_activ FROM aparate ORDER BY nume_aparat ASC");
+            ensureAparatContorInitialColumn($db);
+            $stmtAparate = $db->query("SELECT id_aparat, nume_aparat, office, aparat_activ, contor_initial FROM aparate ORDER BY nume_aparat ASC");
             $aparate = $stmtAparate ? $stmtAparate->fetchAll() : [];
             foreach ($aparate as &$a) {
                 $a['id_aparat'] = (int)$a['id_aparat'];
                 $a['office'] = (int)$a['office'];
                 $a['aparat_activ'] = (int)$a['aparat_activ'];
+                $a['contor_initial'] = (int)($a['contor_initial'] ?? 0);
             }
 
             // Legăturile tonere-aparate
@@ -403,6 +407,7 @@ elseif ($action === 'save-aparat') {
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
     $numeAparat = trim($input['nume_aparat'] ?? '');
     $officeId = (int)($input['office'] ?? 2);
+    $contorInitial = isset($input['contor_initial']) ? (int)$input['contor_initial'] : 0;
     $tonereCompatibile = $input['tonere_ids'] ?? [];
 
     if (empty($numeAparat)) {
@@ -411,6 +416,7 @@ elseif ($action === 'save-aparat') {
 
     if ($db) {
         try {
+            ensureAparatContorInitialColumn($db);
             $db->beginTransaction();
 
             $stmtCheck = $db->prepare("SELECT id_aparat FROM aparate WHERE nume_aparat = :n LIMIT 1");
@@ -419,11 +425,11 @@ elseif ($action === 'save-aparat') {
 
             if ($existing) {
                 $idAparat = $existing['id_aparat'];
-                $stmtUpd = $db->prepare("UPDATE aparate SET office = :off, aparat_activ = 1 WHERE id_aparat = :id");
-                $stmtUpd->execute([':off' => $officeId, ':id' => $idAparat]);
+                $stmtUpd = $db->prepare("UPDATE aparate SET office = :off, aparat_activ = 1, contor_initial = :ci WHERE id_aparat = :id");
+                $stmtUpd->execute([':off' => $officeId, ':ci' => $contorInitial, ':id' => $idAparat]);
             } else {
-                $stmtIns = $db->prepare("INSERT INTO aparate (nume_aparat, office, aparat_activ) VALUES (:n, :off, 1)");
-                $stmtIns->execute([':n' => $numeAparat, ':off' => $officeId]);
+                $stmtIns = $db->prepare("INSERT INTO aparate (nume_aparat, office, contor_initial, aparat_activ) VALUES (:n, :off, :ci, 1)");
+                $stmtIns->execute([':n' => $numeAparat, ':off' => $officeId, ':ci' => $contorInitial]);
                 $idAparat = $db->lastInsertId();
             }
 
@@ -611,4 +617,105 @@ elseif ($action === 'delete-toner') {
         sendResponse(true, "Tonerul a fost șters cu succes (Demo).");
     }
 }
+elseif ($action === 'get-last-index' || $action === 'get-last-counter') {
+    $authUser = requireAuth(null, $db);
+    $idAparat = (int)($_GET['id_aparat'] ?? 0);
+    $idToner = (int)($_GET['id_toner'] ?? 0);
+
+    if ($idAparat <= 0) {
+        sendResponse(false, 'Aparatul este obligatoriu.', null, 400);
+    }
+
+    if ($db) {
+        ensureAparatContorInitialColumn($db);
+
+        $idTipToner = 0;
+        if ($idToner > 0) {
+            $stmtT = $db->prepare("SELECT id_tip_toner FROM tonere WHERE id_toner = :id");
+            $stmtT->execute([':id' => $idToner]);
+            $tRow = $stmtT->fetch();
+            if ($tRow) {
+                $idTipToner = (int)$tRow['id_tip_toner'];
+            } else {
+                $idTipToner = $idToner;
+            }
+        }
+
+        // Pasul 1: Căutare primară în istoric_schimbari pentru perechea (id_aparat, id_toner)
+        $sqlIndex = "SELECT s.contor 
+                     FROM istoric_schimbari s
+                     LEFT JOIN tonere t ON s.id_toner = t.id_toner
+                     WHERE s.id_aparat = :aparat";
+        $paramsIndex = [':aparat' => $idAparat];
+
+        if ($idToner > 0) {
+            if ($idTipToner > 0) {
+                $sqlIndex .= " AND (s.id_toner = :id_toner OR t.id_tip_toner = :id_tip_toner)";
+                $paramsIndex[':id_toner'] = $idToner;
+                $paramsIndex[':id_tip_toner'] = $idTipToner;
+            } else {
+                $sqlIndex .= " AND s.id_toner = :id_toner";
+                $paramsIndex[':id_toner'] = $idToner;
+            }
+        }
+
+        $sqlIndex .= " ORDER BY s.data_schimbare DESC, s.id_istoric_schimbare DESC LIMIT 1";
+        $stmt = $db->prepare($sqlIndex);
+        $stmt->execute($paramsIndex);
+        $row = $stmt->fetch();
+
+        $isFallbackInitial = false;
+        // Pasul 2 (Fallback): Dacă interogarea de mai sus NU returnează niciun rând:
+        if (!$row) {
+            $stmtFallback = $db->prepare("SELECT contor_initial AS contor FROM aparate WHERE id_aparat = :aparat LIMIT 1");
+            $stmtFallback->execute([':aparat' => $idAparat]);
+            $row = $stmtFallback->fetch();
+            $isFallbackInitial = true;
+        }
+
+        $indexVechi = $row ? (int)$row['contor'] : 0;
+
+        $consumReferinta = 105000;
+        if ($idToner > 0) {
+            $stmtRef = $db->prepare("
+                SELECT tt.consum_referinta 
+                FROM tipuri_toner tt 
+                LEFT JOIN tonere t ON t.id_tip_toner = tt.id_tip_toner 
+                WHERE t.id_toner = :toner1 OR tt.id_tip_toner = :toner2 
+                ORDER BY tt.id_tip_toner DESC 
+                LIMIT 1
+            ");
+            $stmtRef->execute([':toner1' => $idToner, ':toner2' => ($idTipToner ?: $idToner)]);
+            $refRow = $stmtRef->fetch();
+            $rawRef = ($refRow && isset($refRow['consum_referinta'])) ? (int)$refRow['consum_referinta'] : 0;
+            if ($rawRef > 0) {
+                $consumReferinta = $rawRef;
+            }
+        }
+
+        $minContor = $indexVechi + 1;
+        $maxContor = $indexVechi + ($consumReferinta * 2);
+
+        sendResponse(true, 'Index vechi calculat cu succes.', [
+            'index_vechi' => $indexVechi,
+            'is_fallback_initial' => $isFallbackInitial,
+            'contor_initial' => $isFallbackInitial ? $indexVechi : null,
+            'consum_referinta' => $consumReferinta,
+            'min_contor' => $minContor,
+            'max_contor' => $maxContor
+        ]);
+    } else {
+        $mockIndex = 39823097;
+        $mockRef = 105000;
+        sendResponse(true, 'Index vechi mock calculat.', [
+            'index_vechi' => $mockIndex,
+            'is_fallback_initial' => false,
+            'contor_initial' => null,
+            'consum_referinta' => $mockRef,
+            'min_contor' => $mockIndex + 1,
+            'max_contor' => $mockIndex + ($mockRef * 2)
+        ]);
+    }
+}
+
 

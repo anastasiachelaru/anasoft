@@ -95,4 +95,12 @@ PREPARE stmt_idx6 FROM @sql_idx6;
 EXECUTE stmt_idx6;
 DEALLOCATE PREPARE stmt_idx6;
 
+-- 6. Structură 'contor_initial' în tabela 'aparate' (Konica Minolta counters depășesc zeci de milioane)
+SET @exist_col_ci = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'aparate' AND COLUMN_NAME = 'contor_initial');
+SET @sql_cmd_ci = IF(@exist_col_ci = 0, 'ALTER TABLE `aparate` ADD COLUMN `contor_initial` BIGINT DEFAULT 0', 'SELECT "Column contor_initial exists"');
+PREPARE stmt_ci FROM @sql_cmd_ci;
+EXECUTE stmt_ci;
+DEALLOCATE PREPARE stmt_ci;
+
+
 

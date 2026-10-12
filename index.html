@@ -25,7 +25,7 @@
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-  <link rel="stylesheet" href="style.css?v=1.1.5">
+  <link rel="stylesheet" href="style.css?v=1.1.6">
 </head>
 
 <body class="dark-theme">
@@ -445,8 +445,15 @@
 
           <div class="wizard-index-box">
             <div class="index-old-header">
-              <span>INDEX VECHI (Ultima schimbare înregistrată):</span>
+              <span id="label-index-vechi">INDEX VECHI (Ultima schimbare înregistrată):</span>
               <strong id="display-index-vechi" class="index-vechi-val">0</strong>
+            </div>
+
+            <!-- Etichetă informativă dedicată când este preluat contorul de pornire / fallback din aparate -->
+            <div id="wizard-fallback-notice" class="fallback-initial-notice hidden">
+              <i class="fa-solid fa-circle-info"></i>
+              <span id="wizard-fallback-notice-text">Contor de pornire aparat: 0</span>
+              <span class="fallback-tag">Prima înlocuire toner pe acest utilaj</span>
             </div>
 
             <div class="index-limits-row">
@@ -959,7 +966,7 @@
             </h4>
 
             <form onsubmit="handleCreateAparatSubmit(event)">
-              <div class="form-grid-2col">
+              <div class="form-grid-3col">
                 <div class="form-group">
                   <label for="newaparat-name"
                     style="color: #f472b6; font-weight: 700; font-size: 0.88rem; display: block; margin-bottom: 6px;">
@@ -982,6 +989,16 @@
                     <option value="5">Sediu Smârdan</option>
                     <option value="6">Sediu UMF 2</option>
                   </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="newaparat-contor"
+                    style="color: #f472b6; font-weight: 700; font-size: 0.88rem; display: block; margin-bottom: 6px;">
+                    <i class="fa-solid fa-gauge-high"></i> Contor inițial (Total Counter de pe ecran) *
+                  </label>
+                  <input type="text" inputmode="numeric" id="newaparat-contor" placeholder="ex: 1.000.000 sau 0"
+                    oninput="formatContorInput(this);" required
+                    style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(244, 114, 182, 0.4); color: #fff; padding: 10px 14px; border-radius: 8px; width: 100%; font-size: 0.9rem;">
                 </div>
               </div>
 
@@ -1041,6 +1058,7 @@
                   <tr>
                     <th>Nume Aparat</th>
                     <th>Sediu</th>
+                    <th>Contor Inițial</th>
                     <th>Status</th>
                     <th>Acțiuni</th>
                   </tr>
@@ -1110,6 +1128,13 @@
           </div>
           <div class="form-group" style="margin-bottom: 14px;">
             <label
+              style="color: #cbd5e1; font-weight: 600; font-size: 0.88rem; display: block; margin-bottom: 6px;"><i
+                class="fa-solid fa-gauge-high text-cyan"></i> Contor Inițial Aparat (Total Counter la înregistrare)</label>
+            <input type="text" inputmode="numeric" id="edit-aparat-contor-initial" placeholder="ex: 1.000.000"
+              oninput="formatContorInput(this);" class="search-input full-width" style="width:100%;">
+          </div>
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label
               style="color: #cbd5e1; font-weight: 600; font-size: 0.88rem; display: block; margin-bottom: 6px;">Index
               Curent Aparat (Număr Pagini Odometru) *</label>
             <input type="text" inputmode="numeric" id="edit-aparat-index" placeholder="ex: 1.000.000"
@@ -1125,15 +1150,15 @@
     </div>
   </div>
 
-  <script src="js/utils.js?v=1.1.5"></script>
-  <script src="js/offices.js?v=1.1.5"></script>
-  <script src="js/auth.js?v=1.1.5"></script>
-  <script src="js/users.js?v=1.1.5"></script>
-  <script src="js/stock.js?v=1.1.5"></script>
-  <script src="js/history.js?v=1.1.5"></script>
-  <script src="js/wizard.js?v=1.1.5"></script>
-  <script src="js/catalog.js?v=1.1.5"></script>
-  <script src="app.js?v=1.1.5"></script>
+  <script src="js/utils.js?v=1.1.6"></script>
+  <script src="js/offices.js?v=1.1.6"></script>
+  <script src="js/auth.js?v=1.1.6"></script>
+  <script src="js/users.js?v=1.1.6"></script>
+  <script src="js/stock.js?v=1.1.6"></script>
+  <script src="js/history.js?v=1.1.6"></script>
+  <script src="js/wizard.js?v=1.1.6"></script>
+  <script src="js/catalog.js?v=1.1.6"></script>
+  <script src="app.js?v=1.1.6"></script>
 </body>
 
 </html>
