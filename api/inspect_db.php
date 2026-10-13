@@ -1,13 +1,20 @@
 <?php
 require_once __DIR__ . '/config.php';
 
+ini_set('display_errors', '1');
+error_reporting(E_ALL);
+
 $secret = defined('DEPLOY_SECRET') ? DEPLOY_SECRET : 'pimro1_anasoft_deploy_2026';
 if (($_GET['secret'] ?? '') !== $secret) {
     http_response_code(403);
     die(json_encode(['status' => 'error', 'message' => 'Unauthorized']));
 }
 
-$db = getDBConnection();
+try {
+    $db = getDBConnection();
+    if (!$db) {
+        throw new Exception("Nu s-a putut conecta la baza de date.");
+    }
 
 // 1. Get all combinations of (id_aparat, id_tip_toner) for Tudor (office 3) and UMF 2 (office 6)
 $stmtCombos = $db->query("
@@ -32,7 +39,7 @@ $combos = $stmtCombos->fetchAll(PDO::FETCH_ASSOC);
 
 // 2. For each combination, simulate the calculation
 $results = [];
-$anomalies = [];
+$anomalii = [];
 $tudorCount = 0;
 $umf2Count = 0;
 
@@ -171,12 +178,19 @@ foreach ($combos as $combo) {
     ];
 }
 
-echo json_encode([
-    'combos_count' => count($combos),
-    'tudor_count' => $tudorCount,
-    'umf2_count' => $umf2Count,
-    'total_count' => $tudorCount + $umf2Count,
-    'anomalies_count' => count($anomalii),
-    'anomalies' => $anomalii,
-    'results' => $results
-], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    echo json_encode([
+        'combos_count' => count($combos),
+        'tudor_count' => $tudorCount,
+        'umf2_count' => $umf2Count,
+        'total_count' => $tudorCount + $umf2Count,
+        'anomalies_count' => count($anomalii),
+        'anomalies' => $anomalii,
+        'results' => $results
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+} catch (Throwable $e) {
+    echo json_encode([
+        'status' => 'error',
+        'message' => $e->getMessage(),
+        'trace' => $e->getTraceAsString()
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+}
